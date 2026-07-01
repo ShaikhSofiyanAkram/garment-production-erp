@@ -1,0 +1,680 @@
+<%
+currentPage = 'payment-collection';
+%>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %> | Garment ERP</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #f1f5f9; }
+        
+        .premium-navbar {
+            background: linear-gradient(135deg, #ffffff, #f8fafc);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            padding: 16px 30px;
+            border-bottom: 2px solid rgba(67,97,238,0.1);
+        }
+        
+        .navbar-brand-premium {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            text-decoration: none;
+        }
+        
+        .brand-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #4361ee, #8b5cf6);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 20px rgba(67,97,238,0.3);
+        }
+        
+        .brand-icon i { font-size: 1.5rem; color: white; }
+        .brand-text { font-size: 1.4rem; font-weight: 800; background: linear-gradient(135deg, #1e293b, #334155); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .brand-badge { background: linear-gradient(135deg, #4361ee, #8b5cf6); font-size: 0.65rem; padding: 3px 10px; border-radius: 30px; color: white; margin-left: 10px; }
+        
+        .payment-container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 25px; }
+        .stat-card { background: white; border-radius: 20px; padding: 20px; position: relative; overflow: hidden; border: 1px solid rgba(0,0,0,0.03); }
+        .stat-card::before { content: ''; position: absolute; top: 0; right: 0; width: 100px; height: 100px; background: radial-gradient(circle, rgba(67,97,238,0.05) 0%, transparent 70%); border-radius: 50%; }
+        .stat-title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin-bottom: 10px; }
+        .stat-value { font-size: 1.8rem; font-weight: 800; color: #1e293b; }
+        .stat-icon { position: absolute; right: 20px; top: 20px; font-size: 2rem; opacity: 0.15; }
+        
+        .card-premium { background: white; border: none; border-radius: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); margin-bottom: 25px; overflow: hidden; }
+        .card-header-premium { padding: 20px 25px; border-bottom: 1px solid #e2e8f0; background: white; }
+        .card-header-premium h5 { font-weight: 700; margin: 0; color: #1e293b; }
+        .card-body-premium { padding: 25px; }
+        
+        .table-premium { width: 100%; border-collapse: collapse; }
+        .table-premium th { padding: 15px; background: #f8fafc; font-weight: 600; color: #1e293b; border-bottom: 2px solid #e2e8f0; }
+        .table-premium td { padding: 15px; border-bottom: 1px solid #e2e8f0; vertical-align: middle; }
+        
+        .form-control-premium { border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 15px; width: 100%; }
+        .form-control-premium:focus { border-color: #4361ee; box-shadow: 0 0 0 3px rgba(67,97,238,0.1); outline: none; }
+        
+        .btn-premium { background: linear-gradient(135deg, #4361ee, #8b5cf6); border: none; border-radius: 12px; padding: 12px 25px; color: white; font-weight: 600; transition: all 0.3s; }
+        .btn-premium:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(67,97,238,0.3); }
+        
+        .btn-full-payment {
+            background: linear-gradient(135deg, #10b981, #059669);
+            border: none;
+            border-radius: 12px;
+            padding: 14px 30px;
+            color: white;
+            font-weight: 700;
+            font-size: 1rem;
+            transition: all 0.3s;
+            width: 100%;
+        }
+        .btn-full-payment:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(16,185,129,0.4); }
+        
+        .advance-card { background: linear-gradient(135deg, #10b981, #059669); color: white; border-radius: 16px; padding: 15px 20px; margin-bottom: 20px; }
+        .advance-amount { font-size: 1.8rem; font-weight: 800; }
+        
+        .payment-breakdown-card {
+            background: linear-gradient(135deg, #f8fafc, #ffffff);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        @media (max-width: 768px) {
+            .stats-grid { grid-template-columns: 1fr; }
+            .table-premium { font-size: 0.8rem; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="premium-navbar">
+    <div class="d-flex justify-content-between align-items-center">
+        <a href="/" class="navbar-brand-premium">
+            <div class="brand-icon"><i class="fas fa-tshirt"></i></div>
+            <div><span class="brand-text">SANYA ERP</span><span class="brand-badge">Premium</span></div>
+        </a>
+        <div>
+            <a href="/dashboard" class="btn btn-sm btn-outline-secondary me-2">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+</nav>
+
+<div class="payment-container">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fas fa-hand-holding-usd text-primary"></i> Payment Collection</h2>
+            <p class="text-muted">Collect payments with advance adjustment</p>
+        </div>
+        <div>
+            <a href="/bills/pending-summary" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Pending Bills
+            </a>
+        </div>
+    </div>
+    
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-title">Total Bills</div>
+            <div class="stat-value"><%= bills.length %></div>
+            <i class="fas fa-file-invoice stat-icon"></i>
+        </div>
+        <div class="stat-card">
+            <div class="stat-title">Total Amount</div>
+            <div class="stat-value">₹<%= (totalAmount || 0).toLocaleString() %></div>
+            <i class="fas fa-chart-line stat-icon"></i>
+        </div>
+        <div class="stat-card">
+            <div class="stat-title">Already Paid</div>
+            <div class="stat-value">₹<%= (totalPaid || 0).toLocaleString() %></div>
+            <i class="fas fa-check-circle stat-icon"></i>
+        </div>
+        <div class="stat-card">
+            <div class="stat-title">Pending Amount</div>
+            <div class="stat-value text-warning">₹<%= (totalPending || 0).toLocaleString() %></div>
+            <i class="fas fa-clock stat-icon"></i>
+        </div>
+    </div>
+    
+    <!-- Available Advance Alert -->
+    <% if (totalAvailableAdvance > 0) { %>
+        <div class="advance-card mb-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <i class="fas fa-hand-holding-usd fa-2x me-3"></i>
+                    <span style="font-size: 1.1rem;">Available Advance Balance</span>
+                </div>
+                <div class="advance-amount">₹<%= totalAvailableAdvance.toLocaleString() %></div>
+            </div>
+            <p class="mb-0 mt-2 small opacity-75">Advance will be automatically adjusted against the bill payment</p>
+        </div>
+    <% } %>
+    
+    <!-- Full Payment Button with Advance -->
+    <% if (totalAvailableAdvance > 0 && totalPending > 0) { 
+        const willUseAdvance = Math.min(totalPending, totalAvailableAdvance);
+        const remainingCash = totalPending - willUseAdvance;
+    %>
+        <div class="row mb-4">
+            <div class="col-md-6 mx-auto">
+                <button class="btn-full-payment" id="fullPaymentWithAdvanceBtn" 
+                        data-pending="<%= totalPending %>" 
+                        data-advance="<%= totalAvailableAdvance %>"
+                        data-will-use="<%= willUseAdvance %>"
+                        data-remaining-cash="<%= remainingCash %>">
+                    <i class="fas fa-bolt"></i> FULL PAYMENT WITH ADVANCE
+                </button>
+                <div class="text-center mt-2">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle"></i> 
+                        Will use ₹<%= willUseAdvance.toLocaleString() %> from advance + 
+                        ₹<%= remainingCash.toLocaleString() %> cash
+                    </small>
+                </div>
+            </div>
+        </div>
+    <% } %>
+    
+    <!-- Bills Table -->
+    <div class="card-premium">
+        <div class="card-header-premium">
+            <h5><i class="fas fa-list"></i> Selected Bills</h5>
+        </div>
+        <div class="card-body-premium p-0">
+            <div class="table-responsive">
+                <table class="table-premium">
+                    <thead>
+                        <tr>
+                            <th><input type="checkbox" id="selectAllBills" class="form-check-input"></th>
+                            <th>Bill #</th>
+                            <th>Date</th>
+                            <th>Client</th>
+                            <th>Items</th>
+                            <th>Total (₹)</th>
+                            <th>Paid (₹)</th>
+                            <th>Pending (₹)</th>
+                            <th>Available Advance</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% if (bills && bills.length) { %>
+                            <% bills.forEach((bill, index) => { 
+                                const billPending = (bill.totalAmount - bill.paidAmount) || 0;
+                            %>
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" class="form-check-input bill-checkbox" 
+                                               data-id="<%= bill._id %>" 
+                                               data-pending="<%= billPending %>"
+                                               data-client="<%= bill.client?._id %>"
+                                               data-advance="<%= bill.availableAdvance || 0 %>">
+                                    </td>
+                                    <td><strong><%= bill.billNumber %></strong></td>
+                                    <td><%= new Date(bill.billDate).toLocaleDateString() %></td>
+                                    <td><%= bill.client?.name %></td>
+                                    <td><%= bill.items.length %> items</td>
+                                    <td>₹<%= (bill.totalAmount || 0).toLocaleString() %></td>
+                                    <td>₹<%= (bill.paidAmount || 0).toLocaleString() %></td>
+                                    <td class="fw-bold text-warning" id="pending_<%= bill._id %>">₹<%= billPending.toLocaleString() %></td>
+                                    <td>
+                                        <% if (bill.availableAdvance > 0) { %>
+                                            <span class="badge bg-success" id="advance_<%= bill._id %>">₹<%= bill.availableAdvance.toLocaleString() %></span>
+                                        <% } else { %>
+                                            <span class="badge bg-secondary">₹0</span>
+                                        <% } %>
+                                    </td>
+                                    <td><span class="badge bg-warning"><%= bill.status %></span></td>
+                                </tr>
+                            <% }) %>
+                        <% } else { %>
+                            <tr><td colspan="10" class="text-center py-4">No bills selected</td></tr>
+                        <% } %>
+                    </tbody>
+                    <tfoot class="table-light">
+                        <tr class="fw-bold">
+                            <td></td>
+                            <td colspan="3" class="text-end">Total:</td>
+                            <td>₹<%= (totalAmount || 0).toLocaleString() %></td>
+                            <td>₹<%= (totalPaid || 0).toLocaleString() %></td>
+                            <td id="totalSelectedPending">₹<%= (totalPending || 0).toLocaleString() %></td>
+                            <td id="totalSelectedAdvance">₹<%= (totalAvailableAdvance || 0).toLocaleString() %></td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Selected Bills Summary -->
+    <div class="card-premium mb-4" id="selectedSummaryCard" style="display: none;">
+        <div class="card-header-premium bg-primary text-white">
+            <h5 class="mb-0"><i class="fas fa-check-circle"></i> Selected Bills Summary</h5>
+        </div>
+        <div class="card-body-premium">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="text-center">
+                        <small class="text-muted">Selected Bills</small>
+                        <h3 id="selectedCount">0</h3>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="text-center">
+                        <small class="text-muted">Total Pending</small>
+                        <h3 class="text-warning" id="selectedPending">₹0</h3>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="text-center">
+                        <small class="text-muted">Available Advance</small>
+                        <h3 class="text-success" id="selectedAdvance">₹0</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="text-center mt-3" id="quickPaymentSection" style="display: none;">
+                <button class="btn btn-success btn-lg" id="quickFullPaymentBtn">
+                    <i class="fas fa-bolt"></i> FULL PAYMENT FOR SELECTED (Use Advance)
+                </button>
+                <button class="btn btn-primary btn-lg ms-2" id="quickPartialPaymentBtn">
+                    <i class="fas fa-hand-holding-usd"></i> USE ADVANCE ONLY
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Payment Form -->
+    <div class="card-premium">
+        <div class="card-header-premium">
+            <h5><i class="fas fa-money-bill-wave"></i> Collect Payment</h5>
+        </div>
+        <div class="card-body-premium">
+            <form id="paymentForm" method="POST" action="/payment-collection/process">
+                <input type="hidden" name="billIds" id="selectedBillIdsInput" value="<%= selectedBillIds ? selectedBillIds.join(',') : '' %>">
+                
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-bold">Payment Amount (₹) *</label>
+                        <input type="number" class="form-control-premium" name="amount" id="paymentAmount" 
+                               max="<%= totalPending || 0 %>" min="1" step="1" required
+                               oninput="updateRemaining()">
+                        <small class="text-muted" id="maxAmountHint">Max: ₹<%= (totalPending || 0).toLocaleString() %></small>
+                    </div>
+                    
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-bold">Payment Method *</label>
+                        <select class="form-control-premium" name="paymentMethod" id="paymentMethod" required>
+                            <option value="cash">💵 Cash</option>
+                            <option value="bank_transfer">🏦 Bank Transfer</option>
+                            <option value="cheque">📝 Cheque</option>
+                            <option value="upi">📱 UPI</option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-bold">Reference / Transaction ID</label>
+                        <input type="text" class="form-control-premium" name="reference" 
+                               id="referenceInput" placeholder="Cheque No / UTR / Transaction ID">
+                    </div>
+                </div>
+                
+                <!-- Advance Usage Option -->
+                <div class="alert alert-info mb-3" id="advanceOptionDiv">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="useAdvance" value="yes" id="useAdvanceCheckbox">
+                        <label class="form-check-label fw-bold" for="useAdvanceCheckbox">
+                            Use available advance for this payment
+                        </label>
+                    </div>
+                    <small class="text-muted" id="advanceAvailableText">Available advance: ₹0</small>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Payment Date</label>
+                        <input type="date" class="form-control-premium" name="paymentDate" 
+                               value="<%= new Date().toISOString().split('T')[0] %>">
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Remark (Optional)</label>
+                        <input type="text" class="form-control-premium" name="remark" id="remarkInput"
+                               placeholder="Any notes about this payment">
+                    </div>
+                </div>
+                
+                <!-- Payment Breakdown -->
+                <div class="payment-breakdown-card mb-3" id="paymentBreakdown" style="display: none;">
+                    <h6><i class="fas fa-calculator"></i> Payment Breakdown</h6>
+                    <div class="row mt-3">
+                        <div class="col-6">💰 Advance Used:</div>
+                        <div class="col-6 text-end fw-bold text-success" id="advanceUsedDisplay">₹0</div>
+                    </div>
+                    <div class="row">
+                        <div class="col-6">💵 Cash/Other Payment:</div>
+                        <div class="col-6 text-end fw-bold" id="cashPaymentDisplay">₹0</div>
+                    </div>
+                    <hr class="my-2">
+                    <div class="row fw-bold">
+                        <div class="col-6">🎯 Total Payment:</div>
+                        <div class="col-6 text-end text-primary" id="totalPaymentDisplay">₹0</div>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info mt-3" id="remainingInfo">
+                    <i class="fas fa-info-circle"></i> 
+                    After this payment, <strong>₹<span id="remainingAfter"><%= totalPending || 0 %></span></strong> will remain pending.
+                </div>
+                
+                <div class="text-center mt-4">
+                    <button type="submit" class="btn-premium px-5 py-3">
+                        <i class="fas fa-check-circle"></i> Process Payment
+                    </button>
+                    <a href="/bills/pending-summary" class="btn btn-outline-secondary px-5 py-3 ms-2">
+                        <i class="fas fa-times"></i> Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+
+    // Add this BEFORE the existing submit event listener
+document.getElementById('paymentForm').addEventListener('submit', function(e) {
+    const amount = parseFloat(document.getElementById('paymentAmount').value) || 0;
+    const useAdvance = document.getElementById('useAdvanceCheckbox')?.checked ? 'yes' : 'no';
+    
+    console.log('=== FORM SUBMIT DEBUG ===');
+    console.log('Amount:', amount);
+    console.log('Use Advance Checkbox Checked:', document.getElementById('useAdvanceCheckbox')?.checked);
+    console.log('Use Advance Value:', useAdvance);
+    console.log('Selected Bills:', document.getElementById('selectedBillIdsInput').value);
+    
+    if (amount <= 0) {
+        e.preventDefault();
+        alert('Please enter a valid payment amount');
+    } else if (selectedBills.length === 0) {
+        e.preventDefault();
+        alert('Please select at least one bill');
+    }
+});
+
+
+    const totalPendingAmount = <%= totalPending || 0 %>;
+    const totalAvailableAdvanceAmount = <%= totalAvailableAdvance || 0 %>;
+    
+    let selectedBills = [];
+    let selectedTotalPending = 0;
+    let selectedTotalAdvance = 0;
+    
+    // Select All functionality
+    const selectAllCheckbox = document.getElementById('selectAllBills');
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            document.querySelectorAll('.bill-checkbox').forEach(cb => {
+                cb.checked = this.checked;
+            });
+            updateSelectedSummary();
+        });
+    }
+    
+    // Individual checkbox change
+    document.querySelectorAll('.bill-checkbox').forEach(cb => {
+        cb.addEventListener('change', updateSelectedSummary);
+    });
+    
+    function updateSelectedSummary() {
+        selectedBills = [];
+        selectedTotalPending = 0;
+        selectedTotalAdvance = 0;
+        
+        document.querySelectorAll('.bill-checkbox:checked').forEach(cb => {
+            const billId = cb.dataset.id;
+            const pending = parseFloat(cb.dataset.pending) || 0;
+            const advance = parseFloat(cb.dataset.advance) || 0;
+            
+            selectedBills.push(billId);
+            selectedTotalPending += pending;
+            selectedTotalAdvance += advance;
+        });
+        
+        const selectedCount = selectedBills.length;
+        const summaryCard = document.getElementById('selectedSummaryCard');
+        const quickSection = document.getElementById('quickPaymentSection');
+        
+        if (selectedCount > 0) {
+            summaryCard.style.display = 'block';
+            document.getElementById('selectedCount').innerText = selectedCount;
+            document.getElementById('selectedPending').innerHTML = `₹${selectedTotalPending.toLocaleString()}`;
+            document.getElementById('selectedAdvance').innerHTML = `₹${selectedTotalAdvance.toLocaleString()}`;
+            
+            // Update hidden input with selected bill IDs
+            document.getElementById('selectedBillIdsInput').value = selectedBills.join(',');
+            
+            // Update payment amount max
+            const paymentInput = document.getElementById('paymentAmount');
+            if (paymentInput) {
+                paymentInput.max = selectedTotalPending;
+                document.getElementById('maxAmountHint').innerHTML = `Max: ₹${selectedTotalPending.toLocaleString()}`;
+            }
+            
+            // Update advance option
+            if (selectedTotalAdvance > 0) {
+                quickSection.style.display = 'block';
+                document.getElementById('advanceOptionDiv').style.display = 'block';
+                document.getElementById('advanceAvailableText').innerHTML = `Available advance: ₹${selectedTotalAdvance.toLocaleString()}`;
+            } else {
+                quickSection.style.display = 'none';
+                document.getElementById('advanceOptionDiv').style.display = 'none';
+            }
+            
+            // Update remaining info
+            document.getElementById('remainingAfter').innerText = selectedTotalPending.toLocaleString();
+        } else {
+            summaryCard.style.display = 'none';
+            document.getElementById('selectedBillIdsInput').value = '';
+            quickSection.style.display = 'none';
+        }
+        
+        updateRemaining();
+    }
+    
+    // Full Payment with Advance - Selected Bills
+    document.getElementById('quickFullPaymentBtn')?.addEventListener('click', function() {
+        const pending = selectedTotalPending;
+        const advance = selectedTotalAdvance;
+        
+        if (pending === 0) {
+            alert('No pending amount selected');
+            return;
+        }
+        
+        const willUseAdvance = Math.min(pending, advance);
+        const remainingCash = pending - willUseAdvance;
+        
+        // Set payment amount
+        document.getElementById('paymentAmount').value = pending;
+        
+        // Check advance checkbox
+        const advanceCheckbox = document.getElementById('useAdvanceCheckbox');
+        if (advanceCheckbox && advance > 0) {
+            advanceCheckbox.checked = true;
+        }
+        
+        // Show breakdown
+        showPaymentBreakdown(pending, willUseAdvance, remainingCash);
+        
+        // Update remaining info
+        document.getElementById('remainingAfter').innerText = '0';
+        
+        // Scroll to payment form
+        document.getElementById('paymentForm').scrollIntoView({ behavior: 'smooth' });
+    });
+    
+    // Use Advance Only - Selected Bills
+    document.getElementById('quickPartialPaymentBtn')?.addEventListener('click', function() {
+        const advance = selectedTotalAdvance;
+        
+        if (advance === 0) {
+            alert('No advance available for selected bills');
+            return;
+        }
+        
+        const willUseAdvance = Math.min(selectedTotalPending, advance);
+        const remainingCash = 0;
+        
+        // Set payment amount to advance amount only
+        document.getElementById('paymentAmount').value = willUseAdvance;
+        
+        // Check advance checkbox
+        const advanceCheckbox = document.getElementById('useAdvanceCheckbox');
+        if (advanceCheckbox) {
+            advanceCheckbox.checked = true;
+        }
+        
+        // Show breakdown
+        showPaymentBreakdown(willUseAdvance, willUseAdvance, remainingCash);
+        
+        // Update remaining info
+        const remaining = selectedTotalPending - willUseAdvance;
+        document.getElementById('remainingAfter').innerText = remaining.toLocaleString();
+        
+        // Scroll to payment form
+        document.getElementById('paymentForm').scrollIntoView({ behavior: 'smooth' });
+    });
+    
+    // Original Full Payment Button (for all bills)
+    const fullPaymentBtn = document.getElementById('fullPaymentWithAdvanceBtn');
+    if (fullPaymentBtn) {
+        fullPaymentBtn.addEventListener('click', function() {
+            const pending = parseFloat(this.dataset.pending) || 0;
+            const advance = parseFloat(this.dataset.advance) || 0;
+            const willUseAdvance = parseFloat(this.dataset.willUse) || 0;
+            const remainingCash = parseFloat(this.dataset.remainingCash) || 0;
+            
+            if (pending === 0) {
+                alert('No pending amount');
+                return;
+            }
+            
+            // Set payment amount
+            document.getElementById('paymentAmount').value = pending;
+            
+            // Check advance checkbox
+            const advanceCheckbox = document.getElementById('useAdvanceCheckbox');
+            if (advanceCheckbox && advance > 0) {
+                advanceCheckbox.checked = true;
+            }
+            
+            // Select all bills if not already
+            if (selectAllCheckbox && !selectAllCheckbox.checked) {
+                selectAllCheckbox.checked = true;
+                updateSelectedSummary();
+            }
+            
+            // Show breakdown
+            showPaymentBreakdown(pending, willUseAdvance, remainingCash);
+            
+            // Update remaining info
+            document.getElementById('remainingAfter').innerText = '0';
+            
+            // Scroll to payment form
+            document.getElementById('paymentForm').scrollIntoView({ behavior: 'smooth' });
+        });
+    }
+    
+    function showPaymentBreakdown(totalAmount, advanceUsed, cashAmount) {
+        const breakdown = document.getElementById('paymentBreakdown');
+        if (totalAmount > 0) {
+            breakdown.style.display = 'block';
+            document.getElementById('advanceUsedDisplay').innerHTML = `₹${advanceUsed.toLocaleString()}`;
+            document.getElementById('cashPaymentDisplay').innerHTML = `₹${cashAmount.toLocaleString()}`;
+            document.getElementById('totalPaymentDisplay').innerHTML = `₹${totalAmount.toLocaleString()}`;
+            
+            // Add success color if advance used
+            if (advanceUsed > 0) {
+                document.getElementById('advanceUsedDisplay').style.color = '#10b981';
+                document.getElementById('advanceUsedDisplay').style.fontWeight = 'bold';
+            }
+        }
+    }
+    
+    function updateRemaining() {
+        let amount = parseFloat(document.getElementById('paymentAmount').value) || 0;
+        const useAdvance = document.getElementById('useAdvanceCheckbox')?.checked || false;
+        
+        let advanceUsed = 0;
+        let cashAmount = amount;
+        
+        if (useAdvance && selectedTotalAdvance > 0) {
+            advanceUsed = Math.min(amount, selectedTotalAdvance);
+            cashAmount = amount - advanceUsed;
+        }
+        
+        const remaining = Math.max(0, selectedTotalPending - amount);
+        document.getElementById('remainingAfter').innerText = remaining.toLocaleString();
+        
+        // Update payment breakdown
+        if (amount > 0) {
+            showPaymentBreakdown(amount, advanceUsed, cashAmount);
+        } else {
+            document.getElementById('paymentBreakdown').style.display = 'none';
+        }
+        
+        const remainingInfo = document.getElementById('remainingInfo');
+        if (amount > selectedTotalPending) {
+            remainingInfo.className = 'alert alert-danger mt-3';
+            remainingInfo.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Payment amount cannot exceed pending amount!';
+            document.getElementById('paymentAmount').classList.add('is-invalid');
+        } else {
+            remainingInfo.className = 'alert alert-info mt-3';
+            remainingInfo.innerHTML = '<i class="fas fa-info-circle"></i> After this payment, <strong>₹<span id="remainingAfter">' + remaining.toLocaleString() + '</span></strong> will remain pending.';
+            document.getElementById('paymentAmount').classList.remove('is-invalid');
+        }
+    }
+    
+    document.getElementById('paymentForm').addEventListener('submit', function(e) {
+        const amount = parseFloat(document.getElementById('paymentAmount').value) || 0;
+        if (amount <= 0) {
+            e.preventDefault();
+            alert('Please enter a valid payment amount');
+        } else if (selectedBills.length === 0) {
+            e.preventDefault();
+            alert('Please select at least one bill');
+        }
+    });
+    
+    // Add event listener for advance checkbox
+    const advanceCheckbox = document.getElementById('useAdvanceCheckbox');
+    if (advanceCheckbox) {
+        advanceCheckbox.addEventListener('change', updateRemaining);
+    }
+    
+    // Initial calculation and summary update
+    updateSelectedSummary();
+    updateRemaining();
+</script>
+</body>
+</html>

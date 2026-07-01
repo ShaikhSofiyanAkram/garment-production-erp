@@ -1,0 +1,367 @@
+<%
+// No layout include needed - express-ejs-layouts handles it automatically
+// Just set layout variable at top
+layout = 'layouts/admin-layout';
+currentPage = 'dashboard';
+%>
+
+<div class="container-fluid">
+    <!-- Welcome Card with Weather -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card bg-gradient-primary text-white" style="background: linear-gradient(135deg, #1e3c72, #2a5298);">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h2 class="mb-2">Welcome back, <%= user ? user.username : 'Admin' %>!</h2>
+                            <p class="mb-0 opacity-75">Today is <%= new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) %></p>
+                            <div class="mt-2">
+                                <span class="badge bg-light text-dark me-2">
+                                    <i class="fas fa-thermometer-half"></i> 34°C
+                                </span>
+                                <span class="badge bg-light text-dark">
+                                    <i class="fas fa-sun"></i> Sunny
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <i class="fas fa-chart-line fa-4x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Action Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card text-center h-100 shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-cut fa-2x text-primary mb-2"></i>
+                    <h5>Quick Actions</h5>
+                    <hr>
+                    <a href="/cutting/create" class="btn btn-outline-primary btn-sm w-100 mb-2">
+                        <i class="fas fa-plus"></i> New Cutting
+                    </a>
+                    <a href="/assignments/create" class="btn btn-outline-primary btn-sm w-100 mb-2">
+                        <i class="fas fa-tasks"></i> New Assignment
+                    </a>
+                    <a href="/bills/create" class="btn btn-outline-primary btn-sm w-100">
+                        <i class="fas fa-file-invoice"></i> Create Bill
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card text-center h-100 shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-users fa-2x text-success mb-2"></i>
+                    <h5>Management</h5>
+                    <hr>
+                    <a href="/workers" class="btn btn-outline-success btn-sm w-100 mb-2">
+                        <i class="fas fa-user-plus"></i> Workers
+                    </a>
+                    <a href="/products" class="btn btn-outline-success btn-sm w-100 mb-2">
+                        <i class="fas fa-box"></i> Products
+                    </a>
+                    <a href="/fabrics" class="btn btn-outline-success btn-sm w-100">
+                        <i class="fas fa-layer-group"></i> Fabrics
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card text-center h-100 shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-industry fa-2x text-info mb-2"></i>
+                    <h5>Production</h5>
+                    <hr>
+                    <a href="/cutting" class="btn btn-outline-info btn-sm w-100 mb-2">
+                        <i class="fas fa-cut"></i> Cutting
+                    </a>
+                    <a href="/assignments" class="btn btn-outline-info btn-sm w-100 mb-2">
+                        <i class="fas fa-tasks"></i> Assignments
+                    </a>
+                    <a href="/packing" class="btn btn-outline-info btn-sm w-100">
+                        <i class="fas fa-boxes"></i> Packing
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card text-center h-100 shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-chart-line fa-2x text-warning mb-2"></i>
+                    <h5>Finance</h5>
+                    <hr>
+                    <a href="/bills" class="btn btn-outline-warning btn-sm w-100 mb-2">
+                        <i class="fas fa-file-invoice"></i> Bills
+                    </a>
+                    <a href="/payments" class="btn btn-outline-warning btn-sm w-100 mb-2">
+                        <i class="fas fa-money-bill"></i> Payments
+                    </a>
+                    <a href="/reports/loss" class="btn btn-outline-warning btn-sm w-100">
+                        <i class="fas fa-chart-line"></i> Reports
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-title">Today's Production</div>
+            <div class="stat-value" id="todayProduction">0</div>
+            <div class="stat-trend up"><i class="fas fa-arrow-up"></i> <span id="productionTrend">0</span>% from yesterday</div>
+            <i class="fas fa-boxes stat-icon"></i>
+        </div>
+        <div class="stat-card">
+            <div class="stat-title">Monthly Production</div>
+            <div class="stat-value" id="monthlyProduction">0</div>
+            <div class="stat-trend"><span id="monthlyTrend">0</span> pieces this month</div>
+            <i class="fas fa-chart-line stat-icon"></i>
+        </div>
+        <div class="stat-card">
+            <div class="stat-title">Pending Bills</div>
+            <div class="stat-value" id="pendingBills">0</div>
+            <div class="stat-trend"><i class="fas fa-rupee-sign"></i> <span id="pendingAmount">0</span></div>
+            <i class="fas fa-file-invoice-dollar stat-icon"></i>
+        </div>
+        <div class="stat-card">
+            <div class="stat-title">Active Workers</div>
+            <div class="stat-value" id="activeWorkers">0</div>
+            <div class="stat-trend"><span id="activeAssignments">0</span> active assignments</div>
+            <i class="fas fa-users stat-icon"></i>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <i class="fas fa-chart-line text-primary"></i> Production Trend
+                </div>
+                <div class="card-body">
+                    <canvas id="productionChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <i class="fas fa-chart-pie text-success"></i> Order Status
+                </div>
+                <div class="card-body">
+                    <canvas id="orderStatusChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity Row -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <span><i class="fas fa-history"></i> Recent Assignments</span>
+                    <a href="/assignments" class="btn btn-sm btn-link">View All</a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Assignment ID</th>
+                                    <th>Karigar</th>
+                                    <th>Product</th>
+                                    <th>Pieces</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recentAssignments">
+                                <tr><td colspan="5" class="text-center">Loading...</td</tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <span><i class="fas fa-receipt"></i> Recent Bills</span>
+                    <a href="/bills" class="btn btn-sm btn-link">View All</a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Bill #</th>
+                                    <th>Client</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recentBills">
+                                <tr><td colspan="4" class="text-center">Loading...</td</tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Status Card -->
+    <div class="row mt-3">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <i class="fas fa-server"></i> System Status
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="alert alert-success mb-0">
+                                <i class="fas fa-check-circle"></i> Database Connected
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="alert alert-success mb-0">
+                                <i class="fas fa-lock"></i> Authentication Working
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="alert alert-success mb-0">
+                                <i class="fas fa-cubes"></i> All Modules Ready
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="alert alert-info mb-0">
+                                <i class="fas fa-chart-line"></i> Real-time Sync Active
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let productionChart, orderStatusChart;
+
+// Load dashboard data
+async function loadDashboardData() {
+    try {
+        const response = await fetch('/dashboard/api/stats');
+        const data = await response.json();
+        
+        // Update stats
+        document.getElementById('todayProduction').innerText = data.todayProduction || 0;
+        document.getElementById('monthlyProduction').innerText = data.monthlyProduction || 0;
+        document.getElementById('pendingBills').innerText = data.pendingBills || 0;
+        document.getElementById('pendingAmount').innerText = data.pendingAmount || 0;
+        document.getElementById('activeWorkers').innerText = data.activeWorkers || 0;
+        document.getElementById('activeAssignments').innerText = data.activeAssignments || 0;
+        
+        // Update recent assignments
+        if (data.recentAssignments && data.recentAssignments.length) {
+            const assignHtml = data.recentAssignments.map(a => `
+                <tr>
+                    <td><strong>${a.assignmentId}</strong></td>
+                    <td>${a.karigar?.name || 'N/A'}</td>
+                    <td>${a.productName}</td>
+                    <td>${a.givenPieces}</td>
+                    <td><span class="badge ${a.status === 'completed' ? 'bg-success' : a.status === 'partial' ? 'bg-warning' : 'bg-danger'}">${a.status}</span></td>
+                </tr>
+            `).join('');
+            document.getElementById('recentAssignments').innerHTML = assignHtml;
+        } else {
+            document.getElementById('recentAssignments').innerHTML = '<tr><td colspan="5" class="text-center">No recent assignments</td></tr>';
+        }
+        
+        // Update recent bills
+        if (data.recentBills && data.recentBills.length) {
+            const billsHtml = data.recentBills.map(b => `
+                <tr>
+                    <td><strong>${b.billNumber}</strong></td>
+                    <td>${b.client?.name || 'N/A'}</td>
+                    <td>₹${b.totalAmount?.toLocaleString() || 0}</td>
+                    <td><span class="badge ${b.status === 'paid' ? 'bg-success' : b.status === 'partial' ? 'bg-warning' : 'bg-danger'}">${b.status}</span></td>
+                </tr>
+            `).join('');
+            document.getElementById('recentBills').innerHTML = billsHtml;
+        } else {
+            document.getElementById('recentBills').innerHTML = '<tr><td colspan="4" class="text-center">No recent bills</td></tr>';
+        }
+        
+        // Setup charts
+        setupCharts(data.productionData || [], data.statusData || {});
+        
+    } catch (error) {
+        console.error('Error loading dashboard:', error);
+    }
+}
+
+function setupCharts(productionData, statusData) {
+    // Production Chart
+    const prodCtx = document.getElementById('productionChart').getContext('2d');
+    if (productionChart) productionChart.destroy();
+    
+    productionChart = new Chart(prodCtx, {
+        type: 'line',
+        data: {
+            labels: productionData.map(d => d.label) || ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+            datasets: [{
+                label: 'Production (Pieces)',
+                data: productionData.map(d => d.value) || [0, 0, 0, 0],
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59,130,246,0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: { position: 'top' }
+            }
+        }
+    });
+    
+    // Order Status Chart
+    const statusCtx = document.getElementById('orderStatusChart').getContext('2d');
+    if (orderStatusChart) orderStatusChart.destroy();
+    
+    orderStatusChart = new Chart(statusCtx, {
+        type: 'doughnut',
+        data: {
+            labels: statusData.labels || ['Pending', 'Partial', 'Completed'],
+            datasets: [{
+                data: statusData.values || [0, 0, 0],
+                backgroundColor: ['#ef4444', '#f59e0b', '#10b981']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+}
+
+// Auto refresh every 30 seconds
+loadDashboardData();
+setInterval(loadDashboardData, 30000);
+</script>

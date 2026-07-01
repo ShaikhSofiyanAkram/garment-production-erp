@@ -1,0 +1,47 @@
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-hand-sparkles"></i> Helper Payment</h4>
+                <small><%= worker.name %> - Monthly Salary: ₹<%= worker.monthlyRate %></small>
+            </div>
+            <div class="card-body">
+                <form action="/payments/create" method="POST">
+                    <input type="hidden" name="workerId" value="<%= worker._id %>">
+                    <input type="hidden" name="workerType" value="helper">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Month</label>
+                        <select class="form-control" name="month" required>
+                            <% for(let i=1; i<=12; i++) { %>
+                                <option value="<%= i %>"><%= new Date(2000, i-1, 1).toLocaleString('default', { month: 'long' }) %></option>
+                            <% } %>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Year</label>
+                        <select class="form-control" name="year" required>
+                            <% for(let i=2020; i<=2030; i++) { %>
+                                <option value="<%= i %>" <%= i === new Date().getFullYear() ? 'selected' : '' %>><%= i %></option>
+                            <% } %>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Amount (₹)</label>
+                        <input type="number" class="form-control" name="amount" value="<%= worker.monthlyRate %>" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Remark</label>
+                        <textarea class="form-control" name="remark" rows="2"></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100">Process Payment</button>
+                    <a href="/payments" class="btn btn-secondary w-100 mt-2">Cancel</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,281 @@
+<%
+currentPage = 'attendance';
+%>
+
+<%- include('../layouts/admin-layout') %>
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fas fa-calendar-check text-info"></i> Attendance Management</h2>
+            <p class="text-muted">Mark daily attendance for all workers</p>
+        </div>
+        <div>
+            <a href="/payments" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Payments
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card-premium mb-4">
+        <div class="card-body-premium">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label fw-bold">Worker Type</label>
+                    <select class="form-control-premium" name="workerType">
+                        <option value="">All Workers</option>
+                        <option value="helper" <%= workerType === 'helper' ? 'selected' : '' %>>Helper</option>
+                        <option value="cutting" <%= workerType === 'cutting' ? 'selected' : '' %>>Cutting</option>
+                        <option value="karigar" <%= workerType === 'karigar' ? 'selected' : '' %>>Karigar</option>
+                        <option value="pressman" <%= workerType === 'pressman' ? 'selected' : '' %>>Pressman</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">Month</label>
+                    <select class="form-control-premium" name="month">
+                        <% for (let i = 1; i <= 12; i++) { %>
+                            <option value="<%= i %>" <%= i === currentMonth ? 'selected' : '' %>>
+                                <%= monthNames[i-1] %>
+                            </option>
+                        <% } %>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">Year</label>
+                    <select class="form-control-premium" name="year">
+                        <% for (let i = 2020; i <= 2030; i++) { %>
+                            <option value="<%= i %>" <%= i === currentYear ? 'selected' : '' %>>
+                                <%= i %>
+                            </option>
+                        <% } %>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search"></i> Load
+                    </button>
+                </div>
+                <div class="col-md-3 d-flex align-items-end gap-2">
+                    <button type="button" class="btn btn-success w-50" onclick="markAllPresent()">
+                        <i class="fas fa-check-double"></i> All Present
+                    </button>
+                    <button type="button" class="btn btn-warning w-50" onclick="markAllAbsent()">
+                        <i class="fas fa-times"></i> All Absent
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Attendance Table -->
+    <div class="card-premium">
+        <div class="card-header-premium">
+            <h5 class="mb-0"><i class="fas fa-table"></i> Attendance - <%= monthNames[currentMonth-1] %> <%= currentYear %></h5>
+        </div>
+        <div class="card-body-premium p-0">
+            <div class="table-responsive">
+                <table class="table-premium">
+                    <thead>
+                        <tr>
+                            <th style="min-width: 120px;">Worker</th>
+                            <th style="min-width: 80px;">Type</th>
+                            <% days.forEach(day => { %>
+                                <th class="text-center <%= fridays.includes(day) ? 'text-danger' : '' %>" style="min-width: 30px; padding: 8px 4px;">
+                                    <%= day %>
+                                    <% if (fridays.includes(day)) { %>
+                                        <span class="d-block text-danger" style="font-size: 8px;">H</span>
+                                    <% } %>
+                                </th>
+                            <% }) %>
+                            <th style="min-width: 60px;">Present</th>
+                            <th style="min-width: 60px;">Absent</th>
+                            <th style="min-width: 60px;">Holiday</th>
+                            <th style="min-width: 80px;">%</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% if (workers && workers.length > 0) { %>
+                            <% workers.forEach(worker => { 
+                                let presentCount = 0;
+                                let absentCount = 0;
+                                let holidayCount = 0;
+                            %>
+                                <tr>
+                                    <td>
+                                        <a href="/payments/worker/<%= worker._id %>" class="fw-bold text-primary">
+                                            <%= worker.name %>
+                                        </a>
+                                    </td>
+                                    <td><span class="badge bg-secondary"><%= worker.workerType %></span></td>
+                                    <% days.forEach(day => { 
+                                        const date = new Date(currentYear, currentMonth - 1, day);
+                                        const dateStr = date.toDateString();
+                                        const key = `${worker._id}_${dateStr}`;
+                                        const record = attendanceMap[key];
+                                        const isFriday = fridays.includes(day);
+                                        
+                                        let status = 'absent';
+                                        let color = '#f8d7da';
+                                        let text = 'A';
+                                        
+                                        if (isFriday && isFridayHoliday) {
+                                            status = 'holiday';
+                                            color = '#e2e3e5';
+                                            text = 'H';
+                                            holidayCount++;
+                                        } else if (record) {
+                                            status = record.status;
+                                            if (status === 'present') {
+                                                color = '#d4edda';
+                                                text = 'P';
+                                                presentCount++;
+                                            } else if (status === 'half_day') {
+                                                color = '#fff3cd';
+                                                text = 'H';
+                                                presentCount += 0.5;
+                                            } else if (status === 'leave') {
+                                                color = '#cce5ff';
+                                                text = 'L';
+                                            } else {
+                                                color = '#f8d7da';
+                                                text = 'A';
+                                                absentCount++;
+                                            }
+                                        } else {
+                                            absentCount++;
+                                        }
+                                    %>
+                                        <td class="text-center" style="background: <%= color %>; cursor: pointer;" 
+                                            onclick="toggleAttendance('<%= worker._id %>', '<%= worker.workerType %>', '<%= date.toISOString().split('T')[0] %>', '<%= status %>')">
+                                            <strong><%= text %></strong>
+                                        </td>
+                                    <% }) %>
+                                    <td class="text-center text-success"><strong><%= presentCount %></strong></td>
+                                    <td class="text-center text-danger"><strong><%= absentCount %></strong></td>
+                                    <td class="text-center text-muted"><%= holidayCount %></td>
+                                    <td class="text-center">
+                                        <%
+                                            const totalDays = days.length - fridays.length;
+                                            const percent = totalDays > 0 ? Math.round((presentCount / totalDays) * 100) : 0;
+                                        %>
+                                        <span class="badge bg-<%= percent >= 80 ? 'success' : percent >= 60 ? 'warning' : 'danger' %>">
+                                            <%= percent %>% 
+                                        </span>
+                                    </td>
+                                </tr>
+                            <% }) %>
+                        <% } else { %>
+                            <tr><td colspan="<%= days.length + 6 %>" class="text-center py-4">No workers found</td></tr>
+                        <% } %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card-premium {
+        background: white;
+        border: none;
+        border-radius: 24px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        overflow: hidden;
+    }
+    .card-body-premium { padding: 25px; }
+    .card-header-premium { padding: 20px 25px; border-bottom: 1px solid #e2e8f0; }
+    
+    .form-control-premium {
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 10px 15px;
+        width: 100%;
+    }
+    
+    .table-premium { width: 100%; border-collapse: collapse; }
+    .table-premium th { padding: 10px; background: #f8fafc; font-weight: 600; border-bottom: 2px solid #e2e8f0; }
+    .table-premium td { padding: 8px; border-bottom: 1px solid #e2e8f0; vertical-align: middle; }
+    .table-premium td:hover { opacity: 0.8; }
+</style>
+
+<script>
+    // ============ TOGGLE ATTENDANCE ============
+    async function toggleAttendance(workerId, workerType, date, currentStatus) {
+        const newStatus = currentStatus === 'present' ? 'absent' : 'present';
+        
+        try {
+            const res = await fetch('/attendance/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    workerId,
+                    workerType,
+                    date,
+                    status: newStatus
+                })
+            });
+            
+            if (res.ok) {
+                location.reload();
+            } else {
+                alert('Error updating attendance');
+            }
+        } catch(e) {
+            console.error('Error:', e);
+            alert('Error updating attendance');
+        }
+    }
+
+    // ============ MARK ALL PRESENT ============
+    async function markAllPresent() {
+        if (!confirm('Mark all workers as present for the selected month?')) return;
+        
+        const workerType = document.querySelector('select[name="workerType"]').value;
+        const month = document.querySelector('select[name="month"]').value;
+        const year = document.querySelector('select[name="year"]').value;
+        
+        try {
+            const res = await fetch('/attendance/mark-all-present', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ workerType, month, year })
+            });
+            
+            if (res.ok) {
+                location.reload();
+            } else {
+                alert('Error marking all present');
+            }
+        } catch(e) {
+            console.error('Error:', e);
+            alert('Error marking all present');
+        }
+    }
+
+    // ============ MARK ALL ABSENT ============
+    async function markAllAbsent() {
+        if (!confirm('Mark all workers as absent for the selected month?')) return;
+        
+        const workerType = document.querySelector('select[name="workerType"]').value;
+        const month = document.querySelector('select[name="month"]').value;
+        const year = document.querySelector('select[name="year"]').value;
+        
+        try {
+            const res = await fetch('/attendance/mark-all-absent', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ workerType, month, year })
+            });
+            
+            if (res.ok) {
+                location.reload();
+            } else {
+                alert('Error marking all absent');
+            }
+        } catch(e) {
+            console.error('Error:', e);
+            alert('Error marking all absent');
+        }
+    }
+</script>

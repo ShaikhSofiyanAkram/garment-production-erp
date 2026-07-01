@@ -1,0 +1,592 @@
+<%
+const currentPage = 'payment-advance';
+%>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %> | Garment ERP</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+    
+    <style>
+        /* ✅ Premium Card Design */
+        .stat-card {
+            background: white;
+            border-radius: 16px;
+            padding: 22px 20px;
+            border: 1px solid #e2e8f0;
+            text-align: center;
+            height: 100%;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px -5px rgba(0,0,0,0.08);
+        }
+        .stat-card .icon {
+            font-size: 28px;
+            margin-bottom: 8px;
+            display: inline-block;
+        }
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #1a1a2e;
+        }
+        .stat-label {
+            font-size: 0.7rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            font-weight: 600;
+            margin-top: 2px;
+        }
+        .stat-card .bg-icon {
+            position: absolute;
+            right: -15px;
+            bottom: -15px;
+            font-size: 70px;
+            opacity: 0.05;
+            color: #1a1a2e;
+        }
+        
+        /* ✅ Filter Section - Premium */
+        .filter-section {
+            background: white;
+            border-radius: 16px;
+            padding: 22px 25px;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 25px;
+        }
+        .filter-section .form-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #64748b;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+        .filter-section .form-control,
+        .filter-section .form-select {
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+            padding: 10px 14px;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+        .filter-section .form-control:focus,
+        .filter-section .form-select:focus {
+            border-color: #4361ee;
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+        }
+        .btn-filter {
+            background: #4361ee;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 10px 30px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .btn-filter:hover {
+            background: #3651d4;
+            color: white;
+            transform: translateY(-1px);
+        }
+        
+        /* ✅ Table - Premium */
+        .table-premium {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .table-premium thead th {
+            padding: 14px 16px;
+            background: #f8fafc;
+            font-weight: 600;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: #64748b;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        .table-premium tbody td {
+            padding: 14px 16px;
+            border-bottom: 1px solid #e2e8f0;
+            vertical-align: middle;
+            font-size: 0.9rem;
+        }
+        .table-premium tbody tr:hover {
+            background: #f8fafc;
+        }
+        
+        /* ✅ Badges */
+        .badge-status {
+            padding: 5px 14px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+        .badge-pending { background: #fef3c7; color: #d97706; }
+        .badge-adjusted { background: #d1fae5; color: #059669; }
+        .badge-cancelled { background: #fee2e2; color: #dc2626; }
+        
+        .badge-type {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .badge-karigar { background: #dbeafe; color: #1d4ed8; }
+        .badge-pressman { background: #cffafe; color: #0891b2; }
+        .badge-helper { background: #fef3c7; color: #d97706; }
+        .badge-cutting { background: #fce4ec; color: #dc2626; }
+        
+        /* ✅ Modal - Premium */
+        .modal-content {
+            border-radius: 16px;
+            border: none;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+        }
+        .modal-header {
+            border-bottom: 1px solid #e2e8f0;
+            padding: 20px 25px;
+            border-radius: 16px 16px 0 0;
+        }
+        .modal-header .modal-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+        .modal-body {
+            padding: 25px;
+        }
+        .modal-footer {
+            border-top: 1px solid #e2e8f0;
+            padding: 16px 25px;
+        }
+        
+        /* ✅ Action Buttons */
+        .btn-action {
+            padding: 4px 12px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .btn-action:hover {
+            transform: translateY(-1px);
+        }
+        
+        /* ✅ Empty State */
+        .empty-state {
+            padding: 50px 20px;
+            text-align: center;
+        }
+        .empty-state i {
+            font-size: 48px;
+            color: #e2e8f0;
+            margin-bottom: 15px;
+        }
+        .empty-state h5 {
+            color: #475569;
+            font-weight: 600;
+        }
+        .empty-state p {
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/dashboard">
+            <i class="fas fa-tshirt"></i> Garment ERP
+        </a>
+        <div class="ms-auto">
+            <span class="text-white me-3">
+                <i class="fas fa-user"></i> <%= user ? user.username : 'Admin' %>
+            </span>
+            <a href="/auth/logout" class="btn btn-sm btn-outline-light">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid mt-4">
+    <!-- ============================================================ -->
+    <!-- ✅ HEADER -->
+    <!-- ============================================================ -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3><i class="fas fa-hand-holding-usd text-warning"></i> Payment Advance Management</h3>
+            <p class="text-muted">Manage worker advances for payments</p>
+        </div>
+        <div>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAdvanceModal">
+                <i class="fas fa-plus"></i> Record Advance
+            </button>
+            <a href="/payments" class="btn btn-secondary ms-2">
+                <i class="fas fa-arrow-left"></i> Back
+            </a>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- ✅ FLASH MESSAGES -->
+    <!-- ============================================================ -->
+    <% if (success_msg && success_msg.length) { %>
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="fas fa-check-circle"></i> <%= success_msg %>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    <% } %>
+    <% if (error_msg && error_msg.length) { %>
+        <div class="alert alert-danger alert-dismissible fade show">
+            <i class="fas fa-exclamation-circle"></i> <%= error_msg %>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    <% } %>
+
+    <!-- ============================================================ -->
+    <!-- ✅ STATS CARDS -->
+    <!-- ============================================================ -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="icon text-primary"><i class="fas fa-coins"></i></div>
+                <div class="stat-value"><%= totalAdvances || 0 %></div>
+                <div class="stat-label">Total Advances</div>
+                <div class="bg-icon"><i class="fas fa-coins"></i></div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="icon text-warning"><i class="fas fa-clock"></i></div>
+                <div class="stat-value">₹<%= totalPending || 0 %></div>
+                <div class="stat-label">Pending Amount</div>
+                <div class="bg-icon"><i class="fas fa-clock"></i></div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="icon text-success"><i class="fas fa-check-circle"></i></div>
+                <div class="stat-value">₹<%= totalAdjusted || 0 %></div>
+                <div class="stat-label">Adjusted Amount</div>
+                <div class="bg-icon"><i class="fas fa-check-circle"></i></div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="icon text-info"><i class="fas fa-users"></i></div>
+                <div class="stat-value"><%= workers?.length || 0 %></div>
+                <div class="stat-label">Active Workers</div>
+                <div class="bg-icon"><i class="fas fa-users"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- ✅ FILTER SECTION -->
+    <!-- ============================================================ -->
+    <div class="filter-section">
+        <form method="GET" action="/payments/advances" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label"><i class="fas fa-user-tag"></i> Worker Type</label>
+                <select name="workerType" class="form-select" id="filterWorkerType">
+                    <option value="">All Types</option>
+                    <option value="karigar" <%= query && query.workerType === 'karigar' ? 'selected' : '' %>>Karigar</option>
+                    <option value="pressman" <%= query && query.workerType === 'pressman' ? 'selected' : '' %>>Pressman</option>
+                    <option value="helper" <%= query && query.workerType === 'helper' ? 'selected' : '' %>>Helper</option>
+                    <option value="cutting" <%= query && query.workerType === 'cutting' ? 'selected' : '' %>>Cutting</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label"><i class="fas fa-flag"></i> Status</label>
+                <select name="status" class="form-select">
+                    <option value="">All</option>
+                    <option value="pending" <%= query && query.status === 'pending' ? 'selected' : '' %>>Pending</option>
+                    <option value="adjusted" <%= query && query.status === 'adjusted' ? 'selected' : '' %>>Adjusted</option>
+                    <option value="cancelled" <%= query && query.status === 'cancelled' ? 'selected' : '' %>>Cancelled</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label"><i class="fas fa-calendar-alt"></i> From</label>
+                <input type="date" name="fromDate" class="form-control" value="<%= query && query.fromDate ? query.fromDate : '' %>">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label"><i class="fas fa-calendar-alt"></i> To</label>
+                <input type="date" name="toDate" class="form-control" value="<%= query && query.toDate ? query.toDate : '' %>">
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn-filter w-100">
+                    <i class="fas fa-filter"></i> Apply Filter
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- ✅ ADVANCES TABLE -->
+    <!-- ============================================================ -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-list"></i> Advance Records</h5>
+            <span class="badge bg-primary"><%= advances?.length || 0 %> records</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table-premium">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Worker</th>
+                            <th>Type</th>
+                            <th class="text-end">Amount</th>
+                            <th>Purpose</th>
+                            <th>Status</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% if (advances && advances.length > 0) { %>
+                            <% advances.forEach(a => { %>
+                                <tr>
+                                    <td><%= new Date(a.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) %></td>
+                                    <td>
+                                        <strong><%= a.worker?.name || 'N/A' %></strong>
+                                        <br><small class="text-muted"><i class="fas fa-phone"></i> <%= a.worker?.phone || '' %></small>
+                                    </td>
+                                    <td>
+                                        <span class="badge-type badge-<%= a.workerType %>">
+                                            <i class="fas fa-<%= a.workerType === 'karigar' ? 'user-cog' : a.workerType === 'pressman' ? 'tshirt' : a.workerType === 'helper' ? 'hands-helping' : 'cut' %>"></i>
+                                            <%= a.workerType.toUpperCase() %>
+                                        </span>
+                                    </td>
+                                    <td class="text-end fw-bold text-danger">₹<%= a.amount || 0 %></td>
+                                    <td><%= a.purpose || 'General' %></td>
+                                    <td>
+                                        <span class="badge-status <%= a.status === 'pending' ? 'badge-pending' : a.status === 'adjusted' ? 'badge-adjusted' : 'badge-cancelled' %>">
+                                            <i class="fas fa-<%= a.status === 'pending' ? 'clock' : a.status === 'adjusted' ? 'check' : 'times' %>"></i>
+                                            <%= a.status || 'pending' %>
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <% if (a.status === 'pending') { %>
+                                            <button class="btn btn-sm btn-outline-success btn-action me-1" onclick="adjustAdvance('<%= a._id %>')" title="Adjust">
+                                                <i class="fas fa-check"></i> Adjust
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger btn-action" onclick="cancelAdvance('<%= a._id %>')" title="Cancel">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        <% } else { %>
+                                            <span class="text-muted">—</span>
+                                        <% } %>
+                                    </td>
+                                </tr>
+                            <% }) %>
+                        <% } else { %>
+                            <tr>
+                                <td colspan="7">
+                                    <div class="empty-state">
+                                        <i class="fas fa-inbox"></i>
+                                        <h5>No Advance Records</h5>
+                                        <p>Record advances for workers to track pending amounts</p>
+                                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAdvanceModal">
+                                            <i class="fas fa-plus"></i> Record First Advance
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        <% } %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- ✅ RECORD ADVANCE MODAL - WITH DYNAMIC WORKER DROPDOWN -->
+<!-- ============================================================ -->
+<div class="modal fade" id="addAdvanceModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-hand-holding-usd text-warning"></i> Record Advance
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="/payments/advances/create">
+                <div class="modal-body">
+                    <!-- ✅ Worker Type Selection - Dynamic -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Worker Type <span class="text-danger">*</span></label>
+                        <select name="workerType" class="form-control" id="advanceWorkerType" required>
+                            <option value="">— Select Worker Type —</option>
+                            <option value="karigar">Karigar</option>
+                            <option value="pressman">Pressman</option>
+                            <option value="helper">Helper</option>
+                            <option value="cutting">Cutting</option>
+                        </select>
+                    </div>
+                    
+                    <!-- ✅ Worker Selection - Dynamic based on type -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Worker <span class="text-danger">*</span></label>
+                        <select name="workerId" class="form-control" id="advanceWorkerId" required>
+                            <option value="">— Select Worker Type First —</option>
+                        </select>
+                        <small class="text-muted" id="workerCount">0 workers available</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Amount (₹) <span class="text-danger">*</span></label>
+                        <input type="number" name="amount" class="form-control" placeholder="Enter amount" min="1" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Purpose</label>
+                        <input type="text" name="purpose" class="form-control" placeholder="e.g., Festival, Emergency, Advance Salary">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Remark</label>
+                        <textarea name="remark" class="form-control" rows="2" placeholder="Optional remark..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Record Advance
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- ============================================================ -->
+<!-- ✅ DYNAMIC WORKER DROPDOWN SCRIPT -->
+<!-- ============================================================ -->
+<script>
+// ✅ All workers data from server
+const allWorkers = [
+    <% workers.forEach(w => { %>
+        { id: '<%= w._id %>', name: '<%= w.name %>', type: '<%= w.workerType %>' },
+    <% }) %>
+];
+
+console.log('All Workers:', allWorkers);
+
+// ✅ Function to update worker dropdown based on selected type
+function updateWorkerDropdown(workerType) {
+    const workerSelect = document.getElementById('advanceWorkerId');
+    const workerCount = document.getElementById('workerCount');
+    
+    // Clear current options
+    workerSelect.innerHTML = '';
+    
+    if (!workerType) {
+        workerSelect.innerHTML = '<option value="">— Select Worker Type First —</option>';
+        workerCount.textContent = '0 workers available';
+        return;
+    }
+    
+    // Filter workers by type
+    const filteredWorkers = allWorkers.filter(w => w.type === workerType);
+    
+    if (filteredWorkers.length === 0) {
+        workerSelect.innerHTML = `<option value="">No ${workerType} workers found</option>`;
+        workerCount.textContent = '0 workers available';
+        return;
+    }
+    
+    // Add workers to dropdown
+    workerSelect.innerHTML = '<option value="">— Select Worker —</option>';
+    filteredWorkers.forEach(w => {
+        const option = document.createElement('option');
+        option.value = w.id;
+        option.textContent = w.name;
+        workerSelect.appendChild(option);
+    });
+    
+    workerCount.textContent = `${filteredWorkers.length} workers available`;
+}
+
+// ✅ Event listener for worker type change
+document.addEventListener('DOMContentLoaded', function() {
+    const workerTypeSelect = document.getElementById('advanceWorkerType');
+    
+    if (workerTypeSelect) {
+        workerTypeSelect.addEventListener('change', function() {
+            const selectedType = this.value;
+            updateWorkerDropdown(selectedType);
+        });
+    }
+    
+    // ✅ Also update when modal opens (in case of pre-selected value)
+    const modal = document.getElementById('addAdvanceModal');
+    if (modal) {
+        modal.addEventListener('shown.bs.modal', function() {
+            const selectedType = document.getElementById('advanceWorkerType').value;
+            if (selectedType) {
+                updateWorkerDropdown(selectedType);
+            }
+        });
+    }
+});
+
+// ==================== ADJUST ADVANCE ====================
+function adjustAdvance(id) {
+    if (!confirm('Are you sure you want to mark this advance as adjusted?')) return;
+    
+    fetch(`/payments/advances/${id}/adjust`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            window.location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(err => alert('Error: ' + err.message));
+}
+
+// ==================== CANCEL ADVANCE ====================
+function cancelAdvance(id) {
+    if (!confirm('Are you sure you want to cancel this advance?')) return;
+    
+    fetch(`/payments/advances/${id}/cancel`, {
+        method: 'DELETE'
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            window.location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(err => alert('Error: ' + err.message));
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,405 @@
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-tasks"></i> New Assignment</h4>
+                <small>Assign cutting work to karigar</small>
+            </div>
+            <div class="card-body">
+                <form action="/assignments/create" method="POST" id="assignmentForm">
+                    
+                    <!-- Select Cutting -->
+                    <div class="mb-3">
+                        <label class="form-label">Select Cutting *</label>
+                        <select class="form-control" id="cuttingSelect" name="cutting" required>
+                            <option value="">-- Select Cutting --</option>
+                            <% if (cuttings && cuttings.length) { %>
+                                <% cuttings.forEach(cutting => { 
+                                    const remaining = cutting.totalPieces - (cutting.assignedPieces || 0);
+                                %>
+                                    <option value="<%= cutting._id %>" 
+                                            data-cutting='<%= JSON.stringify(cutting) %>'
+                                            data-remaining="<%= remaining %>">
+                                        <%= cutting.cuttingNumber %> - <%= cutting.productName %> (<%= cutting.productCategory %>)
+                                        | Total: <%= cutting.totalPieces %> | Remaining: <%= remaining %>
+                                    </option>
+                                <% }) %>
+                            <% } else { %>
+                                <option value="">No cuttings available</option>
+                            <% } %>
+                        </select>
+                    </div>
+                    
+                    <!-- Cutting Details Panel -->
+                    <div id="cuttingDetailsPanel" class="card mb-3" style="display: none;">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0"><i class="fas fa-info-circle"></i> Cutting Details</h5>
+                        </div>
+                        <div class="card-body" id="cuttingDetails"></div>
+                    </div>
+                    
+                    <!-- Assignment Form -->
+                    <div id="assignmentFormPanel" style="display: none;">
+                        <div class="mb-3">
+                            <label class="form-label">Select Sizes & Assign Pieces *</label>
+                            <div id="sizesContainer" class="border rounded p-3 bg-light">
+                                <p class="text-muted">Select a cutting first</p>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Select Karigar *</label>
+                            <select class="form-control" id="karigarSelect" name="karigar" required>
+                                <option value="">-- Select Karigar --</option>
+                                <% if (karigars && karigars.length) { %>
+                                    <% karigars.forEach(karigar => { %>
+                                        <option value="<%= karigar._id %>"><%= karigar.name %></option>
+                                    <% }) %>
+                                <% } else { %>
+                                    <option value="">No karigars available</option>
+                                <% } %>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Total Pieces Giving</label>
+                            <input type="text" class="form-control" id="totalGiving" readonly 
+                                   style="background:#e9ecef; font-weight:bold; font-size:1.2rem;">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Due Date <span class="text-muted">(Optional)</span></label>
+                            <input type="date" class="form-control" name="dueDate">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Remark</label>
+                            <textarea class="form-control" name="remark" rows="2"></textarea>
+                        </div>
+                        
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-primary btn-lg px-5">
+                                <i class="fas fa-save"></i> Create Assignment
+                            </button>
+                            <a href="/assignments" class="btn btn-secondary btn-lg px-5">Cancel</a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .size-assign-card {
+        background: white;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 15px;
+        border-left: 4px solid #2196f3;
+        transition: all 0.3s;
+    }
+    .size-assign-card .size-name {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: #2196f3;
+    }
+    .assign-input {
+        width: 150px;
+        padding: 8px 12px;
+        border: 2px solid #dee2e6;
+        border-radius: 6px;
+        font-size: 14px;
+    }
+    .assign-input:focus {
+        border-color: #2196f3;
+        outline: none;
+    }
+    .remaining-badge {
+        background: #28a745;
+        color: white;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 12px;
+    }
+    .assigned-badge {
+        background: #6c757d;
+        color: white;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 12px;
+    }
+    .cutting-detail-item {
+        display: inline-block;
+        background: #e9ecef;
+        padding: 5px 12px;
+        border-radius: 20px;
+        margin: 3px;
+        font-size: 13px;
+    }
+    .size-card-fully-assigned {
+        opacity: 0.7;
+        background: #f8f9fa;
+        border-left-color: #6c757d;
+    }
+
+    .size-card-partially-assigned {
+    background: #fff3cd;
+    border-left-color: #ffc107;
+}
+.partial-badge {
+    background: #ffc107;
+    color: #856404;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+}
+.assigned-badge {
+    background: #dc3545;
+    color: white;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+}
+.remaining-badge {
+    background: #28a745;
+    color: white;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+}
+</style>
+
+<script>
+    let currentCutting = null;
+    let assignmentData = {};
+    let remainingPieces = {};
+    let originalPieces = {};
+    
+    // Track which sizes have been assigned (to prevent re-assignment in same form)
+    let assignedInThisForm = {};
+    
+    document.getElementById('cuttingSelect').addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        if (!this.value) {
+            document.getElementById('cuttingDetailsPanel').style.display = 'none';
+            document.getElementById('assignmentFormPanel').style.display = 'none';
+            return;
+        }
+        
+        try {
+            currentCutting = JSON.parse(selectedOption.dataset.cutting);
+        } catch(e) {
+            console.error('Error:', e);
+            return;
+        }
+        
+        // Reset form data
+        assignmentData = {};
+        assignedInThisForm = {};
+        
+        document.getElementById('cuttingDetailsPanel').style.display = 'block';
+        document.getElementById('assignmentFormPanel').style.display = 'block';
+        displayCuttingDetails(currentCutting);
+        loadSizesForAssignment(currentCutting);
+    });
+    
+    function displayCuttingDetails(cutting) {
+        const detailsDiv = document.getElementById('cuttingDetails');
+        let sizesHtml = '';
+        if (cutting.sizes && cutting.sizes.length) {
+            cutting.sizes.forEach(s => {
+                const assigned = s.assignedPieces || 0;
+                const remaining = s.pieces - assigned;
+                sizesHtml += `<span class="cutting-detail-item">📏 ${s.size}: ${s.pieces} pcs (Assigned: ${assigned}, Remaining: ${remaining})</span>`;
+            });
+        }
+        
+        detailsDiv.innerHTML = `
+            <div class="row">
+                <div class="col-md-6">
+                    <strong>Cutting Number:</strong> ${cutting.cuttingNumber}<br>
+                    <strong>Product:</strong> ${cutting.productName}<br>
+                    <strong>Category:</strong> ${cutting.productCategory}<br>
+                    <strong>Total Pieces:</strong> ${cutting.totalPieces}
+                </div>
+                <div class="col-md-6">
+                    <strong>Client:</strong> ${cutting.client || 'N/A'}<br>
+                    <strong>Created:</strong> ${new Date(cutting.createdAt).toLocaleDateString()}<br>
+                    <strong>Status:</strong> <span class="badge bg-warning">${cutting.status}</span>
+                </div>
+            </div>
+            <hr>
+            <strong>Sizes & Pieces:</strong><br>
+            ${sizesHtml}
+        `;
+    }
+    
+    function loadSizesForAssignment(cutting) {
+    const container = document.getElementById('sizesContainer');
+    if (!cutting.sizes || cutting.sizes.length === 0) {
+        container.innerHTML = '<p class="text-muted">No sizes available</p>';
+        return;
+    }
+    
+    // Calculate remaining pieces (cutting total - already assigned globally)
+    remainingPieces = {};
+    originalPieces = {};
+    
+    cutting.sizes.forEach(s => {
+        const alreadyAssigned = s.assignedPieces || 0;
+        originalPieces[s.size] = s.pieces;
+        remainingPieces[s.size] = s.pieces - alreadyAssigned;
+    });
+    
+    let html = '<div class="row">';
+    
+    cutting.sizes.forEach(s => {
+        const alreadyAssigned = s.assignedPieces || 0;
+        const remaining = s.pieces - alreadyAssigned;
+        const isFullyAssigned = remaining === 0;
+        const isPartiallyAssigned = alreadyAssigned > 0 && remaining > 0;
+        
+        // Determine card styling based on assignment status
+        let cardClass = 'size-assign-card';
+        let badgeHtml = '';
+        
+        if (isFullyAssigned) {
+            cardClass += ' size-card-fully-assigned';
+            badgeHtml = '<span class="assigned-badge">✓ Fully Assigned</span>';
+        } else if (isPartiallyAssigned) {
+            cardClass += ' size-card-partially-assigned';
+            badgeHtml = `<span class="partial-badge">⚠️ Partially Assigned (${alreadyAssigned}/${s.pieces})</span>`;
+        } else {
+            badgeHtml = `<span class="remaining-badge">Available: ${remaining} pcs</span>`;
+        }
+        
+        html += `
+            <div class="col-md-6">
+                <div class="${cardClass}" data-size="${s.size}">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="size-name">📏 Size ${s.size}</span>
+                        ${badgeHtml}
+                    </div>
+                    <div class="mb-2">
+                        <small class="text-muted">Total: ${s.pieces} | Already Assigned: <strong class="${alreadyAssigned > 0 ? 'text-danger' : ''}">${alreadyAssigned}</strong></small>
+                        ${remaining > 0 ? `<br><small class="text-success">Remaining: ${remaining} pcs</small>` : ''}
+                    </div>
+                    ${!isFullyAssigned ? `
+                        <div>
+                            <label>Pieces to assign:</label>
+                            <input type="number" class="form-control assign-input" 
+                                   id="assign_${s.size}" 
+                                   data-size="${s.size}"
+                                   data-max="${remaining}"
+                                   data-original="${s.pieces}"
+                                   data-assigned="${alreadyAssigned}"
+                                   min="0" max="${remaining}" value="0"
+                                   onchange="updateAssignment('${s.size}', this.value)">
+                            <small class="text-muted">Max: ${remaining} pieces</small>
+                        </div>
+                    ` : `
+                        <div class="alert alert-secondary text-center mb-0 mt-2">
+                            <i class="fas fa-check-circle"></i> This size is fully assigned
+                        </div>
+                    `}
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    container.innerHTML = html;
+    
+    // Reset assignment data
+    assignmentData = {};
+    assignedInThisForm = {};
+    document.getElementById('totalGiving').value = 0;
+    document.getElementById('totalGiving').style.borderColor = '#dc3545';
+}
+    
+    window.updateAssignment = function(size, value) {
+        const pieces = parseInt(value) || 0;
+        const inputElement = document.getElementById(`assign_${size}`);
+        const maxPieces = parseInt(inputElement.dataset.max);
+        
+        // Check if this size was already assigned in this form (prevent duplicate)
+        if (assignedInThisForm[size] && assignedInThisForm[size] > 0) {
+            alert(`❌ Size ${size} has already been assigned in this form. Please create a new assignment for remaining pieces.`);
+            inputElement.value = 0;
+            return;
+        }
+        
+        if (pieces > maxPieces) {
+            alert(`❌ Only ${maxPieces} pieces available for size ${size}`);
+            inputElement.value = maxPieces;
+            assignmentData[size] = maxPieces;
+            if (maxPieces > 0) assignedInThisForm[size] = maxPieces;
+        } else if (pieces > 0) {
+            assignmentData[size] = pieces;
+            assignedInThisForm[size] = pieces;
+        } else {
+            delete assignmentData[size];
+            delete assignedInThisForm[size];
+        }
+        
+        // Calculate total
+        let total = 0;
+        for (let s in assignmentData) {
+            total += assignmentData[s];
+        }
+        document.getElementById('totalGiving').value = total;
+        
+        // Update border color based on total
+        if (total === 0) {
+            document.getElementById('totalGiving').style.borderColor = '#dc3545';
+        } else {
+            document.getElementById('totalGiving').style.borderColor = '#28a745';
+        }
+        
+        // Optional: Show warning if trying to assign multiple sizes in one go
+        const assignedSizes = Object.keys(assignedInThisForm);
+        if (assignedSizes.length > 1) {
+            console.log(`Warning: Assigning multiple sizes (${assignedSizes.join(', ')}) in one assignment. This is allowed.`);
+        }
+    };
+    
+    document.getElementById('assignmentForm').addEventListener('submit', function(e) {
+        let total = 0;
+        for (let size in assignmentData) {
+            total += assignmentData[size];
+        }
+        
+        if (total === 0) {
+            e.preventDefault();
+            alert('❌ Please assign at least one piece to any size');
+            return false;
+        }
+        
+        // Final validation: check against remaining pieces
+        for (let size in assignmentData) {
+            if (assignmentData[size] > remainingPieces[size]) {
+                e.preventDefault();
+                alert(`❌ Only ${remainingPieces[size]} pieces available for size ${size}`);
+                return false;
+            }
+        }
+        
+        let input = document.getElementById('assignmentDataInput');
+        if (!input) {
+            input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'assignmentData';
+            input.id = 'assignmentDataInput';
+            this.appendChild(input);
+        }
+        input.value = JSON.stringify({ 
+            sizes: assignmentData, 
+            totalGiven: total,
+            originalPieces: originalPieces,
+            remainingPiecesBefore: remainingPieces
+        });
+        
+        return true;
+    });
+</script>

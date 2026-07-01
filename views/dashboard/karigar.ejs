@@ -1,0 +1,405 @@
+<%
+currentPage = 'dashboard';
+%>
+
+<%- include('../layouts/worker-layout') %>
+
+<div class="container-fluid">
+    <!-- Welcome Section -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card bg-gradient-info text-white" style="background: linear-gradient(135deg, #06b6d4, #3b82f6);">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h2 class="mb-2">Welcome back, <%= user ? user.username : 'Karigar' %>!</h2>
+                            <p class="mb-0">Track your assignments, submit production, and view your earnings</p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <i class="fas fa-user-check fa-4x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-title">Total Assignments</div>
+            <div class="stat-value" id="totalAssignments">0</div>
+            <i class="fas fa-tasks stat-icon"></i>
+        </div>
+        <div class="stat-card">
+            <div class="stat-title">Completed</div>
+            <div class="stat-value" id="completedAssignments">0</div>
+            <i class="fas fa-check-circle stat-icon"></i>
+        </div>
+        <div class="stat-card">
+            <div class="stat-title">Pending Work</div>
+            <div class="stat-value" id="pendingAssignments">0</div>
+            <i class="fas fa-clock stat-icon"></i>
+        </div>
+        <div class="stat-card">
+            <div class="stat-title">Total Earnings</div>
+            <div class="stat-value" id="totalEarnings">₹0</div>
+            <i class="fas fa-rupee-sign stat-icon"></i>
+        </div>
+    </div>
+
+    <!-- Current Tasks - Pending Assignments -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white">
+            <i class="fas fa-tasks text-warning"></i> Current Tasks (Pending Assignments)
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Assignment ID</th>
+                            <th>Product</th>
+                            <th>Sizes & Pieces</th>
+                            <th>Total Given</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pendingTasksBody">
+                        <tr><td colspan="6" class="text-center">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Submit Production Form -->
+    <div class="card shadow-sm mb-4" id="productionFormCard" style="display: none;">
+        <div class="card-header bg-success text-white">
+            <i class="fas fa-check-circle"></i> Submit Production Return
+        </div>
+        <div class="card-body">
+            <form id="productionReturnForm">
+                <input type="hidden" id="selectedAssignmentId">
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Assignment ID</label>
+                        <input type="text" class="form-control" id="assignmentDisplay" readonly>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Product</label>
+                        <input type="text" class="form-control" id="productDisplay" readonly>
+                    </div>
+                </div>
+                
+                <div id="sizeReturnContainer" class="mb-3">
+                    <!-- Size-wise return fields will be loaded here -->
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Remark</label>
+                    <textarea class="form-control" id="returnRemark" rows="2" placeholder="Any issues or notes?"></textarea>
+                </div>
+                
+                <div class="text-center">
+                    <button type="submit" class="btn btn-success px-5">
+                        <i class="fas fa-save"></i> Submit Production Return
+                    </button>
+                    <button type="button" class="btn btn-secondary px-5" onclick="cancelProduction()">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Recent Production History -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <span><i class="fas fa-history"></i> My Production History</span>
+            <button class="btn btn-sm btn-outline-primary" onclick="loadProductionHistory()">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Date</th>
+                            <th>Assignment ID</th>
+                            <th>Product</th>
+                            <th>Sizes</th>
+                            <th>Returned</th>
+                            <th>Damage</th>
+                            <th>Missing</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productionHistoryBody">
+                        <tr><td colspan="8" class="text-center">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentAssignments = [];
+
+// Load karigar dashboard data
+async function loadKarigarDashboard() {
+    try {
+        const response = await fetch('/dashboard/api/worker-stats');
+        const data = await response.json();
+        
+        if (data.success) {
+            const stats = data.stats;
+            document.getElementById('totalAssignments').innerText = stats.totalAssignments || 0;
+            document.getElementById('completedAssignments').innerText = stats.completedAssignments || 0;
+            document.getElementById('pendingAssignments').innerText = stats.pendingAssignments || 0;
+            document.getElementById('totalEarnings').innerText = `₹${(stats.totalEarnings || 0).toLocaleString()}`;
+            
+            // Load pending tasks
+            loadPendingTasks();
+            
+            // Load production history
+            loadProductionHistory();
+        }
+    } catch (error) {
+        console.error('Error loading dashboard:', error);
+    }
+}
+
+// Load pending tasks (assignments not completed)
+async function loadPendingTasks() {
+    try {
+        const response = await fetch('/assignment/api/my-pending');
+        const assignments = await response.json();
+        currentAssignments = assignments;
+        
+        const tbody = document.getElementById('pendingTasksBody');
+        if (assignments && assignments.length) {
+            tbody.innerHTML = assignments.map(assign => {
+                let sizesHtml = '';
+                if (assign.sizes && assign.sizes.length) {
+                    sizesHtml = assign.sizes.map(s => `<span class="badge bg-secondary me-1">${s.size}: ${s.pieces}</span>`).join('');
+                }
+                return `
+                    <tr>
+                        <td><strong>${assign.assignmentId}</strong></td>
+                        <td>${assign.productName}</td>
+                        <td>${sizesHtml}</td>
+                        <td>${assign.givenPieces}</td>
+                        <td><span class="badge bg-warning">${assign.status}</span></td>
+                        <td>
+                            <button class="btn btn-sm btn-primary" onclick="openProductionReturn('${assign._id}')">
+                                <i class="fas fa-undo-alt"></i> Submit Return
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        } else {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-success">✓ No pending assignments! Good job!</td></tr>';
+        }
+    } catch (error) {
+        console.error('Error loading pending tasks:', error);
+    }
+}
+
+// Open production return form
+async function openProductionReturn(assignmentId) {
+    try {
+        const response = await fetch(`/assignment/api/${assignmentId}`);
+        const assignment = await response.json();
+        
+        document.getElementById('selectedAssignmentId').value = assignmentId;
+        document.getElementById('assignmentDisplay').value = assignment.assignmentId;
+        document.getElementById('productDisplay').value = `${assignment.productName} (${assignment.productCategory})`;
+        
+        // Build size-wise return form
+        let sizeHtml = '<div class="card"><div class="card-header bg-info text-white">Size-wise Return</div><div class="card-body">';
+        sizeHtml += '<div class="table-responsive"><table class="table table-bordered"><thead class="table-light"><tr>';
+        sizeHtml += '<th>Size</th><th>Given</th><th>Already Returned</th><th>Remaining</th>';
+        sizeHtml += '<th>Returned ✓</th><th>Damage 💔</th><th>Missing ❓</th></tr></thead><tbody>';
+        
+        // Get already returned pieces
+        const returnResponse = await fetch(`/production/api/returns/${assignmentId}`);
+        const returnData = await returnResponse.json();
+        const alreadyReturned = returnData.reduce((sum, r) => sum + (r.totalReturned || 0), 0);
+        
+        for (const size of (assignment.sizes || [])) {
+            const sizeReturned = returnData.reduce((sum, r) => {
+                const sizeData = (r.sizes || []).find(s => s.size === size.size);
+                return sum + (sizeData?.returned || 0);
+            }, 0);
+            const remaining = size.pieces - sizeReturned;
+            
+            sizeHtml += `
+                <tr>
+                    <td><strong>${size.size}</strong></td>
+                    <td>${size.pieces}</td>
+                    <td>${sizeReturned}</td>
+                    <td class="${remaining > 0 ? 'text-success fw-bold' : 'text-muted'}">${remaining}</td>
+                    <td><input type="number" class="form-control return-input" data-size="${size.size}" data-type="returned" style="width: 80px;" min="0" max="${remaining}" value="0"></td>
+                    <td><input type="number" class="form-control return-input" data-size="${size.size}" data-type="damage" style="width: 80px;" min="0" value="0"></td>
+                    <td><input type="number" class="form-control return-input" data-size="${size.size}" data-type="missing" style="width: 80px;" min="0" value="0"></td>
+                </tr>
+            `;
+        }
+        
+        sizeHtml += '</tbody></table></div></div>';
+        document.getElementById('sizeReturnContainer').innerHTML = sizeHtml;
+        
+        // Add event listeners to update validation
+        document.querySelectorAll('.return-input').forEach(input => {
+            input.addEventListener('change', () => validateReturn());
+        });
+        
+        document.getElementById('productionFormCard').style.display = 'block';
+        document.getElementById('productionFormCard').scrollIntoView({ behavior: 'smooth' });
+        
+    } catch (error) {
+        console.error('Error opening production return:', error);
+        alert('Error loading assignment details');
+    }
+}
+
+function validateReturn() {
+    const rows = document.querySelectorAll('#sizeReturnContainer tbody tr');
+    let isValid = true;
+    
+    rows.forEach(row => {
+        const size = row.querySelector('td:first-child strong')?.innerText;
+        const given = parseInt(row.querySelector('td:nth-child(2)')?.innerText) || 0;
+        const returned = parseInt(row.querySelector('input[data-type="returned"]')?.value) || 0;
+        const damage = parseInt(row.querySelector('input[data-type="damage"]')?.value) || 0;
+        const missing = parseInt(row.querySelector('input[data-type="missing"]')?.value) || 0;
+        const total = returned + damage + missing;
+        
+        if (total > given) {
+            row.style.backgroundColor = '#fee2e2';
+            isValid = false;
+        } else {
+            row.style.backgroundColor = '';
+        }
+    });
+    
+    return isValid;
+}
+
+// Submit production return
+document.getElementById('productionReturnForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    if (!validateReturn()) {
+        alert('❌ Validation Error: Returned + Damage + Missing cannot exceed Given pieces!');
+        return;
+    }
+    
+    const assignmentId = document.getElementById('selectedAssignmentId').value;
+    const remark = document.getElementById('returnRemark').value;
+    
+    // Collect size-wise data
+    const sizes = {};
+    const rows = document.querySelectorAll('#sizeReturnContainer tbody tr');
+    
+    rows.forEach(row => {
+        const size = row.querySelector('td:first-child strong')?.innerText;
+        const returned = parseInt(row.querySelector('input[data-type="returned"]')?.value) || 0;
+        const damage = parseInt(row.querySelector('input[data-type="damage"]')?.value) || 0;
+        const missing = parseInt(row.querySelector('input[data-type="missing"]')?.value) || 0;
+        
+        if (returned > 0 || damage > 0 || missing > 0) {
+            sizes[size] = { returned, damage, missing };
+        }
+    });
+    
+    const totalReturned = Object.values(sizes).reduce((sum, s) => sum + (s.returned || 0), 0);
+    const totalDamage = Object.values(sizes).reduce((sum, s) => sum + (s.damage || 0), 0);
+    const totalMissing = Object.values(sizes).reduce((sum, s) => sum + (s.missing || 0), 0);
+    
+    if (totalReturned === 0 && totalDamage === 0 && totalMissing === 0) {
+        alert('Please enter at least one piece to return');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/production/api/return', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                assignment: assignmentId,
+                sizes,
+                totalReturned,
+                totalDamage,
+                totalMissing,
+                remark
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            alert('✅ Production return submitted successfully!');
+            document.getElementById('productionFormCard').style.display = 'none';
+            document.getElementById('productionReturnForm').reset();
+            loadPendingTasks();
+            loadProductionHistory();
+            loadKarigarDashboard();
+        } else {
+            alert('❌ Error: ' + (result.error || 'Something went wrong'));
+        }
+    } catch (error) {
+        console.error('Error submitting return:', error);
+        alert('❌ Error submitting production return');
+    }
+});
+
+function cancelProduction() {
+    document.getElementById('productionFormCard').style.display = 'none';
+    document.getElementById('productionReturnForm').reset();
+}
+
+// Load production history
+async function loadProductionHistory() {
+    try {
+        const response = await fetch('/production/api/my-returns');
+        const returns = await response.json();
+        
+        const tbody = document.getElementById('productionHistoryBody');
+        if (returns && returns.length) {
+            tbody.innerHTML = returns.map(r => {
+                let sizesHtml = '';
+                if (r.sizes && r.sizes.length) {
+                    sizesHtml = r.sizes.map(s => `<span class="badge bg-secondary me-1">${s.size}: ${s.returned}/${s.damage}/${s.missing}</span>`).join('');
+                }
+                return `
+                    <tr>
+                        <td>${new Date(r.returnDate).toLocaleDateString()}</td>
+                        <td>${r.assignmentId}</td>
+                        <td>${r.productName}</td>
+                        <td>${sizesHtml}</td>
+                        <td>${r.totalReturned || 0}</td>
+                        <td>${r.totalDamage || 0}</td>
+                        <td>${r.totalMissing || 0}</td>
+                        <td><span class="badge ${r.status === 'completed' ? 'bg-success' : 'bg-warning'}">${r.status}</span></td>
+                    </tr>
+                `;
+            }).join('');
+        } else {
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center">No production returns yet</td></tr>';
+        }
+    } catch (error) {
+        console.error('Error loading production history:', error);
+    }
+}
+
+// Initial load
+loadKarigarDashboard();
+setInterval(loadKarigarDashboard, 30000);
+</script>

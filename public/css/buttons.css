@@ -1,0 +1,194 @@
+/* ============ STANDARD BUTTON STYLES ============ */
+/* All buttons will have consistent sizing and styling */
+
+.btn {
+    border-radius: 8px;
+    padding: 8px 20px;
+    font-weight: 500;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-sm {
+    padding: 5px 12px;
+    font-size: 12px;
+    border-radius: 6px;
+}
+
+.btn-lg {
+    padding: 12px 28px;
+    font-size: 16px;
+    border-radius: 10px;
+}
+
+/* Primary Button */
+.btn-primary {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    border: none;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59,130,246,0.3);
+}
+
+/* Success Button */
+.btn-success {
+    background: linear-gradient(135deg, #10b981, #059669);
+    border: none;
+    color: white;
+}
+
+.btn-success:hover {
+    background: linear-gradient(135deg, #059669, #047857);
+    transform: translateY(-1px);
+}
+
+/* Danger Button */
+.btn-danger {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    border: none;
+    color: white;
+}
+
+.btn-danger:hover {
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+    transform: translateY(-1px);
+}
+
+/* Warning Button */
+.btn-warning {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    border: none;
+    color: white;
+}
+
+.btn-warning:hover {
+    background: linear-gradient(135deg, #d97706, #b45309);
+    transform: translateY(-1px);
+}
+
+/* Info Button */
+.btn-info {
+    background: linear-gradient(135deg, #06b6d4, #0891b2);
+    border: none;
+    color: white;
+}
+
+.btn-info:hover {
+    background: linear-gradient(135deg, #0891b2, #0e7490);
+    transform: translateY(-1px);
+}
+
+/* Secondary Button */
+.btn-secondary {
+    background: #64748b;
+    border: none;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #475569;
+    transform: translateY(-1px);
+}
+
+/* Outline Buttons */
+.btn-outline-primary {
+    border: 1.5px solid #3b82f6;
+    color: #3b82f6;
+    background: transparent;
+}
+
+.btn-outline-primary:hover {
+    background: #3b82f6;
+    color: white;
+}
+
+.btn-outline-danger {
+    border: 1.5px solid #ef4444;
+    color: #ef4444;
+    background: transparent;
+}
+
+.btn-outline-danger:hover {
+    background: #ef4444;
+    color: white;
+}
+
+/* Action Buttons (View, Edit, Delete, Print) */
+.btn-action {
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: 6px;
+    margin: 0 2px;
+}
+
+.btn-action i {
+    margin-right: 4px;
+}
+
+/* Icon-only buttons */
+.btn-icon {
+    padding: 8px;
+    width: 34px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+}
+
+.btn-icon-sm {
+    padding: 5px;
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+}
+
+/* Form action buttons */
+.form-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 25px;
+    margin-bottom: 10px;
+}
+
+.form-actions .btn {
+    min-width: 120px;
+}
+
+/* Table action buttons container */
+.table-actions {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+
+/* Responsive buttons */
+@media (max-width: 768px) {
+    .btn {
+        padding: 6px 14px;
+        font-size: 12px;
+    }
+    
+    .btn-lg {
+        padding: 10px 20px;
+        font-size: 14px;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .form-actions .btn {
+        width: 100%;
+        max-width: 200px;
+    }
+}

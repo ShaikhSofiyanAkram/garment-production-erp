@@ -1,0 +1,573 @@
+<%
+const currentPage = 'pressman';
+%>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %> | Garment ERP</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+    
+    <style>
+        .form-container { max-width: 1000px; margin: 0 auto; }
+        .entry-row { background: #f8fafc; border-radius: 12px; padding: 15px; margin-bottom: 12px; border: 1px solid #e2e8f0; }
+        .remove-row { cursor: pointer; color: #ef4444; }
+        .remove-row:hover { color: #dc2626; }
+        .summary-card { background: white; border-radius: 16px; padding: 20px; border: 1px solid #e2e8f0; }
+        .summary-value { font-size: 1.5rem; font-weight: 700; }
+        .shortcut-hint { font-size: 0.7rem; color: #94a3b8; }
+    </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/dashboard">
+            <i class="fas fa-tshirt"></i> Garment ERP
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <span class="nav-link">
+                        <i class="fas fa-user"></i> <%= user ? user.username : 'Admin' %>
+                    </span>
+                </li>
+                <li class="nav-item">
+                    <a href="/auth/logout" class="btn btn-sm btn-outline-light nav-link">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid mt-4">
+    <div class="form-container">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h3>
+                    <i class="fas fa-pressman"></i> <%= title %>
+                </h3>
+                <span class="shortcut-hint">
+                    <i class="fas fa-keyboard"></i> Ctrl+Shift+A = Add Row | Ctrl+Enter = Save
+                </span>
+            </div>
+            <div>
+                <a href="/pressman/products" class="btn btn-outline-primary me-2">
+                    <i class="fas fa-box"></i> Products
+                </a>
+                <a href="/pressman" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back
+                </a>
+            </div>
+        </div>
+
+        <!-- Flash Messages -->
+        <% if (success_msg && success_msg.length) { %>
+            <div class="alert alert-success alert-dismissible fade show">
+                <i class="fas fa-check-circle"></i> <%= success_msg %>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <% } %>
+        <% if (error_msg && error_msg.length) { %>
+            <div class="alert alert-danger alert-dismissible fade show">
+                <i class="fas fa-exclamation-circle"></i> <%= error_msg %>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <% } %>
+
+        <!-- Form -->
+        <form id="entryForm">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <!-- Pressman Selection -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">
+                            <i class="fas fa-user"></i> Select Pressman
+                            <span class="text-danger">*</span>
+                        </label>
+                        <select name="pressmanId" id="pressmanId" class="form-control" required>
+                            <option value="">-- Select Pressman --</option>
+                            <% pressmen.forEach(p => { %>
+                                <option value="<%= p._id %>"><%= p.name %></option>
+                            <% }) %>
+                        </select>
+                    </div>
+
+                    <!-- Date -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">
+                            <i class="fas fa-calendar"></i> Date
+                        </label>
+                        <input type="date" name="date" id="date" class="form-control" 
+                               value="<%= new Date().toISOString().split('T')[0] %>">
+                    </div>
+
+                    <!-- Products & Quantities -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">
+                            <i class="fas fa-boxes"></i> Products & Quantities
+                            <span class="text-danger">*</span>
+                        </label>
+                        
+                        <!-- Table Header -->
+                        <div class="row mb-2 px-2">
+                            <div class="col-md-3">
+                                <small class="text-muted fw-bold">Product</small>
+                            </div>
+                            <div class="col-md-2">
+                                <small class="text-muted fw-bold">Size</small>
+                            </div>
+                            <div class="col-md-2">
+                                <small class="text-muted fw-bold">Qty</small>
+                            </div>
+                            <div class="col-md-2">
+                                <small class="text-muted fw-bold">Rate/pc</small>
+                            </div>
+                            <div class="col-md-2">
+                                <small class="text-muted fw-bold">Total (₹)</small>
+                            </div>
+                            <div class="col-md-1"></div>
+                        </div>
+                        
+                        <div id="entryRows">
+                            <!-- Row 1 -->
+                            <div class="entry-row row align-items-end" data-index="0">
+                                <div class="col-md-3">
+                                    <select name="product[]" class="form-control product-select" required>
+                                        <option value="">Select Product</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <select name="size[]" class="form-control size-select" required>
+                                        <option value="">Select Size</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <input type="number" name="quantity[]" class="form-control quantity-input" 
+                                           placeholder="Qty" min="1" required>
+                                </div>
+                                <div class="col-md-2">
+                                    <input type="text" class="form-control row-rate" placeholder="Rate/pc" readonly>
+                                </div>
+                                <div class="col-md-2">
+                                    <input type="text" class="form-control row-amount fw-bold text-success" 
+                                           placeholder="Total" readonly>
+                                </div>
+                                <div class="col-md-1 text-end">
+                                    <i class="fas fa-trash remove-row" title="Remove row"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button type="button" class="btn btn-outline-primary btn-sm mt-2" id="addRow">
+                            <i class="fas fa-plus"></i> Add More Products
+                            <span class="shortcut-hint ms-2">(Ctrl+Shift+A)</span>
+                        </button>
+                    </div>
+
+                    <!-- Summary -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <div class="summary-card">
+                                <div class="text-muted small">Total Quantity</div>
+                                <div class="summary-value text-primary" id="totalQuantity">0</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="summary-card">
+                                <div class="text-muted small">Total Amount</div>
+                                <div class="summary-value text-success" id="totalAmount">₹0</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="summary-card">
+                                <div class="text-muted small">Status</div>
+                                <div class="summary-value text-warning" id="entryStatus">Pending</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Remark -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Remark</label>
+                        <textarea name="remark" id="remark" class="form-control" rows="2" 
+                                  placeholder="Optional remarks..."></textarea>
+                    </div>
+
+                    <!-- Buttons -->
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary" id="saveBtn">
+                            <i class="fas fa-save"></i> Save Entry
+                            <span class="shortcut-hint ms-2">(Ctrl+Enter)</span>
+                        </button>
+                        <button type="reset" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- ==================== COMPLETE SCRIPT (SIRF EK BAAR) ==================== -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Pressman Entry Form Initializing...');
+
+    // ==================== ELEMENTS ====================
+    const form = document.getElementById('entryForm');
+    const rowsContainer = document.getElementById('entryRows');
+    const addRowBtn = document.getElementById('addRow');
+    const totalQuantityEl = document.getElementById('totalQuantity');
+    const totalAmountEl = document.getElementById('totalAmount');
+    const pressmanSelect = document.getElementById('pressmanId');
+
+    // ==================== STORE PRODUCTS DATA ====================
+    let allProducts = [];
+
+    // ==================== LOAD PRODUCTS FROM API ====================
+    async function loadProducts() {
+        try {
+            const response = await fetch('/pressman/api/products');
+            const data = await response.json();
+            
+            if (data.success) {
+                allProducts = data.products;
+                console.log('✅ Products loaded:', allProducts.length);
+                
+                document.querySelectorAll('.product-select').forEach(select => {
+                    const currentValue = select.value;
+                    populateProductSelect(select, currentValue);
+                });
+            }
+        } catch (error) {
+            console.error('❌ Error loading products:', error);
+        }
+    }
+
+    // ==================== POPULATE PRODUCT SELECT ====================
+    function populateProductSelect(selectElement, selectedValue) {
+        selectElement.innerHTML = '<option value="">Select Product</option>';
+        
+        allProducts.forEach(p => {
+            const option = document.createElement('option');
+            option.value = p._id;
+            option.dataset.hasSizeRates = p.hasSizeRates || false;
+            option.dataset.sizeRates = JSON.stringify(p.sizeRates || []);
+            option.dataset.rate = p.rate || 0;
+            
+            let displayName = p.name;
+            if (p.hasSizeRates && p.sizeRates && p.sizeRates.length > 0) {
+                const sizeInfo = p.sizeRates.map(sr => `${sr.size}: ₹${sr.rate}`).join(', ');
+                displayName += ` (${sizeInfo})`;
+            } else {
+                displayName += ` (₹${p.rate}/piece)`;
+            }
+            option.textContent = displayName;
+            
+            if (p._id === selectedValue) {
+                option.selected = true;
+            }
+            selectElement.appendChild(option);
+        });
+    }
+
+    // ==================== POPULATE SIZE SELECT ====================
+    function populateSizeSelect(selectElement, productId) {
+        selectElement.innerHTML = '<option value="">Select Size</option>';
+        
+        if (!productId) return;
+        
+        const product = allProducts.find(p => p._id === productId);
+        if (!product) return;
+        
+        if (product.hasSizeRates && product.sizeRates && product.sizeRates.length > 0) {
+            product.sizeRates.forEach(sr => {
+                const option = document.createElement('option');
+                option.value = sr.size;
+                option.dataset.rate = sr.rate;
+                option.textContent = `${sr.size} (₹${sr.rate}/piece)`;
+                selectElement.appendChild(option);
+            });
+        } else {
+            const option = document.createElement('option');
+            option.value = 'One Size';
+            option.dataset.rate = product.rate || 0;
+            option.textContent = `One Size (₹${product.rate || 0}/piece)`;
+            selectElement.appendChild(option);
+        }
+    }
+
+    // ==================== UPDATE SINGLE ROW ====================
+    function updateRow(row) {
+        const sizeSelect = row.querySelector('.size-select');
+        const quantityInput = row.querySelector('.quantity-input');
+        const rateInput = row.querySelector('.row-rate');
+        const amountInput = row.querySelector('.row-amount');
+        
+        if (!sizeSelect || !quantityInput) return;
+        
+        const selectedOption = sizeSelect.options[sizeSelect.selectedIndex];
+        const rate = parseFloat(selectedOption?.dataset?.rate || 0);
+        const quantity = parseFloat(quantityInput.value) || 0;
+        const amount = rate * quantity;
+        
+        if (rateInput) {
+            rateInput.value = rate > 0 ? `₹${rate}` : '₹0';
+        }
+        
+        if (amountInput) {
+            amountInput.value = amount > 0 ? `₹${amount}` : '₹0';
+        }
+        
+        calculateTotals();
+    }
+
+    // ==================== CALCULATE TOTALS ====================
+    function calculateTotals() {
+        let totalQuantity = 0;
+        let totalAmount = 0;
+        
+        document.querySelectorAll('.entry-row').forEach(row => {
+            const quantityInput = row.querySelector('.quantity-input');
+            const sizeSelect = row.querySelector('.size-select');
+            
+            if (!sizeSelect || !quantityInput) return;
+            
+            const selectedOption = sizeSelect.options[sizeSelect.selectedIndex];
+            const quantity = parseFloat(quantityInput.value) || 0;
+            const rate = parseFloat(selectedOption?.dataset?.rate || 0);
+            
+            totalQuantity += quantity;
+            totalAmount += rate * quantity;
+        });
+        
+        if (totalQuantityEl) totalQuantityEl.textContent = totalQuantity;
+        if (totalAmountEl) totalAmountEl.textContent = `₹${totalAmount}`;
+    }
+
+    // ==================== SETUP ROW EVENTS ====================
+    function setupRowEvents(row) {
+        const productSelect = row.querySelector('.product-select');
+        const sizeSelect = row.querySelector('.size-select');
+        const quantityInput = row.querySelector('.quantity-input');
+        const removeBtn = row.querySelector('.remove-row');
+        
+        if (productSelect) {
+            productSelect.addEventListener('change', function() {
+                populateSizeSelect(sizeSelect, this.value);
+                setTimeout(() => updateRow(row), 50);
+            });
+        }
+        
+        if (sizeSelect) {
+            sizeSelect.addEventListener('change', function() {
+                updateRow(row);
+            });
+        }
+        
+        if (quantityInput) {
+            quantityInput.addEventListener('input', function() {
+                updateRow(row);
+            });
+        }
+        
+        if (removeBtn) {
+            removeBtn.addEventListener('click', function() {
+                if (rowsContainer.children.length > 1) {
+                    row.remove();
+                    calculateTotals();
+                } else {
+                    alert('⚠️ At least one product row is required');
+                }
+            });
+        }
+    }
+
+    // ==================== ADD NEW ROW ====================
+    function addNewRow() {
+        const row = document.createElement('div');
+        row.className = 'entry-row row align-items-end';
+        row.dataset.index = rowsContainer.children.length;
+        
+        row.innerHTML = `
+            <div class="col-md-3">
+                <select name="product[]" class="form-control product-select" required>
+                    <option value="">Select Product</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="size[]" class="form-control size-select" required>
+                    <option value="">Select Size</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <input type="number" name="quantity[]" class="form-control quantity-input" 
+                       placeholder="Qty" min="1" required>
+            </div>
+            <div class="col-md-2">
+                <input type="text" class="form-control row-rate" placeholder="Rate/pc" readonly>
+            </div>
+            <div class="col-md-2">
+                <input type="text" class="form-control row-amount fw-bold text-success" 
+                       placeholder="Total" readonly>
+            </div>
+            <div class="col-md-1 text-end">
+                <i class="fas fa-trash remove-row" title="Remove row"></i>
+            </div>
+        `;
+        
+        rowsContainer.appendChild(row);
+        
+        setupRowEvents(row);
+        populateProductSelect(row.querySelector('.product-select'));
+        
+        setTimeout(() => calculateTotals(), 100);
+    }
+
+    // ==================== FORM SUBMIT ====================
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const pressmanId = pressmanSelect.value;
+        const date = document.getElementById('date').value;
+        const remark = document.getElementById('remark').value;
+        
+        if (!pressmanId) {
+            alert('⚠️ Please select a pressman');
+            pressmanSelect.focus();
+            return;
+        }
+        
+        const entries = [];
+        document.querySelectorAll('.entry-row').forEach(row => {
+            const product = row.querySelector('.product-select').value;
+            const size = row.querySelector('.size-select').value;
+            const quantity = row.querySelector('.quantity-input').value;
+            const sizeSelect = row.querySelector('.size-select');
+            const selectedOption = sizeSelect.options[sizeSelect.selectedIndex];
+            const rate = parseFloat(selectedOption?.dataset?.rate || 0);
+            
+            if (product && size && quantity && parseInt(quantity) > 0) {
+                entries.push({ 
+                    product: product,
+                    size: size,
+                    quantity: parseInt(quantity),
+                    rate: rate
+                });
+            }
+        });
+        
+        if (entries.length === 0) {
+            alert('⚠️ Please add at least one product with quantity');
+            return;
+        }
+        
+        const submitBtn = document.getElementById('saveBtn');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        
+        try {
+            const response = await fetch('/pressman/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    pressmanId, 
+                    date: date || new Date().toISOString().split('T')[0],
+                    entries, 
+                    remark: remark || '' 
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-success alert-dismissible fade show';
+                alertDiv.innerHTML = `
+                    <i class="fas fa-check-circle"></i> 
+                    Entry ${result.entry?.entryNumber || ''} created successfully!
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                form.parentElement.insertBefore(alertDiv, form);
+                
+                setTimeout(() => {
+                    window.location.href = result.redirect || '/pressman';
+                }, 1500);
+            } else {
+                alert('❌ Error: ' + (result.error || 'Unknown error'));
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-save"></i> Save Entry';
+            }
+        } catch (error) {
+            alert('❌ Error saving entry: ' + error.message);
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-save"></i> Save Entry';
+        }
+    });
+
+    // ==================== ADD ROW BUTTON ====================
+    addRowBtn.addEventListener('click', addNewRow);
+
+    // ==================== KEYBOARD SHORTCUTS ====================
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
+            e.preventDefault();
+            addNewRow();
+        }
+    });
+
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.key === 'Enter') {
+            e.preventDefault();
+            form.dispatchEvent(new Event('submit'));
+        }
+    });
+
+    // ==================== INITIAL SETUP ====================
+    async function initialize() {
+        await loadProducts();
+        
+        document.querySelectorAll('.entry-row').forEach(row => {
+            const productSelect = row.querySelector('.product-select');
+            const sizeSelect = row.querySelector('.size-select');
+            
+            if (productSelect) {
+                const currentProduct = productSelect.value;
+                if (currentProduct) {
+                    populateSizeSelect(sizeSelect, currentProduct);
+                }
+            }
+            
+            setupRowEvents(row);
+            setTimeout(() => updateRow(row), 100);
+        });
+        
+        setTimeout(() => {
+            calculateTotals();
+            console.log('✅ Initialization complete!');
+        }, 300);
+    }
+    
+    initialize();
+    console.log('✅ Script loaded successfully!');
+});
+</script>
+</body>
+</html>

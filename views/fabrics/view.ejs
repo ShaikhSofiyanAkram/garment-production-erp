@@ -1,0 +1,199 @@
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-layer-group"></i> Batch: <%= batch.batchNumber %>
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <strong>Date:</strong> <%= new Date(batch.date).toLocaleDateString() %><br>
+                        <strong>Supplier:</strong> <%= batch.supplier || '-' %><br>
+                        <strong>Created By:</strong> <%= batch.createdBy?.username || 'System' %>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <strong>Total Items:</strong> <%= batch.totalItems %><br>
+                        <strong>Total Meters:</strong> <%= batch.totalMeters %> m<br>
+                        <strong>Created At:</strong> <%= new Date(batch.createdAt).toLocaleString() %>
+                    </div>
+                </div>
+                
+                <h5>Fabric Items</h5>
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>#</th>
+                                <th>Fabric Type</th>
+                                <th>Color</th>
+                                <th>Total Meters</th>
+                                <th>Remark</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% batch.items.forEach((item, index) => { %>
+                            <tr>
+                                <td><%= index + 1 %></td>
+                                <td><%= item.fabricType %></td>
+                                <td>
+                                    <% if (item.color) { 
+                                        let colorMap = {
+                                            'White': '#ffffff',
+                                            'Black': '#000000',
+                                            'Red': '#dc3545',
+                                            'Blue': '#007bff',
+                                            'Green': '#28a745',
+                                            'Yellow': '#ffc107',
+                                            'Pink': '#e83e8c',
+                                            'Orange': '#fd7e14',
+                                            'Purple': '#6f42c1',
+                                            'Brown': '#795548',
+                                            'Grey': '#6c757d',
+                                            'Maroon': '#800000',
+                                            'Navy': '#000080',
+                                            'Gold': '#ffd700',
+                                            'Silver': '#c0c0c0'
+                                        };
+                                        let bgColor = colorMap[item.color] || '#6c757d';
+                                        let textColor = ['White', 'Yellow', 'Gold'].includes(item.color) ? '#000' : '#fff';
+                                    %>
+                                        <span class="badge" style="background-color: <%= bgColor %>; color: <%= textColor %>; padding: 5px 10px;">
+                                            <%= item.color %>
+                                        </span>
+                                    <% } else { %>
+                                        -
+                                    <% } %>
+                                </td>
+                                <td><strong><%= item.totalMeters %></strong> m</td>
+                                <td><%= item.remark || '-' %></td>
+                            </tr>
+                            <% }) %>
+                        </tbody>
+                        <tfoot class="table-light">
+                            <tr>
+                                <th colspan="3">Total</th>
+                                <th><%= batch.totalMeters %> m</th>
+                                <th></th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                
+                <% if (batch.overallRemark) { %>
+                <div class="alert alert-secondary">
+                    <strong>Overall Remark:</strong> <%= batch.overallRemark %>
+                </div>
+                <% } %>
+                
+                <div class="text-center mt-4">
+                    <a href="/fabrics/print/<%= batch._id %>" class="btn btn-secondary" target="_blank">
+                        <i class="fas fa-print"></i> Print Batch
+                    </a>
+                    <a href="/fabrics" class="btn btn-primary">Back to Batches</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Print functionality (optional: auto-trigger)
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('print') === 'true') {
+        window.print();
+    }
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- <div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-layer-group"></i> Batch: <%= batch.batchNumber %>
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <strong>Date:</strong> <%= new Date(batch.date).toLocaleDateString() %><br>
+                        <strong>Supplier:</strong> <%= batch.supplier || '-' %><br>
+                        <strong>Created By:</strong> <%= batch.createdBy?.username || 'System' %>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <strong>Total Items:</strong> <%= batch.totalItems %><br>
+                        <strong>Total Meters:</strong> <%= batch.totalMeters %> m<br>
+                        <strong>Created At:</strong> <%= new Date(batch.createdAt).toLocaleString() %>
+                    </div>
+                </div>
+                
+                <h5>Fabric Items</h5>
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>#</th>
+                                <th>Fabric Type</th>
+                                <th>Color</th>
+                                <th>Total Meters</th>
+                                <th>Remark</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% batch.items.forEach((item, index) => { %>
+                            <tr>
+                                <td><%= index + 1 %></td>
+                                <td><%= item.fabricType %></td>
+                                <td>
+                                    <% if (item.color) { %>
+                                        <span class="badge" style="background-color: <%= item.color.toLowerCase() %>; color: <%= ['White','Yellow'].includes(item.color) ? 'black' : 'white' %>">
+                                            <%= item.color %>
+                                        </span>
+                                    <% } else { %>
+                                        -
+                                    <% } %>
+                                </td>
+                                <td><strong><%= item.totalMeters %></strong> m</td>
+                                <td><%= item.remark || '-' %></td>
+                            </tr>
+                            <% }) %>
+                        </tbody>
+                        <tfoot class="table-light">
+                            <tr>
+                                <th colspan="3">Total</th>
+                                <th><%= batch.totalMeters %> m</th>
+                                <th></th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                
+                <% if (batch.overallRemark) { %>
+                <div class="alert alert-secondary">
+                    <strong>Overall Remark:</strong> <%= batch.overallRemark %>
+                </div>
+                <% } %>
+                
+                <div class="text-center mt-4">
+                    <a href="/fabrics/print/<%= batch._id %>" class="btn btn-secondary" target="_blank">
+                        <i class="fas fa-print"></i> Print Batch
+                    </a>
+                    <a href="/fabrics" class="btn btn-primary">Back to Batches</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div> -->

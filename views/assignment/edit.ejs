@@ -1,0 +1,95 @@
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-warning text-white">
+                <h4 class="mb-0"><i class="fas fa-edit"></i> Edit Assignment: <%= assignment.assignmentId %></h4>
+            </div>
+            <div class="card-body">
+                <form action="/assignments/edit/<%= assignment._id %>?_method=PUT" method="POST" id="editForm">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Karigar</label>
+                        <select class="form-control" name="karigar" required>
+                            <option value="">Select Karigar</option>
+                            <% karigars.forEach(k => { %>
+                                <option value="<%= k._id %>" <%= assignment.karigar?._id?.toString() === k._id?.toString() ? 'selected' : '' %>>
+                                    <%= k.name %>
+                                </option>
+                            <% }) %>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Due Date</label>
+                        <input type="date" class="form-control" name="dueDate" value="<%= assignment.dueDate ? new Date(assignment.dueDate).toISOString().split('T')[0] : '' %>">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Remark</label>
+                        <textarea class="form-control" name="remark" rows="2"><%= assignment.remark || '' %></textarea>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <strong>Cutting Info:</strong> <%= cuttingData?.productName %> | Total: <%= cuttingData?.totalPieces %>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Sizes & Pieces</label>
+                        <div id="sizesContainer">
+                            <% if (completeSizes && completeSizes.length) { %>
+                                <% completeSizes.forEach(sizeData => { %>
+                                    <div class="row mb-2">
+                                        <div class="col-md-4">
+                                            <strong><%= sizeData.size %></strong> (Available: <%= sizeData.given %>)
+                                        </div>
+                                        <div class="col-md-4">
+                                            <input type="number" class="form-control size-piece" 
+                                                   data-size="<%= sizeData.size %>"
+                                                   value="<%= sizeData.assigned %>"
+                                                   min="0" max="<%= sizeData.given %>">
+                                        </div>
+                                    </div>
+                                <% }) %>
+                            <% } %>
+                        </div>
+                        <input type="hidden" name="sizesData" id="sizesData">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Total Given Pieces</label>
+                        <input type="text" class="form-control" id="totalGiven" readonly style="background:#e9ecef; font-weight:bold;">
+                    </div>
+                    
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-primary">Update Assignment</button>
+                        <a href="/assignments" class="btn btn-secondary">Cancel</a>
+                        <form action="/assignments/delete/<%= assignment._id %>?_method=DELETE" method="POST" style="display: inline;">
+                            <button type="submit" class="btn btn-danger" onclick="return confirm('Delete this assignment?')">Delete</button>
+                        </form>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function calculateTotal() {
+        let total = 0;
+        document.querySelectorAll('.size-piece').forEach(input => {
+            total += parseInt(input.value) || 0;
+        });
+        document.getElementById('totalGiven').value = total;
+        document.getElementById('sizesData').value = JSON.stringify(
+            Array.from(document.querySelectorAll('.size-piece')).map(input => ({
+                size: input.dataset.size,
+                pieces: parseInt(input.value) || 0
+            }))
+        );
+    }
+    
+    document.querySelectorAll('.size-piece').forEach(input => {
+        input.addEventListener('input', calculateTotal);
+    });
+    calculateTotal();
+</script>

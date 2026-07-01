@@ -1,0 +1,822 @@
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h4><i class="fas fa-boxes"></i> Final Packing Entry</h4>
+                <small>Product + Category + Size-wise packing — Manual entry + Auto from Finishing</small>
+            </div>
+            <div class="card-body">
+                <!-- Tab Navigation -->
+                <ul class="nav nav-tabs mb-4" id="packingTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="manual-tab" data-bs-toggle="tab" data-bs-target="#manual" type="button">
+                            <i class="fas fa-pen"></i> Manual Entry
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="auto-tab" data-bs-toggle="tab" data-bs-target="#auto" type="button">
+                            <i class="fas fa-robot"></i> Auto from Finishing
+                        </button>
+                    </li>
+                </ul>
+
+                <form action="/packing/create" method="POST" id="packingForm">
+                    
+                    <!-- Tab Content -->
+                    <div class="tab-content">
+                        <!-- Manual Entry Tab -->
+                        <div class="tab-pane fade show active" id="manual" role="tabpanel">
+                            <div id="entriesList"></div>
+                            
+                            <div class="mt-3">
+                                <button type="button" class="btn btn-primary" onclick="addNewEntry()">
+                                    <i class="fas fa-plus"></i> Add Another Packing Entry
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Auto from Finishing Tab -->
+                        <div class="tab-pane fade" id="auto" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Select Finishing Records</label>
+                                        <select class="form-control" id="finishingSelect" multiple style="height: 250px;">
+                                            <!-- Will be populated by AJAX -->
+                                        </select>
+                                        <small class="text-muted">Click to select individual records. Hold Ctrl for multiple selection.</small>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <button type="button" class="btn btn-warning" onclick="addSelectedToAutoList()">
+                                            <i class="fas fa-plus-circle"></i> Add Selected to List
+                                        </button>
+                                        <button type="button" class="btn btn-info" onclick="selectAllFinishing()">
+                                            <i class="fas fa-check-double"></i> Select All
+                                        </button>
+                                        <button type="button" class="btn btn-secondary" onclick="deselectAllFinishing()">
+                                            <i class="fas fa-times"></i> Deselect All
+                                        </button>
+                                        <button type="button" class="btn btn-danger" onclick="clearAutoList()">
+                                            <i class="fas fa-trash"></i> Clear All
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <div class="card bg-light">
+                                        <div class="card-body text-center">
+                                            <h5>Selected Count</h5>
+                                            <h2 class="text-primary" id="autoSelectedCount">0</h2>
+                                            <small class="text-muted">records selected</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Auto Selected List Preview -->
+                            <div class="card mt-3" id="autoListCard" style="display: none;">
+                                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                                    <span><i class="fas fa-list"></i> Selected Products for Packing</span>
+                                    <span class="badge bg-light text-dark" id="autoListCount">0 items</span>
+                                </div>
+                                <div class="card-body p-0">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover mb-0">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>#</th>
+                                                    <th>Finishing #</th>
+                                                    <th>Product</th>
+                                                    <th>Category</th>
+                                                    <th>Size</th>
+                                                    <th class="text-end">Pieces</th>
+                                                    <th class="text-center">Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="autoListBody">
+                                                <!-- Dynamic rows will appear here -->
+                                            </tbody>
+                                            <tfoot class="table-primary fw-bold">
+                                                <tr>
+                                                    <td colspan="5" class="text-end">Total Pieces:</td>
+                                                    <td class="text-end" id="autoListTotal">0</td>
+                                                    <td></td>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="card-footer text-center">
+                                    <button type="button" class="btn btn-success btn-lg" onclick="confirmAutoPack()">
+                                        <i class="fas fa-boxes"></i> 📦 Finalize Auto Products to Packing
+                                    </button>
+                                    <button type="button" class="btn btn-secondary" onclick="clearAutoList()">
+                                        <i class="fas fa-times"></i> Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Common Fields -->
+                    <div class="mb-3 mt-4">
+                        <label>Remark (Optional)</label>
+                        <textarea name="remark" class="form-control" rows="2"></textarea>
+                    </div>
+
+                    <div class="text-center mt-4">
+                        <button type="submit" class="btn btn-success btn-lg px-5" id="submitBtn" disabled>
+                            <i class="fas fa-save"></i> Finalize Packing
+                        </button>
+                        <a href="/packing" class="btn btn-secondary btn-lg px-5">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let allProducts = [];
+    let entryCount = 0;
+    let allFinishingRecords = [];
+    let autoSelectedEntries = [];
+
+    // ============ LOAD PRODUCTS ============
+    async function loadProducts() {
+        try {
+            const res = await fetch('/products/api/list');
+            if (!res.ok) throw new Error('Failed to load products');
+            const data = await res.json();
+            allProducts = Array.isArray(data) ? data : [];
+            console.log('Products loaded:', allProducts.length);
+        } catch(e) {
+            console.error('Error loading products:', e);
+            allProducts = [];
+        }
+        addNewEntry();
+    }
+
+    // ============ MANUAL ENTRY FUNCTIONS ============
+    function addNewEntry(copyFromId = null) {
+        const container = document.getElementById('entriesList');
+        const entryDiv = document.createElement('div');
+        entryDiv.className = 'card mb-3 p-3 border';
+        entryDiv.id = `entry-${entryCount}`;
+        entryDiv.style.borderLeft = '4px solid red';
+        
+        let copiedData = null;
+        if (copyFromId !== null) {
+            const sourceDiv = document.getElementById(`entry-${copyFromId}`);
+            if (sourceDiv) {
+                const sourceProduct = sourceDiv.querySelector('.product-select');
+                const sourceCategory = sourceDiv.querySelector('.category-select');
+                const sourceSize = sourceDiv.querySelector('.size-select');
+                const sourceManualSize = sourceDiv.querySelector('.manual-size-input');
+                const sourcePieces = sourceDiv.querySelector('.pieces-input');
+                const sourceNewProduct = sourceDiv.querySelector('.new-product-input');
+                
+                copiedData = {
+                    productValue: sourceProduct.value,
+                    isManualProduct: sourceProduct.value === 'other',
+                    manualProductName: sourceNewProduct.value,
+                    category: sourceCategory.value,
+                    sizeValue: sourceSize.value,
+                    manualSizeValue: sourceManualSize.value,
+                    pieces: sourcePieces.value
+                };
+            }
+        }
+
+        let productOptions = '<option value="">-- Select or Type --</option>';
+        if (Array.isArray(allProducts) && allProducts.length > 0) {
+            allProducts.forEach(p => {
+                productOptions += `<option value="${p.name}" data-category="${p.category}">${p.name} (${p.category})</option>`;
+            });
+        }
+        productOptions += '<option value="other">+ Add New Product</option>';
+
+        entryDiv.innerHTML = `
+            <div class="row align-items-end">
+                <div class="col-md-3">
+                    <label>Product</label>
+                    <select class="form-control product-select" data-id="${entryCount}" onchange="handleProductChange(${entryCount})">
+                        ${productOptions}
+                    </select>
+                    <input type="text" class="form-control mt-1 new-product-input" id="newProduct-${entryCount}" style="display:none;" placeholder="Enter product name" oninput="updateEntryData(${entryCount})">
+                </div>
+                <div class="col-md-2">
+                    <label>Category</label>
+                    <select class="form-control category-select" id="category-${entryCount}" onchange="handleCategoryChange(${entryCount})">
+                        <option value="">Select</option>
+                        <option value="Kids">Kids</option>
+                        <option value="Mens">Mens</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label>Size</label>
+                    <select class="form-control size-select" id="size-${entryCount}" onchange="handleSizeChange(${entryCount})">
+                        <option value="">Select Size</option>
+                    </select>
+                    <input type="text" class="form-control mt-1 manual-size-input" id="manualSize-${entryCount}" style="display:none;" placeholder="Enter size manually" oninput="updateEntryData(${entryCount})">
+                </div>
+                <div class="col-md-2">
+                    <label>Pieces</label>
+                    <input type="number" class="form-control pieces-input" id="pieces-${entryCount}" value="0" min="0" oninput="updateEntryData(${entryCount})">
+                </div>
+                <div class="col-md-3 d-flex gap-2">
+                    <button type="button" class="btn btn-sm btn-info" onclick="copyEntry(${entryCount})">
+                        <i class="fas fa-copy"></i> Copy Line Down
+                    </button>
+                    <button type="button" class="btn btn-sm btn-danger" onclick="removeEntry(${entryCount})">
+                        <i class="fas fa-trash"></i> Remove
+                    </button>
+                </div>
+            </div>
+            <input type="hidden" class="entry-data" id="entryData-${entryCount}">
+        `;
+
+        container.appendChild(entryDiv);
+        
+        if (copiedData) {
+            const productSelect = entryDiv.querySelector('.product-select');
+            const newProductInput = entryDiv.querySelector('.new-product-input');
+            const categorySelect = entryDiv.querySelector('.category-select');
+            const sizeSelect = entryDiv.querySelector('.size-select');
+            const manualSizeInput = entryDiv.querySelector('.manual-size-input');
+            const piecesInput = entryDiv.querySelector('.pieces-input');
+            
+            if (copiedData.isManualProduct) {
+                productSelect.value = 'other';
+                newProductInput.style.display = 'block';
+                newProductInput.value = copiedData.manualProductName;
+                productSelect.disabled = true;
+            } else {
+                productSelect.value = copiedData.productValue;
+            }
+            
+            if (copiedData.category) {
+                categorySelect.value = copiedData.category;
+                loadSizes(copiedData.category, entryCount);
+            }
+            
+            setTimeout(() => {
+                if (copiedData.sizeValue === 'other') {
+                    sizeSelect.value = 'other';
+                    manualSizeInput.style.display = 'block';
+                    manualSizeInput.value = copiedData.manualSizeValue;
+                    sizeSelect.disabled = true;
+                } else if (copiedData.sizeValue) {
+                    const optionExists = Array.from(sizeSelect.options).some(opt => opt.value === copiedData.sizeValue);
+                    if (optionExists) {
+                        sizeSelect.value = copiedData.sizeValue;
+                    }
+                }
+                piecesInput.value = copiedData.pieces;
+                updateEntryData(entryCount);
+            }, 100);
+        }
+        
+        entryCount++;
+        updateSubmitButton();
+    }
+
+    function copyEntry(sourceId) {
+        addNewEntry(sourceId);
+    }
+
+    function handleProductChange(idx) {
+        const productSelect = document.querySelector(`#entry-${idx} .product-select`);
+        const newProductInput = document.querySelector(`#newProduct-${idx}`);
+        const categorySelect = document.querySelector(`#category-${idx}`);
+        const selectedOption = productSelect.options[productSelect.selectedIndex];
+        
+        if (productSelect.value === 'other') {
+            newProductInput.style.display = 'block';
+            categorySelect.disabled = false;
+            productSelect.disabled = true;
+            categorySelect.value = '';
+            updateEntryData(idx);
+            return;
+        }
+        
+        newProductInput.style.display = 'none';
+        productSelect.disabled = false;
+        categorySelect.disabled = false;
+        
+        let category = selectedOption?.dataset?.category || '';
+        if (category) {
+            categorySelect.value = category;
+            loadSizes(category, idx);
+        } else {
+            categorySelect.value = '';
+        }
+        updateEntryData(idx);
+    }
+
+    function handleCategoryChange(idx) {
+        const categorySelect = document.querySelector(`#category-${idx}`);
+        if (categorySelect.value) {
+            loadSizes(categorySelect.value, idx);
+        }
+        updateEntryData(idx);
+    }
+
+    function handleSizeChange(idx) {
+        const sizeSelect = document.querySelector(`#size-${idx}`);
+        const manualInput = document.querySelector(`#manualSize-${idx}`);
+        
+        if (sizeSelect.value === 'other') {
+            manualInput.style.display = 'block';
+            sizeSelect.disabled = true;
+        } else {
+            manualInput.style.display = 'none';
+        }
+        updateEntryData(idx);
+    }
+
+    function loadSizes(category, idx) {
+        const sizeSelect = document.querySelector(`#size-${idx}`);
+        let sizes = [];
+        if (category === 'Kids') {
+            sizes = ['1','2','3','4','5','6','7','8','9','10','11','12'];
+        } else if (category === 'Mens') {
+            sizes = ['26','28','30','32','34','36','38','40','42','44','46','48','50','52','54','56','58','60'];
+        }
+        const currentValue = sizeSelect.value;
+        sizeSelect.innerHTML = `<option value="">Select Size</option>${sizes.map(s => `<option value="${s}">${s}</option>`).join('')}<option value="other">+ Manual Size</option>`;
+        if (currentValue && currentValue !== 'other' && sizes.includes(currentValue)) {
+            sizeSelect.value = currentValue;
+        }
+        updateEntryData(idx);
+    }
+
+    function updateEntryData(idx) {
+        const div = document.getElementById(`entry-${idx}`);
+        if (!div) return false;
+        
+        const productSelect = div.querySelector('.product-select');
+        const newProductInput = div.querySelector('.new-product-input');
+        const categorySelect = div.querySelector('.category-select');
+        const sizeSelect = div.querySelector('.size-select');
+        const manualSize = div.querySelector('.manual-size-input');
+        const piecesInput = div.querySelector('.pieces-input');
+        
+        let productName = '';
+        if (productSelect.value === 'other') {
+            productName = newProductInput.value.trim();
+        } else {
+            productName = productSelect.value;
+        }
+        
+        let category = categorySelect.value;
+        let size = '';
+        if (sizeSelect.value === 'other') {
+            size = manualSize.value.trim();
+        } else {
+            size = sizeSelect.value;
+        }
+        
+        let pieces = parseInt(piecesInput.value) || 0;
+        
+        const isValid = productName && category && size && pieces > 0;
+        
+        if (isValid) {
+            const entry = {
+                productName: productName,
+                category: category,
+                size: size,
+                packedPieces: pieces
+            };
+            div.querySelector('.entry-data').value = JSON.stringify(entry);
+            div.style.borderLeft = '4px solid green';
+        } else {
+            div.querySelector('.entry-data').value = '';
+            div.style.borderLeft = '4px solid red';
+        }
+        
+        updateSubmitButton();
+        return isValid;
+    }
+
+    function removeEntry(idx) {
+        const entryDiv = document.getElementById(`entry-${idx}`);
+        if (entryDiv) entryDiv.remove();
+        updateSubmitButton();
+    }
+
+    // ============ AUTO FROM FINISHING FUNCTIONS ============
+    async function loadFinishingRecords() {
+        const select = document.getElementById('finishingSelect');
+        select.innerHTML = '<option value="">Loading finishing records...</option>';
+        
+        try {
+            console.log('📡 Calling API: /packing/api/finishing-records');
+            const res = await fetch('/packing/api/finishing-records');
+            const data = await res.json();
+            
+            console.log('📦 API Response:', data);
+            
+            if (data.success && data.records && data.records.length > 0) {
+                allFinishingRecords = data.records;
+                renderFinishingSelect(allFinishingRecords);
+            } else {
+                select.innerHTML = '<option value="">❌ No finishing records available</option>';
+                console.log('⚠️ No finishing records found');
+            }
+        } catch (error) {
+            console.error('❌ Error loading finishing records:', error);
+            select.innerHTML = `<option value="">❌ Error: ${error.message}</option>`;
+        }
+    }
+
+    function renderFinishingSelect(records) {
+        const select = document.getElementById('finishingSelect');
+        select.innerHTML = '';
+        
+        if (!records || records.length === 0) {
+            select.innerHTML = '<option value="">No finishing records available</option>';
+            return;
+        }
+        
+        console.log(`✅ Rendering ${records.length} finishing records`);
+        
+        records.forEach((record, index) => {
+            const option = document.createElement('option');
+            option.value = record._id;
+            option.dataset.index = index;
+            option.dataset.productName = record.productName;
+            option.dataset.category = record.category;
+            option.dataset.size = record.size;
+            option.dataset.pieces = record.passedPieces;
+            option.dataset.finishingNumber = record.finishingNumber;
+            option.textContent = `${record.finishingNumber} - ${record.productName} (${record.size}) - ${record.passedPieces} pcs`;
+            select.appendChild(option);
+        });
+    }
+
+    function selectAllFinishing() {
+        const select = document.getElementById('finishingSelect');
+        const options = select.options;
+        
+        if (options.length === 0 || options[0].value === '') {
+            showToast('No finishing records to select', 'warning');
+            return;
+        }
+        
+        for (let i = 0; i < options.length; i++) {
+            options[i].selected = true;
+        }
+        updateSelectedCount();
+        showToast('✅ All records selected', 'info');
+    }
+
+    function deselectAllFinishing() {
+        const select = document.getElementById('finishingSelect');
+        for (let i = 0; i < select.options.length; i++) {
+            select.options[i].selected = false;
+        }
+        updateSelectedCount();
+        showToast('❌ All records deselected', 'info');
+    }
+
+    function updateSelectedCount() {
+        const select = document.getElementById('finishingSelect');
+        const selected = Array.from(select.selectedOptions);
+        document.getElementById('autoSelectedCount').innerText = selected.length;
+    }
+
+    function addSelectedToAutoList() {
+        const select = document.getElementById('finishingSelect');
+        const selectedOptions = Array.from(select.selectedOptions);
+        
+        if (selectedOptions.length === 0) {
+            showToast('⚠️ Please select at least one finishing record', 'warning');
+            return;
+        }
+        
+        let addedCount = 0;
+        let duplicateCount = 0;
+        
+        selectedOptions.forEach(option => {
+            const productName = option.dataset.productName || 'Unknown';
+            const category = option.dataset.category || 'Mens';
+            const size = option.dataset.size || 'N/A';
+            const pieces = parseInt(option.dataset.pieces) || 0;
+            const finishingNumber = option.dataset.finishingNumber || 'FIN-NA';
+            
+            const exists = autoSelectedEntries.some(e => 
+                e.productName === productName && 
+                e.category === category && 
+                e.size === size
+            );
+            
+            if (exists) {
+                duplicateCount++;
+                return;
+            }
+            
+            if (pieces > 0) {
+                autoSelectedEntries.push({
+                    productName: productName,
+                    category: category,
+                    size: size,
+                    packedPieces: pieces,
+                    finishingNumber: finishingNumber
+                });
+                addedCount++;
+            }
+        });
+        
+        if (addedCount === 0 && duplicateCount > 0) {
+            showToast(`⚠️ ${duplicateCount} records already in list (duplicates skipped)`, 'warning');
+        } else if (addedCount > 0) {
+            showToast(`✅ ${addedCount} records added to packing list`, 'success');
+            if (duplicateCount > 0) {
+                showToast(`⚠️ ${duplicateCount} duplicates skipped`, 'warning');
+            }
+        } else {
+            showToast('⚠️ No valid records to add (all have 0 pieces)', 'warning');
+        }
+        
+        const select2 = document.getElementById('finishingSelect');
+        for (let i = 0; i < select2.options.length; i++) {
+            if (select2.options[i].selected) {
+                select2.options[i].selected = false;
+            }
+        }
+        updateSelectedCount();
+        renderAutoList();
+    }
+
+    function renderAutoList() {
+        const card = document.getElementById('autoListCard');
+        const body = document.getElementById('autoListBody');
+        const totalElem = document.getElementById('autoListTotal');
+        const countElem = document.getElementById('autoListCount');
+        
+        if (autoSelectedEntries.length === 0) {
+            card.style.display = 'none';
+            return;
+        }
+        
+        card.style.display = 'block';
+        countElem.innerText = `${autoSelectedEntries.length} items`;
+        
+        let totalPieces = 0;
+        body.innerHTML = autoSelectedEntries.map((entry, index) => {
+            totalPieces += entry.packedPieces;
+            return `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td><span class="badge bg-info">${entry.finishingNumber}</span></td>
+                    <td><strong>${entry.productName}</strong></td>
+                    <td><span class="badge bg-secondary">${entry.category}</span></td>
+                    <td><span class="badge bg-primary">${entry.size}</span></td>
+                    <td class="text-end fw-bold text-success">${entry.packedPieces}</td>
+                    <td class="text-center">
+                        <button class="btn btn-sm btn-danger" onclick="removeFromAutoList(${index})">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+        
+        totalElem.innerText = totalPieces;
+    }
+
+    function removeFromAutoList(index) {
+        autoSelectedEntries.splice(index, 1);
+        renderAutoList();
+        showToast('🗑️ Item removed from list', 'info');
+    }
+
+    function clearAutoList() {
+        if (autoSelectedEntries.length === 0) return;
+        if (confirm('⚠️ Remove all items from packing list?')) {
+            autoSelectedEntries = [];
+            renderAutoList();
+            showToast('🗑️ All items removed', 'info');
+        }
+    }
+
+    function confirmAutoPack() {
+        if (autoSelectedEntries.length === 0) {
+            showToast('⚠️ No entries to add. Please select finishing records first.', 'warning');
+            return;
+        }
+        
+        console.log(`✅ Confirming ${autoSelectedEntries.length} auto entries`);
+        
+        let addedCount = 0;
+        let duplicateCount = 0;
+        
+        const existingEntries = [];
+        document.querySelectorAll('.entry-data').forEach(el => {
+            try {
+                const data = JSON.parse(el.value);
+                if (data.productName && data.category && data.size) {
+                    existingEntries.push(`${data.productName}|${data.category}|${data.size}`);
+                }
+            } catch(e) {}
+        });
+        
+        autoSelectedEntries.forEach(entry => {
+            const key = `${entry.productName}|${entry.category}|${entry.size}`;
+            
+            if (existingEntries.includes(key)) {
+                duplicateCount++;
+                return;
+            }
+            
+            const container = document.getElementById('entriesList');
+            const idx = entryCount;
+            
+            const entryDiv = document.createElement('div');
+            entryDiv.className = 'card mb-3 p-3 border';
+            entryDiv.id = `entry-${idx}`;
+            entryDiv.style.borderLeft = '4px solid #10b981';
+            entryDiv.style.background = '#f0fdf4';
+            
+            let productOptions = '<option value="">-- Select or Type --</option>';
+            if (Array.isArray(allProducts) && allProducts.length > 0) {
+                allProducts.forEach(p => {
+                    const selected = p.name === entry.productName ? 'selected' : '';
+                    productOptions += `<option value="${p.name}" data-category="${p.category}" ${selected}>${p.name} (${p.category})</option>`;
+                });
+            }
+            productOptions += '<option value="other">+ Add New Product</option>';
+            
+            entryDiv.innerHTML = `
+                <div class="row align-items-end">
+                    <div class="col-md-3">
+                        <label>Product</label>
+                        <select class="form-control product-select" data-id="${idx}" onchange="handleProductChange(${idx})">
+                            ${productOptions}
+                        </select>
+                        <input type="text" class="form-control mt-1 new-product-input" id="newProduct-${idx}" style="display:none;" placeholder="Enter product name" oninput="updateEntryData(${idx})">
+                    </div>
+                    <div class="col-md-2">
+                        <label>Category</label>
+                        <select class="form-control category-select" id="category-${idx}" onchange="handleCategoryChange(${idx})">
+                            <option value="">Select</option>
+                            <option value="Kids" ${entry.category === 'Kids' ? 'selected' : ''}>Kids</option>
+                            <option value="Mens" ${entry.category === 'Mens' ? 'selected' : ''}>Mens</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label>Size</label>
+                        <select class="form-control size-select" id="size-${idx}" onchange="handleSizeChange(${idx})">
+                            <option value="">Select Size</option>
+                        </select>
+                        <input type="text" class="form-control mt-1 manual-size-input" id="manualSize-${idx}" style="display:none;" placeholder="Enter size manually" oninput="updateEntryData(${idx})">
+                    </div>
+                    <div class="col-md-2">
+                        <label>Pieces</label>
+                        <input type="number" class="form-control pieces-input" id="pieces-${idx}" value="${entry.packedPieces}" min="0" oninput="updateEntryData(${idx})">
+                    </div>
+                    <div class="col-md-3 d-flex gap-2">
+                        <button type="button" class="btn btn-sm btn-info" onclick="copyEntry(${idx})">
+                            <i class="fas fa-copy"></i> Copy Line Down
+                        </button>
+                        <button type="button" class="btn btn-sm btn-danger" onclick="removeEntry(${idx})">
+                            <i class="fas fa-trash"></i> Remove
+                        </button>
+                        <span class="badge bg-success ms-1 d-flex align-items-center">Auto</span>
+                    </div>
+                </div>
+                <input type="hidden" class="entry-data" id="entryData-${idx}">
+                <input type="hidden" class="finishing-ref" value="${entry.finishingNumber || ''}">
+            `;
+            
+            container.appendChild(entryDiv);
+            
+            setTimeout(() => {
+                loadSizes(entry.category, idx);
+                setTimeout(() => {
+                    const sizeSelect = document.querySelector(`#entry-${idx} .size-select`);
+                    if (sizeSelect) {
+                        let found = false;
+                        for (const opt of sizeSelect.options) {
+                            if (opt.value === entry.size) {
+                                opt.selected = true;
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (!found && entry.size !== 'N/A') {
+                            const newOpt = document.createElement('option');
+                            newOpt.value = entry.size;
+                            newOpt.textContent = entry.size;
+                            newOpt.selected = true;
+                            sizeSelect.appendChild(newOpt);
+                        }
+                    }
+                    updateEntryData(idx);
+                }, 150);
+            }, 50);
+            
+            entryCount++;
+            addedCount++;
+            existingEntries.push(key);
+        });
+        
+        autoSelectedEntries = [];
+        renderAutoList();
+        
+        if (addedCount > 0) {
+            showToast(`✅ ${addedCount} auto entries added successfully!`, 'success');
+            if (duplicateCount > 0) {
+                showToast(`⚠️ ${duplicateCount} duplicates skipped (already in list)`, 'warning');
+            }
+        } else {
+            showToast(`⚠️ No new entries added. ${duplicateCount} duplicates found.`, 'warning');
+        }
+        
+        updateSubmitButton();
+    }
+
+    function updateSubmitButton() {
+        const entries = document.querySelectorAll('.entry-data');
+        let hasValid = false;
+        entries.forEach(el => {
+            if (el.value) {
+                try {
+                    const data = JSON.parse(el.value);
+                    if (data.productName && data.category && data.size && data.packedPieces > 0) {
+                        hasValid = true;
+                    }
+                } catch(e) {}
+            }
+        });
+        document.getElementById('submitBtn').disabled = !hasValid;
+    }
+
+    function showToast(message, type) {
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type} alert-dismissible fade show position-fixed top-0 end-0 m-3`;
+        toast.style.zIndex = '9999';
+        toast.style.minWidth = '300px';
+        toast.innerHTML = `${message} <button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
+    }
+
+    // ============ FORM SUBMIT ============
+    document.getElementById('packingForm').addEventListener('submit', function(e) {
+        for (let i = 0; i < entryCount; i++) {
+            updateEntryData(i);
+        }
+        
+        const allEntries = [];
+        for (let i = 0; i < entryCount; i++) {
+            const dataInput = document.querySelector(`#entryData-${i}`);
+            if (dataInput && dataInput.value) {
+                try {
+                    const parsed = JSON.parse(dataInput.value);
+                    if (parsed.productName && parsed.category && parsed.size && parsed.packedPieces > 0) {
+                        allEntries.push(parsed);
+                    }
+                } catch(e) {}
+            }
+        }
+        
+        if (allEntries.length === 0) {
+            e.preventDefault();
+            alert('❌ Please add at least one valid packing entry.\n\nEach entry needs:\n- Product\n- Category\n- Size\n- Pieces > 0');
+            return;
+        }
+        
+        const seen = new Set();
+        for (const entry of allEntries) {
+            const key = `${entry.productName}|${entry.category}|${entry.size}`;
+            if (seen.has(key)) {
+                e.preventDefault();
+                alert(`⚠️ Duplicate entry found: ${entry.productName} - ${entry.category} - ${entry.size}`);
+                return;
+            }
+            seen.add(key);
+        }
+        
+        const hiddenInput = document.createElement('input');
+        hiddenInput.type = 'hidden';
+        hiddenInput.name = 'packingEntries';
+        hiddenInput.value = JSON.stringify(allEntries);
+        this.appendChild(hiddenInput);
+    });
+
+    // ============ EVENT LISTENERS ============
+    document.addEventListener('DOMContentLoaded', function() {
+        const finishingSelect = document.getElementById('finishingSelect');
+        if (finishingSelect) {
+            finishingSelect.addEventListener('change', updateSelectedCount);
+        }
+        updateSelectedCount();
+    });
+
+    // ============ INITIALIZE ============
+    loadProducts();
+    loadFinishingRecords();
+</script>

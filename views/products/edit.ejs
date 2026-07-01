@@ -1,0 +1,506 @@
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card">
+            <div class="card-header bg-warning text-white">
+                <h4 class="mb-0"><i class="fas fa-edit"></i> Edit Product</h4>
+                <small>Update product details and size-wise rates</small>
+            </div>
+            <div class="card-body">
+                <form action="/products/edit/<%= product._id %>?_method=PUT" method="POST" id="editProductForm">
+                    
+                    <!-- Product Name -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Product Name *</label>
+                        <input type="text" class="form-control" id="productName" name="name" value="<%= product.name %>" required>
+                    </div>
+                    
+                    <!-- Category Selection -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Category *</label>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="card category-card <%= product.category === 'Kids' ? 'selected' : '' %>" data-category="Kids" style="cursor: pointer;">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-child fa-3x mb-2"></i>
+                                        <h5>Kids</h5>
+                                        <p class="text-muted small">Size: 1 to 12 Years</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card category-card <%= product.category === 'Mens' ? 'selected' : '' %>" data-category="Mens" style="cursor: pointer;">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-male fa-3x mb-2"></i>
+                                        <h5>Mens</h5>
+                                        <p class="text-muted small">Size: 26,28,30... to 60</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card category-card <%= product.category === 'Other' ? 'selected' : '' %>" data-category="Other" style="cursor: pointer;">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-tag fa-3x mb-2"></i>
+                                        <h5>Other</h5>
+                                        <p class="text-muted small">Custom Category</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" name="category" id="category" value="<%= product.category %>">
+                        
+                        <div id="customCategoryDiv" style="display: <%= product.category === 'Other' ? 'block' : 'none' %>; margin-top: 15px;">
+                            <label class="form-label fw-bold">Custom Category Name *</label>
+                            <input type="text" class="form-control" id="customCategory" name="customCategory" 
+                                value="<%= product.customCategory || '' %>" placeholder="Enter custom category name">
+                        </div>
+                    </div>
+                    
+                    <!-- ⭐ SIZE-WISE RATES -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0"><i class="fas fa-tags"></i> Size-wise Rates</h5>
+                            <small>Update rates for each size</small>
+                        </div>
+                        <div class="card-body">
+                            <div id="sizeRateContainer">
+                                <!-- Sizes with rates will be loaded here -->
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="applyAllClientRates">
+                                        <label class="form-check-label" for="applyAllClientRates">
+                                            <i class="fas fa-copy"></i> Apply same Client Rate to all sizes
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="applyAllKarigarRates">
+                                        <label class="form-check-label" for="applyAllKarigarRates">
+                                            <i class="fas fa-copy"></i> Apply same Karigar Rate to all sizes
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Colors -->
+                    <div class="mb-3 mt-3">
+                        <label class="form-label fw-bold">Colors <span class="text-muted">(Optional)</span></label>
+                        <div class="row">
+                            <% const colorOptions = ['White', 'Red', 'Blue', 'Black', 'Yellow', 'Green', 'Maroon']; %>
+                            <% colorOptions.forEach(color => { %>
+                                <div class="col-md-2 mb-2">
+                                    <div class="form-check">
+                                        <input class="form-check-input color-check" type="checkbox" name="colors" value="<%= color %>" 
+                                            id="color<%= color %>" <%= (product.colors && product.colors.includes(color)) ? 'checked' : '' %>>
+                                        <label class="form-check-label" for="color<%= color %>">
+                                            <span class="badge <%= color === 'White' ? 'bg-light text-dark border' : color === 'Black' ? 'bg-dark' : color === 'Yellow' ? 'bg-warning text-dark' : 'bg-primary' %> p-2">
+                                                <%= color === 'White' ? '⚪' : color === 'Red' ? '🔴' : color === 'Blue' ? '🔵' : color === 'Black' ? '⬛' : color === 'Yellow' ? '🟡' : color === 'Green' ? '🟢' : '🟤' %> <%= color %>
+                                            </span>
+                                        </label>
+                                    </div>
+                                </div>
+                            <% }) %>
+                            <div class="col-md-2 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input color-check" type="checkbox" name="colors" value="other" id="colorOther" 
+                                        <%= (product.colors && product.colors.some(c => !colorOptions.includes(c))) ? 'checked' : '' %>>
+                                    <label class="form-check-label" for="colorOther">
+                                        <span class="badge bg-secondary p-2">🎨 Other</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="otherColorDiv" style="display: <%= (product.colors && product.colors.some(c => !colorOptions.includes(c))) ? 'block' : 'none' %>; margin-top: 10px;">
+                            <input type="text" class="form-control" id="otherColorName" name="otherColorName"
+                                value="<%= (product.colors && product.colors.find(c => !colorOptions.includes(c))) || '' %>" 
+                                placeholder="Enter custom color name">
+                        </div>
+                    </div>
+                    
+                    <!-- Status -->
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="isActive" name="isActive" <%= product.isActive ? 'checked' : '' %>>
+                            <label class="form-check-label" for="isActive">Active</label>
+                        </div>
+                    </div>
+                    
+                    <!-- Submit -->
+                    <div class="text-center mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg px-5">
+                            <i class="fas fa-save"></i> Update Product
+                        </button>
+                        <a href="/products" class="btn btn-secondary btn-lg px-5">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .category-card {
+        transition: all 0.3s;
+        cursor: pointer;
+        border: 2px solid #dee2e6;
+    }
+    .category-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    .category-card.selected {
+        border-color: #3b82f6;
+        background: #eff6ff;
+    }
+    .rate-input {
+        width: 140px;
+        padding: 6px 10px;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 13px;
+        transition: border-color 0.2s;
+    }
+    .rate-input:focus {
+        border-color: #3b82f6;
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(59,130,246,0.1);
+    }
+    .rate-input.has-value {
+        border-color: #10b981;
+        background: #f0fdf4;
+    }
+    .color-check {
+        display: none;
+    }
+    .color-check + label {
+        cursor: pointer;
+    }
+    .color-check:checked + label .badge {
+        border: 3px solid #ffc107;
+        transform: scale(1.05);
+    }
+    .color-check + label .badge {
+        transition: all 0.2s;
+        cursor: pointer;
+        padding: 8px 15px;
+        font-size: 14px;
+    }
+</style>
+
+<script>
+    (function() {
+        // ✅ DIRECT DATA INJECTION FROM SERVER
+        var productData = {
+            id: '<%= product._id %>',
+            name: '<%= product.name %>',
+            category: '<%= product.category %>',
+            customCategory: '<%= product.customCategory || "" %>',
+            isActive: <%= product.isActive %>,
+            sizes: <%- JSON.stringify(product.sizes || []) %>,
+            sizeRates: <%- JSON.stringify(product.sizeRates || []) %>,
+            colors: <%- JSON.stringify(product.colors || []) %>
+        };
+        
+        console.log('🔍 Product Data Received:', productData);
+        
+        var sizeRateData = {};
+        
+        // ============ INITIALIZE SIZE RATES ============
+        function initSizeRates() {
+            var container = document.getElementById('sizeRateContainer');
+            
+            if (!productData.sizes || productData.sizes.length === 0) {
+                container.innerHTML = '<p class="text-muted text-center">No sizes available for this product</p>';
+                return;
+            }
+            
+            // Create rate data for each size
+            productData.sizes.forEach(function(size) {
+                var existing = productData.sizeRates.find(function(r) { return r.size === size; });
+                sizeRateData[size] = {
+                    clientRate: existing ? existing.clientRate : '',
+                    karigarRate: existing ? existing.karigarRate : ''
+                };
+            });
+            
+            console.log('📊 Size Rate Data:', sizeRateData);
+            renderSizeRates();
+        }
+        
+        // ============ RENDER SIZE RATES TABLE ============
+        function renderSizeRates() {
+            var container = document.getElementById('sizeRateContainer');
+            
+            var html = `
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width:10%">Size</th>
+                                <th style="width:30%">Client Rate (₹)</th>
+                                <th style="width:30%">Karigar Rate (₹)</th>
+                                <th style="width:15%">Status</th>
+                                <th style="width:15%" class="text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            productData.sizes.forEach(function(size) {
+                var data = sizeRateData[size] || { clientRate: '', karigarRate: '' };
+                var hasClient = data.clientRate && parseFloat(data.clientRate) > 0;
+                var hasKarigar = data.karigarRate && parseFloat(data.karigarRate) > 0;
+                
+                var statusHtml = (hasClient || hasKarigar) ? 
+                    '<span class="badge bg-success">✅ Set</span>' : 
+                    '<span class="badge bg-warning text-dark">⏳ Pending</span>';
+                
+                html += `
+                    <tr>
+                        <td><strong class="text-primary">${size}</strong></td>
+                        <td>
+                            <input type="number" class="rate-input ${hasClient ? 'has-value' : ''}" 
+                                   data-size="${size}" data-type="client" 
+                                   value="${data.clientRate || ''}" 
+                                   placeholder="Enter client rate" 
+                                   step="0.01"
+                                   onchange="updateSizeRate('${size}', 'clientRate', this.value)"
+                                   onkeyup="updateSizeRate('${size}', 'clientRate', this.value)">
+                        </td>
+                        <td>
+                            <input type="number" class="rate-input ${hasKarigar ? 'has-value' : ''}" 
+                                   data-size="${size}" data-type="karigar" 
+                                   value="${data.karigarRate || ''}" 
+                                   placeholder="Enter karigar rate" 
+                                   step="0.01"
+                                   onchange="updateSizeRate('${size}', 'karigarRate', this.value)"
+                                   onkeyup="updateSizeRate('${size}', 'karigarRate', this.value)">
+                        </td>
+                        <td>${statusHtml}</td>
+                        <td class="text-center">
+                            <button type="button" class="btn btn-sm btn-outline-danger" 
+                                    onclick="clearSizeRate('${size}')" title="Clear rates">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                        </tbody>
+                        <tfoot>
+                            <tr class="table-secondary">
+                                <td colspan="5">
+                                    <small class="text-muted">
+                                        <i class="fas fa-info-circle"></i> 
+                                        Total ${productData.sizes.length} sizes. Enter rates for each size.
+                                    </small>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            `;
+            
+            container.innerHTML = html;
+        }
+        
+        // ============ UPDATE SIZE RATE ============
+        window.updateSizeRate = function(size, field, value) {
+            if (!sizeRateData[size]) {
+                sizeRateData[size] = { clientRate: '', karigarRate: '' };
+            }
+            sizeRateData[size][field] = value;
+            
+            var row = document.querySelector('input[data-size="' + size + '"][data-type="' + field + '"]');
+            if (row) {
+                if (value && parseFloat(value) > 0) {
+                    row.classList.add('has-value');
+                } else {
+                    row.classList.remove('has-value');
+                }
+            }
+            updateSizeStatus(size);
+        };
+        
+        // ============ UPDATE STATUS BADGE ============
+        window.updateSizeStatus = function(size) {
+            var data = sizeRateData[size] || { clientRate: '', karigarRate: '' };
+            var hasClient = data.clientRate && parseFloat(data.clientRate) > 0;
+            var hasKarigar = data.karigarRate && parseFloat(data.karigarRate) > 0;
+            
+            var rows = document.querySelectorAll('#sizeRateContainer tbody tr');
+            rows.forEach(function(row) {
+                var label = row.querySelector('td:first-child strong');
+                if (label && label.textContent === size) {
+                    var statusCell = row.querySelector('td:nth-child(4)');
+                    if (statusCell) {
+                        if (hasClient || hasKarigar) {
+                            statusCell.innerHTML = '<span class="badge bg-success">✅ Set</span>';
+                        } else {
+                            statusCell.innerHTML = '<span class="badge bg-warning text-dark">⏳ Pending</span>';
+                        }
+                    }
+                }
+            });
+        };
+        
+        // ============ CLEAR SIZE RATE ============
+        window.clearSizeRate = function(size) {
+            if (sizeRateData[size]) {
+                sizeRateData[size].clientRate = '';
+                sizeRateData[size].karigarRate = '';
+                renderSizeRates();
+            }
+        };
+        
+        // ============ CATEGORY SELECTION ============
+        document.querySelectorAll('.category-card').forEach(function(card) {
+            card.addEventListener('click', function() {
+                var category = this.dataset.category;
+                
+                document.querySelectorAll('.category-card').forEach(function(c) {
+                    c.classList.remove('selected');
+                });
+                this.classList.add('selected');
+                document.getElementById('category').value = category;
+                
+                var customDiv = document.getElementById('customCategoryDiv');
+                if (category === 'Other') {
+                    customDiv.style.display = 'block';
+                    document.getElementById('customCategory').required = true;
+                } else {
+                    customDiv.style.display = 'none';
+                    document.getElementById('customCategory').required = false;
+                }
+            });
+        });
+        
+        // ============ COLOR HANDLING ============
+        document.getElementById('colorOther').addEventListener('change', function() {
+            document.getElementById('otherColorDiv').style.display = this.checked ? 'block' : 'none';
+        });
+        
+        // ============ APPLY ALL CLIENT RATES ============
+        document.getElementById('applyAllClientRates').addEventListener('change', function() {
+            if (this.checked) {
+                var rate = prompt('Enter Client Rate to apply to all sizes:');
+                if (rate && parseFloat(rate) > 0) {
+                    productData.sizes.forEach(function(size) {
+                        if (sizeRateData[size]) {
+                            sizeRateData[size].clientRate = rate;
+                        }
+                    });
+                    renderSizeRates();
+                }
+                this.checked = false;
+            }
+        });
+        
+        // ============ APPLY ALL KARIGAR RATES ============
+        document.getElementById('applyAllKarigarRates').addEventListener('change', function() {
+            if (this.checked) {
+                var rate = prompt('Enter Karigar Rate to apply to all sizes:');
+                if (rate && parseFloat(rate) > 0) {
+                    productData.sizes.forEach(function(size) {
+                        if (sizeRateData[size]) {
+                            sizeRateData[size].karigarRate = rate;
+                        }
+                    });
+                    renderSizeRates();
+                }
+                this.checked = false;
+            }
+        });
+        
+        // ============ FORM SUBMIT ============
+        document.getElementById('editProductForm').addEventListener('submit', function(e) {
+            var productName = document.getElementById('productName').value.trim();
+            if (!productName) {
+                e.preventDefault();
+                alert('❌ Please enter product name');
+                return false;
+            }
+            
+            var category = document.getElementById('category').value;
+            if (!category) {
+                e.preventDefault();
+                alert('❌ Please select a category');
+                return false;
+            }
+            
+            if (category === 'Other') {
+                var customCat = document.getElementById('customCategory').value.trim();
+                if (!customCat) {
+                    e.preventDefault();
+                    alert('❌ Please enter custom category name');
+                    return false;
+                }
+            }
+            
+            // Collect size-wise rates
+            var sizeRates = [];
+            for (var size in sizeRateData) {
+                var rates = sizeRateData[size];
+                var client = parseFloat(rates.clientRate) || 0;
+                var karigar = parseFloat(rates.karigarRate) || 0;
+                if (client > 0 || karigar > 0) {
+                    sizeRates.push({ 
+                        size: size, 
+                        clientRate: client, 
+                        karigarRate: karigar 
+                    });
+                }
+            }
+            
+            // Remove existing sizeRates hidden inputs
+            var existingSizeRatesInputs = this.querySelectorAll('input[name="sizeRates"]');
+            existingSizeRatesInputs.forEach(function(input) { input.remove(); });
+            
+            if (sizeRates.length > 0) {
+                var hidden = document.createElement('input');
+                hidden.type = 'hidden';
+                hidden.name = 'sizeRates';
+                hidden.value = JSON.stringify(sizeRates);
+                this.appendChild(hidden);
+            }
+            
+            // Colors
+            var selectedColors = [];
+            document.querySelectorAll('.color-check:checked').forEach(function(cb) {
+                if (cb.value === 'other') {
+                    var otherColor = document.getElementById('otherColorName').value.trim();
+                    if (otherColor) selectedColors.push(otherColor);
+                } else {
+                    selectedColors.push(cb.value);
+                }
+            });
+            
+            var existingColorsInputs = this.querySelectorAll('input[name="colors"]');
+            existingColorsInputs.forEach(function(input) { input.remove(); });
+            
+            if (selectedColors.length > 0) {
+                var colorsHidden = document.createElement('input');
+                colorsHidden.type = 'hidden';
+                colorsHidden.name = 'colors';
+                colorsHidden.value = JSON.stringify(selectedColors);
+                this.appendChild(colorsHidden);
+            }
+            
+            console.log('Updating product with:', { productName, category, sizeRates: sizeRates.length });
+            return true;
+        });
+        
+        // ============ INIT ============
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 DOM Loaded - Initializing edit page');
+            console.log('📦 Product Data:', productData);
+            initSizeRates();
+        });
+    })();
+</script>

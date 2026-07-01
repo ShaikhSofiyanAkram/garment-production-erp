@@ -1,0 +1,412 @@
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-plus-circle"></i> Add New Product</h4>
+            </div>
+            <div class="card-body">
+                <form action="/products/create" method="POST" id="productForm">
+                    
+
+                    <!-- Product Name Dropdown with Manual Entry Option -->
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Product Name *</label>
+                        <select class="form-control" id="productSelect" name="productSelect" required>
+                            <option value="">Select Product</option>
+                            <option value="Pathani Shalwar">Pathani Shalwar</option>
+                            <option value="Kurta Pajama">Kurta Pajama</option>
+                            <option value="Jubba">Jubba</option>
+                            <option value="Single Kurta">Single Kurta</option>
+                            <option value="Single Pathani">Single Pathani</option>
+                            <option value="Coat">Coat</option>
+                            <option value="Jacket">Jacket</option>
+                            <option value="Puna Pant">Puna Pant</option>
+                            <option value="Pajama">Pajama</option>
+                            <option value="Shalwar">Shalwar</option>
+                            <option value="Pant">Pant</option>
+                            <option value="School Uniform">School Uniform</option>
+                            <option value="other">-- Add New Product --</option>
+                        </select>
+                        
+                        <div id="newProductDiv" style="display: none; margin-top: 10px;">
+                            <input type="text" class="form-control" id="newProductName" name="newProductName" 
+                                placeholder="Enter new product name">
+                            <small class="text-muted">New product will be added to database automatically</small>
+                        </div>
+                        <input type="hidden" name="name" id="finalProductName">
+                    </div>
+                    
+                    <!-- Category Selection - 2 Options Only -->
+                    <div class="mb-4">
+                        <label class="form-label">Category *</label>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card category-card" data-category="kids" style="cursor: pointer;">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-child fa-3x mb-2"></i>
+                                        <h5>Kids</h5>
+                                        <p class="text-muted small">Size: 1 to 12 Years</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card category-card" data-category="mens" style="cursor: pointer;">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-male fa-3x mb-2"></i>
+                                        <h5>Mens</h5>
+                                        <p class="text-muted small">Size: 26,28,30,32... to 50</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" name="category" id="category" required>
+                    </div>
+                    
+                    <!-- Sizes Selection - Dynamic -->
+                    <div class="mb-3">
+                        <label class="form-label">Sizes * (Click to select multiple)</label>
+                        <div id="sizeOptions" class="row g-2">
+                            <!-- Sizes will be populated by JavaScript -->
+                        </div>
+                        <small class="text-muted">Selected sizes will be highlighted in blue. Click again to deselect.</small>
+                    </div>
+                    
+
+
+
+
+                        <!-- Colors Selection (Optional) -->
+                    <div class="mb-3">
+                        <label class="form-label">Colors <span class="text-muted">(Optional - Select multiple)</span></label>
+                        <div class="row">
+                            <div class="col-md-3 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input color-check" type="checkbox" name="colors" value="White" id="colorWhite">
+                                    <label class="form-check-label" for="colorWhite">
+                                        <span class="badge bg-light text-dark border p-2">⚪ White</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input color-check" type="checkbox" name="colors" value="Red" id="colorRed">
+                                    <label class="form-check-label" for="colorRed">
+                                        <span class="badge bg-danger p-2">🔴 Red</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input color-check" type="checkbox" name="colors" value="Blue" id="colorBlue">
+                                    <label class="form-check-label" for="colorBlue">
+                                        <span class="badge bg-primary p-2">🔵 Blue</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input color-check" type="checkbox" name="colors" value="Black" id="colorBlack">
+                                    <label class="form-check-label" for="colorBlack">
+                                        <span class="badge bg-dark p-2">⬛ Black</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input color-check" type="checkbox" name="colors" value="Yellow" id="colorYellow">
+                                    <label class="form-check-label" for="colorYellow">
+                                        <span class="badge bg-warning text-dark p-2">🟡 Yellow</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input color-check" type="checkbox" name="colors" value="Green" id="colorGreen">
+                                    <label class="form-check-label" for="colorGreen">
+                                        <span class="badge bg-success p-2">🟢 Green</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input color-check" type="checkbox" name="colors" value="Maroon" id="colorMaroon">
+                                    <label class="form-check-label" for="colorMaroon">
+                                        <span class="badge bg-danger p-2" style="background-color:#800000 !important;">🟤 Maroon</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input color-check" type="checkbox" name="colors" value="other" id="colorOther">
+                                    <label class="form-check-label" for="colorOther">
+                                        <span class="badge bg-secondary p-2">🎨 Other</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="otherColorDiv" style="display: none; margin-top: 10px;">
+                            <input type="text" class="form-control" id="otherColorName" name="otherColorName" 
+                                placeholder="Enter custom color name">
+                            <small class="text-muted">Add custom color (will be saved to database)</small>
+                        </div>
+                    </div> 
+                    
+                    <!-- Rate Settings -->
+                        <div class="card mt-3">
+                            <div class="card-header bg-info text-white">
+                                <h5 class="mb-0"><i class="fas fa-tags"></i> Rate Settings</h5>
+                                <small>Client Rate (for billing) | Karigar Rate (for piece payment)</small>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="clientRate" class="form-label">Client Rate (₹) *</label>
+                                        <input type="number" class="form-control" id="clientRate" name="clientRate" required step="0.01" placeholder="e.g., 1200">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="karigarRate" class="form-label">Karigar Rate (₹) *</label>
+                                        <input type="number" class="form-control" id="karigarRate" name="karigarRate" required step="0.01" placeholder="e.g., 300">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+
+
+
+                    
+                    <div class="text-center mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-save"></i> Save Product
+                        </button>
+                        <a href="/products" class="btn btn-secondary btn-lg">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Kids sizes: 1 to 12 (all numbers)
+    const kidsSizes = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
+    
+    // Mens sizes: 26,28,30,32,34,36,38,40,42,44,46,48,50 (even numbers only)
+    const mensSizes = ['26', '28', '30', '32', '34', '36', '38', '40', '42', '44', '46', '48', '50', '52', '54', '56', '58', '60'];
+    
+    let selectedSizes = [];
+    let currentCategory = null;
+    
+    // Function to render size options
+    function renderSizeOptions(category) {
+        const sizeOptionsDiv = document.getElementById('sizeOptions');
+        const sizes = category === 'kids' ? kidsSizes : mensSizes;
+        const categoryName = category === 'kids' ? 'Kids' : 'Mens';
+        
+        sizeOptionsDiv.innerHTML = `<div class="col-12 mb-2"><strong>${categoryName} Sizes:</strong></div>`;
+        selectedSizes = [];
+        
+        // Create size buttons grid
+        sizes.forEach(size => {
+            const col = document.createElement('div');
+            col.className = 'col-md-2 col-sm-3 col-4 mb-2';
+            col.innerHTML = `
+                <div class="size-option btn btn-outline-secondary w-100 py-2" data-size="${size}">
+                    ${size}
+                </div>
+            `;
+            sizeOptionsDiv.appendChild(col);
+        });
+        
+        // Add click handlers
+        document.querySelectorAll('.size-option').forEach(option => {
+            option.addEventListener('click', function() {
+                const size = this.getAttribute('data-size');
+                if (selectedSizes.includes(size)) {
+                    selectedSizes = selectedSizes.filter(s => s !== size);
+                    this.classList.remove('btn-primary');
+                    this.classList.add('btn-outline-secondary');
+                } else {
+                    selectedSizes.push(size);
+                    this.classList.remove('btn-outline-secondary');
+                    this.classList.add('btn-primary');
+                }
+                updateHiddenSizesInput();
+            });
+        });
+    }
+    
+    // Update hidden input with selected sizes
+    function updateHiddenSizesInput() {
+        let hiddenInput = document.getElementById('selectedSizes');
+        if (!hiddenInput) {
+            hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'sizes';
+            hiddenInput.id = 'selectedSizes';
+            document.getElementById('productForm').appendChild(hiddenInput);
+        }
+        hiddenInput.value = selectedSizes.join(',');
+    }
+    
+    // Category selection handler
+    document.querySelectorAll('.category-card').forEach(card => {
+        card.addEventListener('click', function() {
+            const category = this.getAttribute('data-category');
+            currentCategory = category;
+            
+            // Update UI
+            document.querySelectorAll('.category-card').forEach(c => {
+                c.classList.remove('border-primary', 'bg-light');
+                c.style.border = '1px solid #dee2e6';
+            });
+            this.classList.add('border-primary', 'bg-light');
+            this.style.border = '2px solid #0d6efd';
+            
+            // Set hidden input
+            document.getElementById('category').value = category;
+            
+            // Render sizes
+            renderSizeOptions(category);
+        });
+    });
+    
+    // ========== PRODUCT DROPDOWN HANDLING ==========
+    const productSelect = document.getElementById('productSelect');
+    const newProductDiv = document.getElementById('newProductDiv');
+    const newProductInput = document.getElementById('newProductName');
+    
+    if(productSelect) {
+        productSelect.addEventListener('change', function() {
+            if(this.value === 'other') {
+                newProductDiv.style.display = 'block';
+                newProductInput.required = true;
+            } else {
+                newProductDiv.style.display = 'none';
+                newProductInput.required = false;
+                newProductInput.value = '';
+            }
+        });
+    }
+    
+    // ========== COLOR "OTHER" HANDLING (optional) ==========
+    const colorOther = document.getElementById('colorOther');
+    const otherColorDiv = document.getElementById('otherColorDiv');
+    const otherColorName = document.getElementById('otherColorName');
+    
+    if(colorOther) {
+        colorOther.addEventListener('change', function() {
+            if(this.checked) {
+                otherColorDiv.style.display = 'block';
+            } else {
+                otherColorDiv.style.display = 'none';
+                otherColorName.value = '';
+            }
+        });
+    }
+    
+    // ========== MAIN FORM SUBMIT VALIDATION (COMBINED) ==========
+    document.getElementById('productForm').addEventListener('submit', function(e) {
+        
+        // ----- 1. Product Name Validation -----
+        const productSelect = document.getElementById('productSelect');
+        const newProductInput = document.getElementById('newProductName');
+        let finalProductName = productSelect.value;
+        
+        if(productSelect.value === 'other') {
+            if(!newProductInput.value.trim()) {
+                e.preventDefault();
+                alert('❌ Please enter new product name');
+                return false;
+            }
+            finalProductName = newProductInput.value.trim();
+            
+            // Create hidden input with final name
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'name';
+            hiddenInput.value = finalProductName;
+            this.appendChild(hiddenInput);
+            
+            // Disable original select so it doesn't send 'other'
+            productSelect.disabled = true;
+        } else if(productSelect.value === '') {
+            e.preventDefault();
+            alert('❌ Please select a product');
+            return false;
+        }
+        
+        // ----- 2. Category Validation -----
+        if (!currentCategory) {
+            e.preventDefault();
+            alert('❌ Please select a category (Kids or Mens)');
+            return false;
+        }
+        
+        // ----- 3. Sizes Validation -----
+        if (selectedSizes.length === 0) {
+            e.preventDefault();
+            alert('❌ Please select at least one size');
+            return false;
+        }
+        
+        // ----- 4. Colors Validation (Optional - as per your requirement) -----
+        // Commenting out the mandatory color validation (colors are now optional)
+        // const selectedColors = document.querySelectorAll('.color-check:checked');
+        // if (selectedColors.length === 0) {
+        //     e.preventDefault();
+        //     alert('❌ Please select at least one color');
+        //     return false;
+        // }
+        
+        // ----- 5. Rates Validation -----
+        const clientRate = document.getElementById('clientRate').value;
+        const karigarRate = document.getElementById('karigarRate').value;
+        const pressmanRate = document.getElementById('pressmanRate').value;
+        
+        if (!clientRate || !karigarRate || !pressmanRate) {
+            e.preventDefault();
+            alert('❌ Please enter all rates (Client, Karigar, Pressman)');
+            return false;
+        }
+        
+        // All validations passed
+        return true;
+    });
+</script>
+
+<style>
+    .category-card {
+        transition: all 0.3s;
+        cursor: pointer;
+        border: 2px solid #dee2e6;
+    }
+    .category-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    .size-option {
+        cursor: pointer;
+        transition: all 0.2s;
+        font-weight: 500;
+    }
+    .size-option:hover {
+        transform: scale(1.02);
+    }
+    .color-check:checked + label .badge {
+        border: 3px solid #ffc107;
+        transform: scale(1.05);
+    }
+    .color-check + label .badge {
+        transition: all 0.2s;
+        cursor: pointer;
+        padding: 8px 15px;
+        font-size: 14px;
+    }
+    .color-check {
+        display: none;
+    }
+    .color-check + label {
+        cursor: pointer;
+    }
+</style>

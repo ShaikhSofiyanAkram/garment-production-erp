@@ -1,0 +1,181 @@
+<div class="row">
+    <div class="col-md-10 mx-auto">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h4 class="mb-0"><i class="fas fa-user"></i> Worker Details: <%= worker.name %></h4>
+                <small><%= worker.workerType %> | <%= worker.paymentType %></small>
+            </div>
+            <div class="card-body">
+                
+                <!-- Basic Info -->
+                <div class="row mb-3">
+                    <div class="col-md-4"><strong>Phone:</strong> <%= worker.phone %></div>
+                    <div class="col-md-4"><strong>Email:</strong> <%= worker.email || '-' %></div>
+                    <div class="col-md-4"><strong>Joining Date:</strong> <%= new Date(worker.joiningDate).toLocaleDateString() %></div>
+                    <div class="col-md-6"><strong>Address:</strong> <%= worker.address || '-' %></div>
+                    <div class="col-md-6"><strong>Status:</strong> 
+                        <% if(worker.isActive){ %><span class="badge bg-success">Active</span>
+                        <% } else { %><span class="badge bg-danger">Inactive</span><% } %>
+                    </div>
+                </div>
+
+                <!-- Documents -->
+                <div class="card mb-3">
+                    <div class="card-header bg-secondary text-white">📄 Documents</div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <strong>Aadhar:</strong><br>
+                                <% if(worker.documents?.aadhar){ %>
+                                    <a href="/uploads/workers/<%= worker.documents.aadhar %>" target="_blank" class="btn btn-sm btn-outline-primary mt-1">View Aadhar</a>
+                                <% } else { %><span class="text-muted">Not uploaded</span><% } %>
+                            </div>
+                            <div class="col-md-4">
+                                <strong>PAN:</strong><br>
+                                <% if(worker.documents?.pan){ %>
+                                    <a href="/uploads/workers/<%= worker.documents.pan %>" target="_blank" class="btn btn-sm btn-outline-primary mt-1">View PAN</a>
+                                <% } else { %><span class="text-muted">Not uploaded</span><% } %>
+                            </div>
+                            <div class="col-md-4">
+                                <strong>Photo:</strong><br>
+                                <% if(worker.documents?.photo){ %>
+                                    <img src="/uploads/workers/<%= worker.documents.photo %>" alt="Photo" style="max-width:100px; border-radius:8px; margin-top:5px;">
+                                <% } else { %><span class="text-muted">No photo</span><% } %>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Info -->
+                <!-- <div class="card mb-3">
+                    <div class="card-header bg-primary text-white">💰 Payment Details</div>
+                    <div class="card-body">
+                        <% if(worker.paymentType === 'monthly'){ %>
+                            <strong>Monthly Salary:</strong> ₹<%= worker.monthlyRate %>
+                        <% } else { %>
+                            <strong>Rate Type:</strong> Piece-based (Rate fetched from Products)<br>
+                            <a href="/products" class="btn btn-sm btn-outline-primary mt-2">📦 Manage Product Rates</a>
+                        <% } %>
+                    </div>
+                </div> -->
+
+                    <!-- Payment Info -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-primary text-white">💰 Payment Details</div>
+                        <div class="card-body">
+                            <% if(worker.paymentType === 'monthly'){ %>
+                                <strong>Monthly Salary:</strong> ₹<%= worker.monthlyRate %>
+                            <% } else { 
+                                let rateLink = '/products'; // default for karigar
+                                if(worker.workerType === 'pressman') rateLink = '/pressman/products';
+                            %>
+                                <strong>Rate Type:</strong> Piece-based (Rate fetched from 
+                                    <% if(worker.workerType === 'pressman'){ %>Pressman Products<% } else { %>Main Products<% } %>
+                                )<br>
+                                <a href="<%= rateLink %>" class="btn btn-sm btn-outline-primary mt-2">
+                                    📦 Manage 
+                                    <% if(worker.workerType === 'pressman'){ %>Pressman<% } else { %>Product<% } %> Rates
+                                </a>
+                            <% } %>
+                        </div>
+                    </div>
+
+
+
+
+
+                <!-- Work Summary for Karigar/Pressman -->
+                <% if(worker.paymentType === 'piece'){ %>
+                <div class="card mb-3">
+                    <div class="card-header bg-warning text-dark">📅 Work Summary</div>
+                    <div class="card-body" id="workSummaryDiv">Loading...</div>
+                </div>
+                <% } %>
+
+                <!-- Payment History -->
+                <div class="card mb-3">
+                    <div class="card-header bg-success text-white">💵 Payment History</div>
+                    <div class="card-body" id="paymentHistoryDiv">Loading...</div>
+                </div>
+
+                <a href="/workers" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Back to Workers</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(async function() {
+    const workerId = '<%= worker._id %>';
+    const workerType = '<%= worker.workerType %>';
+    const paymentType = '<%= worker.paymentType %>';
+
+    // Payment History
+    try {
+        const payRes = await fetch(`/workers/payment-history/${workerId}`);
+        const payData = await payRes.json();
+        if(payData.payments && payData.payments.length){
+            let html = `<table class="table table-sm table-bordered">
+                <thead class="table-dark"><tr><th>Date</th><th>Amount</th><th>Month/Week</th><th>Remark</th></tr></thead><tbody>`;
+            payData.payments.forEach(p => {
+                let period = '-';
+                if(p.month) period = `${p.month}/${p.year}`;
+                else if(p.fromDate) period = `${new Date(p.fromDate).toLocaleDateString()} to ${new Date(p.toDate).toLocaleDateString()}`;
+                html += `<tr>
+                    <td>${new Date(p.paymentDate).toLocaleDateString()}</td>
+                    <td><strong>₹${p.amount}</strong></td>
+                    <td>${period}</td>
+                    <td>${p.remark || '-'}</td>
+                </tr>`;
+            });
+            html += `</tbody></table>`;
+            document.getElementById('paymentHistoryDiv').innerHTML = html;
+        } else {
+            document.getElementById('paymentHistoryDiv').innerHTML = '<p class="text-muted">No payments recorded.</p>';
+        }
+    } catch(e) {
+        document.getElementById('paymentHistoryDiv').innerHTML = '<p class="text-muted">Payment history not available.</p>';
+    }
+
+    // Work Summary for piece workers
+    if(paymentType === 'piece'){
+        try {
+            let url = workerType === 'karigar' ? `/workers/karigar-work/${workerId}` : `/workers/pressman-work/${workerId}`;
+            const workRes = await fetch(url);
+            const workData = await workRes.json();
+            
+            if(workData.work?.length || workData.entries?.length){
+                let html = `<table class="table table-sm table-bordered"><thead class="table-dark"><tr>`;
+                if(workerType === 'karigar'){
+                    html += `<th>Week</th><th>Product</th><th>Pieces</th><th>Amount (₹)</th></tr></thead><tbody>`;
+                    workData.work.forEach(w => {
+                        html += `<tr>
+                            <td>${new Date(w.weekStart).toLocaleDateString()} - ${new Date(w.weekEnd).toLocaleDateString()}</td>
+                            <td>${w.product}</td>
+                            <td>${w.pieces}</td>
+                            <td>₹${w.amount}</td>
+                        </tr>`;
+                    });
+                } else if(workerType === 'pressman'){
+                    html += `<th>Date</th><th>Entry #</th><th>Products</th><th>Qty</th><th>Amount</th></tr></thead><tbody>`;
+                    workData.entries.forEach(e => {
+                        html += `<tr>
+                            <td>${new Date(e.date).toLocaleDateString()}</td>
+                            <td>${e.entryNumber}</td>
+                            <td>${e.entries?.length || 0} items</td>
+                            <td>${e.totalQuantity}</td>
+                            <td>₹${e.totalAmount}</td>
+                        </tr>`;
+                    });
+                }
+                html += `</tbody></table>`;
+                document.getElementById('workSummaryDiv').innerHTML = html;
+            } else {
+                document.getElementById('workSummaryDiv').innerHTML = '<p class="text-muted">No work records found.</p>';
+            }
+        } catch(e) {
+            document.getElementById('workSummaryDiv').innerHTML = '<p class="text-muted">Work summary not available.</p>';
+        }
+    }
+})();
+</script>

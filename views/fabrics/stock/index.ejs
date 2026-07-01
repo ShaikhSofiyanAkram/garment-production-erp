@@ -1,0 +1,206 @@
+<%
+currentPage = 'fabrics';
+%>
+
+<%- include('../../layouts/admin-layout') %>
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fas fa-warehouse text-primary"></i> Fabric Stock Ledger</h2>
+            <p class="text-muted">Manage fabric inventory, track consumption and waste</p>
+        </div>
+        <a href="/fabrics/stock/add" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Add Stock
+        </a>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="stats-grid mb-4">
+        <div class="stat-card">
+            <div class="stat-title">Total Stock</div>
+            <div class="stat-value"><%= summary.totalMeters || 0 %> m</div>
+            <i class="fas fa-layer-group stat-icon"></i>
+        </div>
+        <div class="stat-card">
+            <div class="stat-title">Remaining</div>
+            <div class="stat-value text-success"><%= summary.remainingMeters || 0 %> m</div>
+            <i class="fas fa-check-circle stat-icon"></i>
+        </div>
+        <div class="stat-card">
+            <div class="stat-title">Consumed</div>
+            <div class="stat-value text-info"><%= summary.consumedMeters || 0 %> m</div>
+            <i class="fas fa-industry stat-icon"></i>
+        </div>
+        <div class="stat-card">
+            <div class="stat-title">Wasted</div>
+            <div class="stat-value text-danger"><%= summary.wastedMeters || 0 %> m</div>
+            <i class="fas fa-trash-alt stat-icon"></i>
+        </div>
+    </div>
+
+    <!-- Low Stock Alert -->
+    <% if (summary.lowStock > 0) { %>
+    <div class="alert alert-warning mb-4">
+        <i class="fas fa-exclamation-triangle"></i>
+        <strong>Low Stock Alert!</strong> <%= summary.lowStock %> fabric types are running low (less than 100 meters).
+        <a href="#lowStockTable" class="alert-link">View details</a>
+    </div>
+    <% } %>
+
+    <!-- Filters -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Fabric Type</label>
+                    <input type="text" class="form-control" name="fabricType" value="<%= filters.fabricType || '' %>" placeholder="e.g., Cotton, Silk">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Status</label>
+                    <select class="form-control" name="status">
+                        <option value="">All</option>
+                        <option value="in_stock" <%= filters.status === 'in_stock' ? 'selected' : '' %>>In Stock</option>
+                        <option value="partial" <%= filters.status === 'partial' ? 'selected' : '' %>>Partial</option>
+                        <option value="exhausted" <%= filters.status === 'exhausted' ? 'selected' : '' %>>Exhausted</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">From Date</label>
+                    <input type="date" class="form-control" name="fromDate" value="<%= filters.fromDate || '' %>">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">To Date</label>
+                    <input type="date" class="form-control" name="toDate" value="<%= filters.toDate || '' %>">
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search"></i> Filter
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Stock Table -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-white">
+            <i class="fas fa-list"></i> Stock Batches
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Batch #</th>
+                            <th>Fabric Type</th>
+                            <th>Color</th>
+                            <th>Total (m)</th>
+                            <th>Remaining (m)</th>
+                            <th>Consumed</th>
+                            <th>Wasted</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% if (stock && stock.length) { %>
+                            <% stock.forEach(s => {
+                                const remainingPercent = (s.remainingMeters / s.totalMeters) * 100;
+                                const isLowStock = s.remainingMeters < 100 && s.remainingMeters > 0;
+                            %>
+                            <tr class="<%= isLowStock ? 'table-warning' : '' %>">
+                                <td><strong><%= s.batchNumber %></strong></td>
+                                <td><%= s.fabricType %> - <%= s.fabricName %></td>
+                                <td><%= s.color || '-' %></td>
+                                <td class="text-end"><%= s.totalMeters.toFixed(2) %></td>
+                                <td class="text-end">
+                                    <strong class="<%= s.remainingMeters > 0 ? 'text-success' : 'text-danger' %>">
+                                        <%= s.remainingMeters.toFixed(2) %>
+                                    </strong>
+                                    <div class="progress mt-1" style="height: 4px;">
+                                        <div class="progress-bar bg-success" style="width: <%= remainingPercent %>%"></div>
+                                    </div>
+                                </td>
+                                <td class="text-end"><%= s.consumedMeters.toFixed(2) %></td>
+                                <td class="text-end"><%= s.wastedMeters.toFixed(2) %></td>
+                                <td>
+                                    <% if (s.status === 'in_stock') { %>
+                                        <span class="badge bg-success">In Stock</span>
+                                    <% } else if (s.status === 'partial') { %>
+                                        <span class="badge bg-warning">Partial</span>
+                                    <% } else { %>
+                                        <span class="badge bg-secondary">Exhausted</span>
+                                    <% } %>
+                                </td>
+                                <td><%= new Date(s.purchaseDate).toLocaleDateString() %></td>
+                                <td>
+                                    <a href="/fabrics/stock/view/<%= s._id %>" class="btn btn-sm btn-info" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <button class="btn btn-sm btn-danger" onclick="deleteStock('<%= s._id %>')" title="Mark Exhausted">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <% }) %>
+                        <% } else { %>
+                            <tr><td colspan="10" class="text-center py-5">No stock records found</td></tr>
+                        <% } %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Low Stock Section -->
+    <% if (stock && stock.filter(s => s.remainingMeters < 100 && s.remainingMeters > 0).length > 0) { %>
+    <div class="card shadow-sm mt-4" id="lowStockTable">
+        <div class="card-header bg-warning text-dark">
+            <i class="fas fa-exclamation-triangle"></i> Low Stock Alert (Less than 100 meters)
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Batch #</th>
+                            <th>Fabric Type</th>
+                            <th>Remaining (m)</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% stock.filter(s => s.remainingMeters < 100 && s.remainingMeters > 0).forEach(s => { %>
+                            <tr>
+                                <td><%= s.batchNumber %></td>
+                                <td><%= s.fabricType %> - <%= s.fabricName %></td>
+                                <td class="text-danger fw-bold"><%= s.remainingMeters.toFixed(2) %> m</td>
+                                <td>
+                                    <a href="/fabrics/stock/view/<%= s._id %>" class="btn btn-sm btn-info">View</a>
+                                </td>
+                            </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <% } %>
+</div>
+
+<script>
+function deleteStock(id) {
+    if (confirm('Mark this stock as exhausted? This will set remaining meters to 0.')) {
+        fetch(`/fabrics/stock/delete/${id}`, { method: 'DELETE' })
+            .then(res => {
+                if (res.ok) {
+                    location.reload();
+                } else {
+                    alert('Error updating stock');
+                }
+            });
+    }
+}
+</script>

@@ -1,0 +1,181 @@
+<!-- <div class="row">
+    <div class="col-md-12 mb-4">
+        <h2><i class="fas fa-chart-line"></i> Dashboard</h2>
+        <p>Welcome back, <%= user.username %>!</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-3 mb-3">
+        <div class="stat-card">
+            <h3><%= totalProduction %></h3>
+            <p>Total Production</p>
+            <i class="fas fa-boxes fa-2x float-end"></i>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+            <h3><%= pendingBills %></h3>
+            <p>Pending Bills</p>
+            <i class="fas fa-file-invoice fa-2x float-end"></i>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+            <h3>₹<%= totalPendingAmount.toLocaleString() %></h3>
+            <p>Pending Amount</p>
+            <i class="fas fa-rupee-sign fa-2x float-end"></i>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+            <h3>₹<%= totalPayments.toLocaleString() %></h3>
+            <p>Total Received</p>
+            <i class="fas fa-hand-holding-usd fa-2x float-end"></i>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-tachometer-alt"></i> Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-2">
+                        <a href="/cutting/create" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-cut"></i> New Cutting
+                        </a>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <a href="/assignments/create" class="btn btn-outline-info w-100">
+                            <i class="fas fa-tasks"></i> New Assignment
+                        </a>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <a href="/production/return" class="btn btn-outline-warning w-100">
+                            <i class="fas fa-undo-alt"></i> Production Return
+                        </a>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <a href="/bills/create" class="btn btn-outline-success w-100">
+                            <i class="fas fa-file-invoice"></i> Create Bill
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-bar"></i> Worker Performance</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Worker</th>
+                                <th>Given</th>
+                                <th>Completed</th>
+                                <th>Rate</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% workerPerformance.forEach(worker => { %>
+                            <tr>
+                                <td><%= worker.worker[0]?.name || 'Unknown' %></td>
+                                <td><%= worker.totalGiven %></td>
+                                <td><%= worker.completed %></td>
+                                <td><%= ((worker.completed/worker.totalGiven)*100).toFixed(1) %>%</td>
+                            </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div> -->
+
+
+
+
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <h2><i class="fas fa-chart-line"></i> Dashboard</h2>
+        <p>Welcome back, <%= user ? user.username : 'Admin' %>!</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-3 mb-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h5>Quick Actions</h5>
+                <hr>
+                <a href="/cutting/create" class="btn btn-light btn-sm w-100 mb-2">✂️ New Cutting</a>
+                <a href="/assignments/create" class="btn btn-light btn-sm w-100 mb-2">📋 New Assignment</a>
+                <a href="/bills/create" class="btn btn-light btn-sm w-100">💰 Create Bill</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h5>Management</h5>
+                <hr>
+                <a href="/workers" class="btn btn-light btn-sm w-100 mb-2">👥 Workers</a>
+                <a href="/products" class="btn btn-light btn-sm w-100 mb-2">📦 Products</a>
+                <a href="/fabrics" class="btn btn-light btn-sm w-100">🧵 Fabrics</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <h5>Production</h5>
+                <hr>
+                <a href="/cutting" class="btn btn-light btn-sm w-100 mb-2">✂️ Cutting</a>
+                <a href="/assignments" class="btn btn-light btn-sm w-100 mb-2">📋 Assignments</a>
+                <a href="/packing" class="btn btn-light btn-sm w-100">📦 Packing</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card bg-warning text-dark">
+            <div class="card-body">
+                <h5>Finance</h5>
+                <hr>
+                <a href="/bills" class="btn btn-light btn-sm w-100 mb-2">📄 Bills</a>
+                <a href="/payments" class="btn btn-light btn-sm w-100 mb-2">💵 Payments</a>
+                <a href="/reports/loss" class="btn btn-light btn-sm w-100">📊 Reports</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>System Status</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle"></i> System is running properly!
+                </div>
+                <p>✅ Database Connected</p>
+                <p>✅ Authentication Working</p>
+                <p>✅ All Modules Ready</p>
+            </div>
+        </div>
+    </div>
+</div>

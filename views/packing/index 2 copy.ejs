@@ -1,0 +1,571 @@
+<div class="container-fluid px-0">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h2 class="mb-0"><i class="fas fa-boxes text-success"></i> Packing Management</h2>
+            <p class="text-muted mb-0">Final packing entries before billing — Night entry summary</p>
+        </div>
+        <div>
+            <a href="/packing/create" class="btn btn-success btn-lg shadow-sm">
+                <i class="fas fa-plus-circle"></i> New Packing Entry
+            </a>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="card shadow-sm mb-4 border-0">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label fw-bold"><i class="fas fa-calendar-day"></i> From Date</label>
+                    <input type="date" id="fromDate" class="form-control">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-bold"><i class="fas fa-calendar-day"></i> To Date</label>
+                    <input type="date" id="toDate" class="form-control">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-bold"><i class="fas fa-filter"></i> Quick Filter</label>
+                    <select id="quickFilter" class="form-select">
+                        <option value="all">All Entries</option>
+                        <option value="today" selected>Today</option>
+                        <option value="yesterday">Yesterday</option>
+                        <option value="week">Last 7 Days</option>
+                        <option value="month">Last 30 Days</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-primary w-50" onclick="applyFilter()">
+                            <i class="fas fa-search"></i> Filter
+                        </button>
+                        <button class="btn btn-info w-50" onclick="printPacking()">
+                            <i class="fas fa-print"></i> Print / Send
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Packing Table (Screen View) -->
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-bordered mb-0" id="packingTable">
+                    <thead class="table-dark">
+                        <tr>
+                            <th style="width: 100px;">Packing #</th>
+                            <th style="width: 120px;">Date</th>
+                            <th style="width: 100px;">Total Pieces</th>
+                            <th>Products & Sizes</th>
+                            <th style="width: 100px;">Remark</th>
+                            <th style="width: 120px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="packingTableBody">
+                        <tr><td colspan="6" class="text-center py-5">Loading......</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- PRINT LAYOUT - Professional Client Version -->
+<div id="printSection" style="display: none;">
+    <div style="padding: 20px; font-family: 'Segoe UI', Arial, sans-serif; max-width: 1200px; margin: 0 auto; background: white;">
+        
+        <!-- Company Header -->
+        <div style="text-align: center; border-bottom: 3px solid #1a5f7a; padding-bottom: 20px; margin-bottom: 25px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <div style="text-align: left;">
+                    <p style="margin: 0; color: #555; font-size: 12px;">GST: 27AAACA1234A1Z</p>
+                    <p style="margin: 0; color: #555; font-size: 12px;">PAN: AAACA1234A</p>
+                </div>
+                <div style="text-align: right;">
+                    <p style="margin: 0; color: #555; font-size: 12px;">Phone: +91 98765 43210</p>
+                    <p style="margin: 0; color: #555; font-size: 12px;">Email: info@garmentfactory.com</p>
+                </div>
+            </div>
+            <h1 style="color: #1a5f7a; margin: 0; font-size: 28px;">🏭 GARMENT FACTORY ERP</h1>
+            <h3 style="color: #333; margin: 8px 0 5px 0;">Daily Packing Summary</h3>
+            <p style="color: #666; margin: 5px 0;" id="printDateRange"></p>
+        </div>
+
+        <!-- Packing Summary Cards -->
+        <div id="printSummaryCards"></div>
+
+        <!-- Detailed Packing Table -->
+        <div id="printTableContainer"></div>
+
+        <!-- Grand Total Footer -->
+        <div id="printGrandTotal" style="margin-top: 25px; text-align: right; padding: 15px; background: #f5f5f5; border-radius: 8px;">
+            <!-- Will be filled dynamically -->
+        </div>
+
+        <!-- Footer -->
+        <div style="margin-top: 30px; text-align: center; border-top: 1px solid #ddd; padding-top: 20px; font-size: 11px; color: #888;">
+            <p>This is a computer generated packing summary. No signature required.</p>
+            <p>Generated on: <span id="printTimestamp"></span></p>
+            <p style="color: #1a5f7a; font-weight: bold;">Thank you for your business!</p>
+        </div>
+    </div>
+</div>
+
+<style>
+    .print-card {
+        background: #f8f9fa;
+        border-left: 4px solid #1a5f7a;
+        padding: 12px 15px;
+        margin-bottom: 15px;
+        border-radius: 8px;
+    }
+    .print-card-title {
+        font-weight: bold;
+        font-size: 16px;
+        color: #1a5f7a;
+        margin-bottom: 10px;
+    }
+    .product-group {
+        margin-bottom: 12px;
+        border-bottom: 1px dashed #ddd;
+        padding-bottom: 8px;
+    }
+    .product-name {
+        font-weight: bold;
+        color: #2c3e50;
+        font-size: 14px;
+        margin-bottom: 6px;
+    }
+    .size-row {
+        display: inline-block;
+        background: #e9ecef;
+        padding: 4px 10px;
+        margin: 3px;
+        border-radius: 15px;
+        font-size: 12px;
+    }
+    .size-row strong {
+        color: #1a5f7a;
+    }
+    .total-badge {
+        background: #1a5f7a;
+        color: white;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 13px;
+        display: inline-block;
+    }
+    .table-professional {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
+    .table-professional th {
+        background: #1a5f7a;
+        color: white;
+        padding: 12px;
+        text-align: left;
+        font-weight: 600;
+    }
+    .table-professional td {
+        padding: 10px 12px;
+        border-bottom: 1px solid #e0e0e0;
+        vertical-align: top;
+    }
+    .table-professional tr:hover {
+        background: #f8f9fa;
+    }
+    @media print {
+        body * {
+            visibility: hidden;
+        }
+        #printSection, #printSection * {
+            visibility: visible;
+        }
+        #printSection {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            display: block !important;
+        }
+        .btn, .navbar, .card-header, .action-buttons, .filter-section, .no-print {
+            display: none !important;
+        }
+        .print-card {
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+    }
+
+
+
+    .table-hover tbody tr:hover {
+        background-color: #f5f5f5;
+    }
+    .badge-product {
+        display: inline-block;
+        background: #e9ecef;
+        padding: 4px 8px;
+        margin: 2px;
+        border-radius: 6px;
+        font-size: 12px;
+    }
+    .badge-product strong {
+        color: #2c3e50;
+    }
+    .action-buttons .btn {
+        margin: 0 2px;
+    }
+    
+    /* Print Styles - Single Page */
+    @media print {
+        body * {
+            visibility: hidden;
+        }
+        #printSection, #printSection * {
+            visibility: visible;
+        }
+        #printSection {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            display: block !important;
+        }
+        .no-print, .btn, .card-header, .navbar, .action-buttons, .filter-section {
+            display: none !important;
+        }
+        .table-print {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        .table-print th, .table-print td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .table-print th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        .page-break {
+            page-break-before: avoid;
+            page-break-inside: avoid;
+        }
+    }
+
+    .print-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+.print-table th {
+    background: #1a5f7a;
+    color: white;
+    padding: 8px;
+    text-align: left;
+    font-weight: 600;
+}
+.print-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    vertical-align: top;
+}
+.print-table tr:hover {
+    background: #f8f9fa;
+}
+.size-highlight {
+    display: inline-block;
+    background: #e9ecef;
+    padding: 4px 12px;
+    margin: 3px;
+    border-radius: 20px;
+    font-size: 11px;
+    transition: all 0.2s;
+}
+.size-highlight strong {
+    color: #1a5f7a;
+}
+.category-badge {
+    display: inline-block;
+    background: #e8f4f8;
+    padding: 4px 12px;
+    margin: 2px;
+    border-radius: 15px;
+    font-size: 11px;
+    font-weight: bold;
+    color: #1a5f7a;
+}
+</style>
+
+<script>
+    let allPackings = [];
+
+    function setDefaultDates() {
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+        document.getElementById('fromDate').value = todayStr;
+        document.getElementById('toDate').value = todayStr;
+    }
+
+    async function loadPackings() {
+        try {
+            const fromDate = document.getElementById('fromDate').value;
+            const toDate = document.getElementById('toDate').value;
+            
+            let url = '/packing/api/list';
+            const params = [];
+            if (fromDate) params.push(`fromDate=${fromDate}`);
+            if (toDate) params.push(`toDate=${toDate}`);
+            if (params.length) url += '?' + params.join('&');
+            
+            const res = await fetch(url);
+            allPackings = await res.json();
+            renderTable(allPackings);
+        } catch(e) {
+            console.error('Error:', e);
+            document.getElementById('packingTableBody').innerHTML = '<tr><td colspan="6" class="text-center py-5 text-danger">Error loading data</td></tr>';
+        }
+    }
+
+    function renderTable(packings) {
+        const tbody = document.getElementById('packingTableBody');
+        if (!packings || packings.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-5 text-muted">No packing entries found for selected date range</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = packings.map(p => {
+            let productsHtml = '';
+            const entries = p.entries || [];
+            entries.forEach(e => {
+                productsHtml += `<span class="badge-product"><strong>${escapeHtml(e.productName)}</strong> - ${escapeHtml(e.size)} : ${e.packedPieces} pcs</span> `;
+            });
+            
+            const dateObj = new Date(p.packingDate);
+            const dateStr = dateObj.toLocaleDateString('en-IN');
+            
+            return `
+                <tr data-id="${p._id}">
+                    <td class="fw-bold">${escapeHtml(p.packingNumber)}</td>
+                    <td>${dateStr}</td>
+                    <td class="text-end fw-bold">${p.totalPieces} pcs</td>
+                    <td>${productsHtml}</td>
+                    <td>${escapeHtml(p.remark) || '-'}</td>
+                    <td class="action-buttons">
+                        <button class="btn btn-sm btn-danger" onclick="deletePacking('${p._id}')" title="Delete Entry">
+                            <i class="fas fa-trash-alt"></i> Delete
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    function applyFilter() {
+        loadPackings();
+    }
+
+    function setQuickFilter() {
+        const filter = document.getElementById('quickFilter').value;
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+        
+        if (filter === 'today') {
+            document.getElementById('fromDate').value = todayStr;
+            document.getElementById('toDate').value = todayStr;
+        } else if (filter === 'yesterday') {
+            const yesterday = new Date(today);
+            yesterday.setDate(today.getDate() - 1);
+            document.getElementById('fromDate').value = yesterday.toISOString().split('T')[0];
+            document.getElementById('toDate').value = yesterday.toISOString().split('T')[0];
+        } else if (filter === 'week') {
+            const weekAgo = new Date(today);
+            weekAgo.setDate(today.getDate() - 7);
+            document.getElementById('fromDate').value = weekAgo.toISOString().split('T')[0];
+            document.getElementById('toDate').value = todayStr;
+        } else if (filter === 'month') {
+            const monthAgo = new Date(today);
+            monthAgo.setDate(today.getDate() - 30);
+            document.getElementById('fromDate').value = monthAgo.toISOString().split('T')[0];
+            document.getElementById('toDate').value = todayStr;
+        } else if (filter === 'all') {
+            document.getElementById('fromDate').value = '';
+            document.getElementById('toDate').value = '';
+        }
+        loadPackings();
+    }
+
+function printPacking() {
+    const fromDate = document.getElementById('fromDate').value;
+    const toDate = document.getElementById('toDate').value;
+    
+    let dateDisplay = '';
+    if (fromDate && toDate && fromDate === toDate) {
+        dateDisplay = formatDateDisplay(fromDate);
+    } else if (fromDate && toDate) {
+        dateDisplay = `${formatDateDisplay(fromDate)} to ${formatDateDisplay(toDate)}`;
+    } else if (fromDate) {
+        dateDisplay = `From ${formatDateDisplay(fromDate)}`;
+    } else if (toDate) {
+        dateDisplay = `Until ${formatDateDisplay(toDate)}`;
+    } else {
+        dateDisplay = 'All Entries';
+    }
+    
+    let grandTotalPieces = 0;
+    let grandTotalEntries = allPackings.length;
+    
+    // Group by category first, then by product
+    const categoryOrder = { 'Kids': 1, 'Mens': 2 };
+    
+    let tableHtml = '<table class="print-table" style="width:100%; border-collapse: collapse;">';
+    tableHtml += '<thead><tr>';
+    tableHtml += '<th style="width:10%">Packing #</th>';
+    tableHtml += '<th style="width:8%">Date</th>';
+    tableHtml += '<th style="width:12%">Category</th>';
+    tableHtml += '<th style="width:45%">Product & Size Details</th>';
+    tableHtml += '<th style="width:10%">Total Pcs</th>';
+    tableHtml += '<th style="width:15%">Remark</th>';
+    tableHtml += '</tr></thead><tbody>';
+    
+    allPackings.forEach(p => {
+        grandTotalPieces += p.totalPieces;
+        const dateStr = new Date(p.packingDate).toLocaleDateString('en-IN');
+        
+        // Group by category then product
+        const categoryMap = new Map();
+        (p.entries || []).forEach(e => {
+            const cat = e.category || (e.productName?.includes('Kids') ? 'Kids' : 'Mens');
+            if (!categoryMap.has(cat)) {
+                categoryMap.set(cat, new Map());
+            }
+            const productMap = categoryMap.get(cat);
+            if (!productMap.has(e.productName)) {
+                productMap.set(e.productName, []);
+            }
+            productMap.get(e.productName).push({ size: e.size, pieces: e.packedPieces });
+        });
+        
+        // Sort categories: Kids first, then Mens
+        const sortedCategories = Array.from(categoryMap.keys()).sort((a,b) => {
+            return (categoryOrder[a] || 99) - (categoryOrder[b] || 99);
+        });
+        
+        let productsHtml = '';
+        sortedCategories.forEach(cat => {
+            const productMap = categoryMap.get(cat);
+            const catIcon = cat === 'Kids' ? '👶' : '👔';
+            productsHtml += `<div style="margin-top: 8px; margin-bottom: 12px;">`;
+            productsHtml += `<div style="background: #e8f4f8; padding: 4px 8px; border-radius: 4px; font-weight: bold; color: #1a5f7a;">${catIcon} ${cat}</div>`;
+            
+            for (let [productName, sizes] of productMap) {
+                productsHtml += `<div style="margin-left: 15px; margin-top: 6px;">`;
+                productsHtml += `<strong>📦 ${productName}</strong><br>`;
+                productsHtml += `<div style="margin-left: 20px;">`;
+                sizes.forEach(s => {
+                    productsHtml += `<span style="display: inline-block; background: #e9ecef; padding: 3px 10px; margin: 3px; border-radius: 15px; font-size: 11px;">
+                        <strong style="color: #1a5f7a;">Size ${s.size}</strong> : ${s.pieces} pcs
+                    </span> `;
+                });
+                productsHtml += `</div></div>`;
+            }
+            productsHtml += `</div>`;
+        });
+        
+        tableHtml += '<tr>';
+        tableHtml += `<td style="vertical-align: top;"><strong>${p.packingNumber}</strong></td>`;
+        tableHtml += `<td style="vertical-align: top;">${dateStr}</td>`;
+        tableHtml += `<td style="vertical-align: top;">${Array.from(categoryMap.keys()).join(', ')}</td>`;
+        tableHtml += `<td style="vertical-align: top;">${productsHtml}</td>`;
+        tableHtml += `<td style="text-align: center; vertical-align: top; font-weight: bold; background: #f0f8ff;">${p.totalPieces} pcs</td>`;
+        tableHtml += `<td style="vertical-align: top;">${p.remark || '-'}</td>`;
+        tableHtml += '</tr>';
+    });
+    
+    tableHtml += '</tbody></table>';
+    
+    const grandTotalHtml = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding: 12px; background: linear-gradient(135deg, #1a5f7a, #0d3b4f); border-radius: 8px;">
+            <div style="color: white;">
+                <strong>📊 Summary:</strong> Total ${grandTotalEntries} packing entries
+            </div>
+            <div style="background: #ffc107; color: #1a5f7a; padding: 8px 20px; border-radius: 30px; font-weight: bold; font-size: 16px;">
+                🎯 GRAND TOTAL: ${grandTotalPieces} pieces
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('printDateRange').innerHTML = `<strong>📅 Packing Date:</strong> ${dateDisplay}`;
+    document.getElementById('printMainTable').innerHTML = tableHtml;
+    document.getElementById('printGrandTotal').innerHTML = grandTotalHtml;
+    document.getElementById('printTimestamp').innerHTML = new Date().toLocaleString();
+    
+    setTimeout(() => { window.print(); }, 100);
+}
+
+function formatDateDisplay(dateStr) {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+
+    function deletePacking(id) {
+        if (!confirm('⚠️ Delete this packing entry? This cannot be undone.')) return;
+        
+        fetch(`/packing/delete/${id}`, { method: 'DELETE' })
+            .then(res => {
+                if (res.ok) {
+                    alert('✅ Deleted');
+                    loadPackings();
+                } else {
+                    alert('❌ Delete failed');
+                }
+            })
+            .catch(e => alert('Error: ' + e.message));
+    }
+
+    document.getElementById('quickFilter').addEventListener('change', setQuickFilter);
+    document.getElementById('fromDate').addEventListener('change', loadPackings);
+    document.getElementById('toDate').addEventListener('change', loadPackings);
+    
+    setDefaultDates();
+    loadPackings();
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

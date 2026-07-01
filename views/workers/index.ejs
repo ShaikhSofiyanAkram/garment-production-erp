@@ -1,0 +1,326 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-users"></i> Workers Management</h2>
+    <a href="/workers/create" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Add Worker
+    </a>
+</div>
+
+<!-- Category Tabs -->
+<ul class="nav nav-tabs mb-4" id="workerTab" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#all" type="button" role="tab">
+            <i class="fas fa-list"></i> All (<%= workers.length %>)
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#karigar" type="button" role="tab">
+            <i class="fas fa-user-circle"></i> Karigar (<%= workers.filter(w=> w.workerType === 'karigar').length %>)
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#pressman" type="button" role="tab">
+            <i class="fas fa-industry"></i> Pressman (<%= workers.filter(w=> w.workerType === 'pressman').length %>)
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#cutting" type="button" role="tab">
+            <i class="fas fa-cut"></i> Cutting (<%= workers.filter(w=> w.workerType === 'cutting').length %>)
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#helper" type="button" role="tab">
+            <i class="fas fa-hand-sparkles"></i> Helper (<%= workers.filter(w=> w.workerType === 'helper').length %>)
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content">
+    <!-- All Workers Tab -->
+    <div class="tab-pane fade show active" id="all" role="tabpanel">
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Phone</th>
+                                <th>Type</th>
+                                <th>Payment Type</th>
+                                <th>Rate</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% workers.forEach(worker=> { %>
+                                <tr
+                                    class="<%= worker.workerType === 'karigar' ? 'table-info' : worker.workerType === 'pressman' ? 'table-warning' : '' %>">
+                                    <td>
+                                        <%= worker.name %> <%- worker.workerType==='karigar'
+                                                ? '<span class="badge bg-info">Piece-based</span>' : '' %>
+                                    </td>
+                                    <td>
+                                        <%= worker.phone %>
+                                    </td>
+                                    <td>
+                                        <span
+                                            class="badge <%= worker.workerType === 'cutting' ? 'bg-secondary' : worker.workerType === 'karigar' ? 'bg-info' : worker.workerType === 'helper' ? 'bg-success' : 'bg-warning' %>">
+                                            <%= worker.workerType %>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <%= worker.paymentType %>
+                                    </td>
+                                    <td>
+                                        <% if (worker.paymentType==='monthly' ) { %>
+                                            <strong>₹<%= worker.monthlyRate %></strong>
+                                            <small class="text-muted">/month</small>
+                                            <% } else { %>
+                                                <span class="badge bg-info">
+                                                    <i class="fas fa-tags"></i> Per Product Rate
+                                                </span>
+                                                <small class="text-muted d-block">Set in Products</small>
+                                                <% } %>
+                                    </td>
+                                    <td>
+                                        <% if (worker.isActive) { %>
+                                            <span class="badge bg-success">Active</span>
+                                            <% } else { %>
+                                                <span class="badge bg-danger">Inactive</span>
+                                                <% } %>
+                                    </td>
+                                    <td>
+                                        <a href="/workers/view/<%= worker._id %>" class="btn btn-sm btn-info"
+                                        title="View Details">
+                                        <i class="fas fa-eye"></i> View
+                                        </a>
+                                        <a href="/workers/edit/<%= worker._id %>" class="btn btn-sm btn-warning">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <form action="/workers/delete/<%= worker._id %>?_method=DELETE" method="POST"
+                                            style="display: inline;">
+                                            <button type="submit" class="btn btn-sm btn-danger delete-confirm">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Karigar Tab -->
+    <div class="tab-pane fade" id="karigar" role="tabpanel">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5><i class="fas fa-user-circle"></i> Karigar (Piece-based Workers)</h5>
+                <small>Rates are configured in <a href="/products" class="text-white">Product Management → Karigar
+                        Rate</a></small>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Phone</th>
+                                <th>Email</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% workers.filter(w=> w.workerType === 'karigar').forEach(worker => { %>
+                                <tr>
+                                    <td>
+                                        <%= worker.name %>
+                                    </td>
+                                    <td>
+                                        <%= worker.phone %>
+                                    </td>
+                                    <td>
+                                        <%= worker.email || '-' %>
+                                    </td>
+                                    <td>
+                                        <% if (worker.isActive) { %>
+                                            <span class="badge bg-success">Active</span>
+                                            <% } else { %>
+                                                <span class="badge bg-danger">Inactive</span>
+                                                <% } %>
+                                    </td>
+                                    <td>
+                                        <a href="/workers/edit/<%= worker._id %>" class="btn btn-sm btn-warning">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="/products" class="btn btn-sm btn-info">
+                                            <i class="fas fa-tags"></i> Set Rate
+                                        </a>
+                                    </td>
+                                </tr>
+                                <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pressman Tab -->
+    <div class="tab-pane fade" id="pressman" role="tabpanel">
+        <div class="card">
+            <div class="card-header bg-warning">
+                <h5><i class="fas fa-industry"></i> Pressman (Piece-based Workers)</h5>
+                <small>Rates are configured in <a href="/products">Product Management → Pressman Rate</a></small>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Phone</th>
+                                <th>Email</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% workers.filter(w=> w.workerType === 'pressman').forEach(worker => { %>
+                                <tr>
+                                    <td>
+                                        <%= worker.name %>
+                                    </td>
+                                    <td>
+                                        <%= worker.phone %>
+                                    </td>
+                                    <td>
+                                        <%= worker.email || '-' %>
+                                    </td>
+                                    <td>
+                                        <% if (worker.isActive) { %>
+                                            <span class="badge bg-success">Active</span>
+                                            <% } else { %>
+                                                <span class="badge bg-danger">Inactive</span>
+                                                <% } %>
+                                    </td>
+                                    <td>
+                                        <a href="/workers/edit/<%= worker._id %>" class="btn btn-sm btn-warning">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="/products" class="btn btn-sm btn-info">
+                                            <i class="fas fa-tags"></i> Set Rate
+                                        </a>
+                                    </td>
+                                </tr>
+                                <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cutting Worker Tab -->
+    <div class="tab-pane fade" id="cutting" role="tabpanel">
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <h5><i class="fas fa-cut"></i> Cutting Workers (Monthly Fixed)</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Phone</th>
+                                <th>Monthly Salary</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% workers.filter(w=> w.workerType === 'cutting').forEach(worker => { %>
+                                <tr>
+                                    <td>
+                                        <%= worker.name %>
+                                    </td>
+                                    <td>
+                                        <%= worker.phone %>
+                                    </td>
+                                    <td><strong>₹<%= worker.monthlyRate %></strong>/month</td>
+                                    <td>
+                                        <% if (worker.isActive) { %>
+                                            <span class="badge bg-success">Active</span>
+                                            <% } else { %>
+                                                <span class="badge bg-danger">Inactive</span>
+                                                <% } %>
+                                    </td>
+                                    <td>
+                                        <a href="/workers/edit/<%= worker._id %>" class="btn btn-sm btn-warning">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Helper Tab -->
+    <div class="tab-pane fade" id="helper" role="tabpanel">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5><i class="fas fa-hand-sparkles"></i> Helpers (Monthly Fixed)</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Phone</th>
+                                <th>Monthly Salary</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% workers.filter(w=> w.workerType === 'helper').forEach(worker => { %>
+                                <tr>
+                                    <td>
+                                        <%= worker.name %>
+                                    </td>
+                                    <td>
+                                        <%= worker.phone %>
+                                    </td>
+                                    <td><strong>₹<%= worker.monthlyRate %></strong>/month</td>
+                                    <td>
+                                        <% if (worker.isActive) { %>
+                                            <span class="badge bg-success">Active</span>
+                                            <% } else { %>
+                                                <span class="badge bg-danger">Inactive</span>
+                                                <% } %>
+                                    </td>
+                                    <td>
+                                        <a href="/workers/edit/<%= worker._id %>" class="btn btn-sm btn-warning">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+

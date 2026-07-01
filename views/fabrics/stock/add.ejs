@@ -1,0 +1,104 @@
+<%
+currentPage = 'fabrics';
+%>
+
+<%- include('../../layouts/admin-layout') %>
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fas fa-plus-circle text-primary"></i> Add Fabric Stock</h2>
+            <p class="text-muted">Add new fabric batch to inventory</p>
+        </div>
+        <a href="/fabrics/stock" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Stock
+        </a>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <form method="POST" action="/fabrics/stock/add">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Fabric Type *</label>
+                        <select class="form-control" name="fabricType" required>
+                            <option value="">Select Fabric Type</option>
+                            <option value="Armani">Armani</option>
+                            <option value="Cotton">Cotton (सूती)</option>
+                            <option value="Polyester">Polyester (पॉलिएस्टर)</option>
+                            <option value="Silk">Banglury Silk (रेशम)</option>
+                            <option value="Linen">Linen (लिनेन)</option>
+                            <option value="Denim">Denim (डेनिम)</option>
+                            <option value="Viscose">Viscose (विस्कोस)</option>
+                            <option value="Wool">Wool (ऊन)</option>
+                            <option value="Other">Other (अन्य)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Fabric Name *</label>
+                        <input type="text" class="form-control" name="fabricName" required placeholder="e.g., Super Cotton, Premium Silk">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-bold">Color</label>
+                        <input type="text" class="form-control" name="color" placeholder="e.g., White, Black, Red">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-bold">Supplier</label>
+                        <input type="text" class="form-control" name="supplier" placeholder="Supplier name">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-bold">Purchase Date</label>
+                        <input type="date" class="form-control" name="purchaseDate" value="<%= new Date().toISOString().split('T')[0] %>">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-bold">Invoice Number</label>
+                        <input type="text" class="form-control" name="invoiceNumber" placeholder="Supplier invoice number">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-bold">Roll Number</label>
+                        <input type="text" class="form-control" name="rollNumber" placeholder="Optional">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-bold">Meters per Roll</label>
+                        <input type="number" class="form-control" name="metersPerRoll" step="0.01" placeholder="Optional">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Total Rolls *</label>
+                        <input type="number" class="form-control" name="totalRolls" required min="1" value="1">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Total Meters *</label>
+                        <input type="number" class="form-control" name="totalMeters" required min="0.01" step="0.01" id="totalMeters">
+                        <small class="text-muted">Total fabric quantity in meters</small>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Remark</label>
+                    <textarea class="form-control" name="remark" rows="2" placeholder="Any notes about this batch"></textarea>
+                </div>
+
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>Note:</strong> Batch number will be auto-generated (e.g., FAB-202412-0001)
+                </div>
+
+                <div class="text-center mt-4">
+                    <button type="submit" class="btn btn-primary btn-lg px-5">
+                        <i class="fas fa-save"></i> Add Stock
+                    </button>
+                    <a href="/fabrics/stock" class="btn btn-secondary btn-lg px-5">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

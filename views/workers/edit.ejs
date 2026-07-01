@@ -1,0 +1,174 @@
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-warning text-white">
+                <h4 class="mb-0"><i class="fas fa-edit"></i> Edit Worker</h4>
+            </div>
+            <div class="card-body">
+                <form action="/workers/edit/<%= worker._id %>?_method=PUT" method="POST">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="name" class="form-label">Full Name *</label>
+                            <input type="text" class="form-control" id="name" name="name" value="<%= worker.name %>" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="phone" class="form-label">Phone Number *</label>
+                            <input type="tel" class="form-control" id="phone" name="phone" value="<%= worker.phone %>" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" name="email" value="<%= worker.email %>">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="address" class="form-label">Address</label>
+                            <textarea class="form-control" id="address" name="address" rows="2"><%= worker.address %></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="workerType" class="form-label">Worker Type *</label>
+                            <select class="form-control" id="workerType" name="workerType" required>
+                                <option value="cutting" <%= worker.workerType === 'cutting' ? 'selected' : '' %>>Cutting Worker</option>
+                                <option value="karigar" <%= worker.workerType === 'karigar' ? 'selected' : '' %>>Karigar (Piece-based)</option>
+                                <option value="helper" <%= worker.workerType === 'helper' ? 'selected' : '' %>>Helper (Finishing)</option>
+                                <option value="pressman" <%= worker.workerType === 'pressman' ? 'selected' : '' %>>Pressman</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="paymentType" class="form-label">Payment Type *</label>
+                            <select class="form-control" id="paymentType" name="paymentType" required>
+                                <option value="monthly" <%= worker.paymentType === 'monthly' ? 'selected' : '' %>>Monthly Fixed</option>
+                                <option value="piece" <%= worker.paymentType === 'piece' ? 'selected' : '' %>>Piece-based</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3" id="monthlyRateDiv" style="<%= worker.paymentType === 'monthly' ? 'display:block' : 'display:none' %>">
+                            <label for="monthlyRate" class="form-label">Monthly Salary (₹)</label>
+                            <input type="number" class="form-control" id="monthlyRate" name="monthlyRate" value="<%= worker.monthlyRate %>" step="0.01">
+                        </div>
+                    </div>
+                    
+                    <% if (worker.paymentType === 'piece') { %>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Piece-based Worker:</strong> Rate will be fetched from Product Management.
+                        <a href="/products">Click here to set product rates</a>
+                    </div>
+                    <% } %>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="isActive" name="isActive" <%= worker.isActive ? 'checked' : '' %>>
+                            <label class="form-check-label" for="isActive">Active</label>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Update Worker
+                        </button>
+                        <a href="/workers" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const paymentType = document.getElementById('paymentType');
+    const monthlyRateDiv = document.getElementById('monthlyRateDiv');
+    
+    paymentType.addEventListener('change', function() {
+        if (this.value === 'monthly') {
+            monthlyRateDiv.style.display = 'block';
+        } else {
+            monthlyRateDiv.style.display = 'none';
+        }
+    });
+</script>
+
+
+
+
+
+
+
+
+
+
+<!-- 
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-warning text-white">
+                <h4 class="mb-0"><i class="fas fa-edit"></i> Edit Worker</h4>
+            </div>
+            <div class="card-body">
+                <form action="/workers/edit/<%= worker._id %>?_method=PUT" method="POST">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="name" class="form-label">Full Name *</label>
+                            <input type="text" class="form-control" id="name" name="name" value="<%= worker.name %>" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="phone" class="form-label">Phone Number *</label>
+                            <input type="tel" class="form-control" id="phone" name="phone" value="<%= worker.phone %>" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" name="email" value="<%= worker.email %>">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="address" class="form-label">Address</label>
+                            <textarea class="form-control" id="address" name="address" rows="2"><%= worker.address %></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="workerType" class="form-label">Worker Type *</label>
+                            <select class="form-control" id="workerType" name="workerType" required>
+                                <option value="cutting" <%= worker.workerType === 'cutting' ? 'selected' : '' %>>Cutting Worker</option>
+                                <option value="karigar" <%= worker.workerType === 'karigar' ? 'selected' : '' %>>Karigar (Piece-based)</option>
+                                <option value="helper" <%= worker.workerType === 'helper' ? 'selected' : '' %>>Helper (Finishing)</option>
+                                <option value="pressman" <%= worker.workerType === 'pressman' ? 'selected' : '' %>>Pressman</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="paymentType" class="form-label">Payment Type *</label>
+                            <select class="form-control" id="paymentType" name="paymentType" required>
+                                <option value="monthly" <%= worker.paymentType === 'monthly' ? 'selected' : '' %>>Monthly Fixed</option>
+                                <option value="piece" <%= worker.paymentType === 'piece' ? 'selected' : '' %>>Piece-based</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="rate" class="form-label">Rate (₹) *</label>
+                            <input type="number" class="form-control" id="rate" name="rate" value="<%= worker.rate %>" required step="0.01">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="isActive" name="isActive" <%= worker.isActive ? 'checked' : '' %>>
+                            <label class="form-check-label" for="isActive">Active</label>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Update Worker
+                        </button>
+                        <a href="/workers" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div> -->

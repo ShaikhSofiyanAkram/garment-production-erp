@@ -1,0 +1,278 @@
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fas fa-cog text-primary"></i> System Settings</h2>
+            <p class="text-muted">Manage your system configuration</p>
+        </div>
+        <div>
+            <button class="btn btn-outline-primary" onclick="exportSettings()">
+                <i class="fas fa-download"></i> Export Settings
+            </button>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-3">
+            <div class="card shadow-sm">
+                <div class="list-group list-group-flush">
+                    <a href="?tab=general" class="list-group-item list-group-item-action <%= activeTab === 'general' ? 'active' : '' %>">
+                        <i class="fas fa-building"></i> General
+                    </a>
+                    <a href="?tab=rates" class="list-group-item list-group-item-action <%= activeTab === 'rates' ? 'active' : '' %>">
+                        <i class="fas fa-tags"></i> Rates & Taxes
+                    </a>
+                    <a href="?tab=system" class="list-group-item list-group-item-action <%= activeTab === 'system' ? 'active' : '' %>">
+                        <i class="fas fa-desktop"></i> System
+                    </a>
+                    <a href="?tab=audit" class="list-group-item list-group-item-action <%= activeTab === 'audit' ? 'active' : '' %>">
+                        <i class="fas fa-history"></i> Audit Logs
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-9">
+            <!-- General Settings Tab -->
+            <div id="general-tab" class="<%= activeTab === 'general' ? '' : 'd-none' %>">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="fas fa-building"></i> General Settings</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="/settings/update">
+                            <input type="hidden" name="category" value="general">
+                            
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Company Name</label>
+                                <input type="text" class="form-control" name="settings[company_name]" 
+                                       value="<%= settings.general?.find(s => s.key === 'company_name')?.value || 'Garment Factory ERP' %>">
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Company Address</label>
+                                <textarea class="form-control" name="settings[company_address]" rows="2"><%= settings.general?.find(s => s.key === 'company_address')?.value || '123 Fashion Street, Garment District' %></textarea>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Phone Number</label>
+                                    <input type="text" class="form-control" name="settings[company_phone]" 
+                                           value="<%= settings.general?.find(s => s.key === 'company_phone')?.value || '+91 9876543210' %>">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Email Address</label>
+                                    <input type="email" class="form-control" name="settings[company_email]" 
+                                           value="<%= settings.general?.find(s => s.key === 'company_email')?.value || 'info@garmentfactory.com' %>">
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">GST Number</label>
+                                <input type="text" class="form-control" name="settings[company_gst]" 
+                                       value="<%= settings.general?.find(s => s.key === 'company_gst')?.value || '07AAACA1234A1Z' %>">
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Bill Footer Message</label>
+                                <textarea class="form-control" name="settings[bill_footer]" rows="2"><%= settings.general?.find(s => s.key === 'bill_footer')?.value || 'Thank you for your business!' %></textarea>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save Settings
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rates Tab -->
+            <div id="rates-tab" class="<%= activeTab === 'rates' ? '' : 'd-none' %>">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="fas fa-tags"></i> Rates & Taxes</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="/settings/update">
+                            <input type="hidden" name="category" value="rates">
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Helper Daily Rate (₹)</label>
+                                    <input type="number" class="form-control" name="settings[helper_daily_rate]" 
+                                           value="<%= settings.rates?.find(s => s.key === 'helper_daily_rate')?.value || 300 %>">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Cutting Worker Monthly Salary (₹)</label>
+                                    <input type="number" class="form-control" name="settings[cutting_monthly_rate]" 
+                                           value="<%= settings.rates?.find(s => s.key === 'cutting_monthly_rate')?.value || 12000 %>">
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Default GST (%)</label>
+                                    <input type="number" class="form-control" name="settings[default_gst]" 
+                                           value="<%= settings.rates?.find(s => s.key === 'default_gst')?.value || 18 %>">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-check mt-4">
+                                        <input type="checkbox" class="form-check-input" name="settings[round_off_enabled]" 
+                                               id="roundOff" value="true" <%= settings.rates?.find(s => s.key === 'round_off_enabled')?.value !== false ? 'checked' : '' %>>
+                                        <label class="form-check-label" for="roundOff">
+                                            Enable Round Off in Bills
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" name="settings[friday_holiday]" 
+                                           id="fridayHoliday" value="true" <%= settings.rates?.find(s => s.key === 'friday_holiday')?.value !== false ? 'checked' : '' %>>
+                                    <label class="form-check-label" for="fridayHoliday">
+                                        Friday Holiday (for Helper Salary)
+                                    </label>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save"></i> Save Settings
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Tab -->
+            <div id="system-tab" class="<%= activeTab === 'system' ? '' : 'd-none' %>">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="fas fa-desktop"></i> System Settings</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="/settings/update">
+                            <input type="hidden" name="category" value="system">
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Site Name</label>
+                                <input type="text" class="form-control" name="settings[site_name]" 
+                                       value="<%= settings.system?.find(s => s.key === 'site_name')?.value || 'Garment ERP' %>">
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Timezone</label>
+                                    <select class="form-control" name="settings[timezone]">
+                                        <option value="Asia/Kolkata" <%= (settings.system?.find(s => s.key === 'timezone')?.value || 'Asia/Kolkata') === 'Asia/Kolkata' ? 'selected' : '' %>>Asia/Kolkata (IST)</option>
+                                        <option value="Asia/Dubai" <%= (settings.system?.find(s => s.key === 'timezone')?.value) === 'Asia/Dubai' ? 'selected' : '' %>>Asia/Dubai</option>
+                                        <option value="America/New_York" <%= (settings.system?.find(s => s.key === 'timezone')?.value) === 'America/New_York' ? 'selected' : '' %>>America/New_York</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Items Per Page</label>
+                                    <select class="form-control" name="settings[items_per_page]">
+                                        <option value="10" <%= (settings.system?.find(s => s.key === 'items_per_page')?.value || 25) == 10 ? 'selected' : '' %>>10</option>
+                                        <option value="25" <%= (settings.system?.find(s => s.key === 'items_per_page')?.value || 25) == 25 ? 'selected' : '' %>>25</option>
+                                        <option value="50" <%= (settings.system?.find(s => s.key === 'items_per_page')?.value) == 50 ? 'selected' : '' %>>50</option>
+                                        <option value="100" <%= (settings.system?.find(s => s.key === 'items_per_page')?.value) == 100 ? 'selected' : '' %>>100</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" name="settings[email_notifications]" 
+                                           id="emailNotifications" value="true" <%= (settings.system?.find(s => s.key === 'email_notifications')?.value) !== false ? 'checked' : '' %>>
+                                    <label class="form-check-label" for="emailNotifications">
+                                        Enable Email Notifications
+                                    </label>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-info">
+                                <i class="fas fa-save"></i> Save Settings
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Audit Logs Tab -->
+            <div id="audit-tab" class="<%= activeTab === 'audit' ? '' : 'd-none' %>">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0"><i class="fas fa-history"></i> Audit Logs</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> View all system activities and user actions.
+                        </div>
+                        
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Timestamp</th>
+                                        <th>User</th>
+                                        <th>Action</th>
+                                        <th>Module</th>
+                                        <th>Details</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="auditLogsBody">
+                                    <tr><td colspan="5" class="text-center">No audit logs found</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+async function exportSettings() {
+    try {
+        const response = await fetch('/settings/export');
+        const data = await response.json();
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `garment-settings-${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        alert('Settings exported successfully!');
+    } catch (error) {
+        alert('Error exporting settings');
+    }
+}
+
+// Load audit logs if on audit tab
+<% if (activeTab === 'audit') { %>
+async function loadAuditLogs() {
+    try {
+        const response = await fetch('/settings/audit-logs');
+        const data = await response.json();
+        const tbody = document.getElementById('auditLogsBody');
+        
+        if (data.logs && data.logs.length) {
+            tbody.innerHTML = data.logs.map(log => `
+                <tr>
+                    <td>${new Date(log.timestamp).toLocaleString()}</td>
+                    <td>${log.user?.username || 'System'}</td>
+                    <td><span class="badge bg-${log.action === 'CREATE' ? 'success' : log.action === 'UPDATE' ? 'warning' : log.action === 'DELETE' ? 'danger' : 'info'}">${log.action}</span></td>
+                    <td><span class="badge bg-secondary">${log.module}</span></td>
+                    <td>${log.details?.changes || '-'}</td>
+                </tr>
+            `).join('');
+        }
+    } catch (error) {
+        console.error('Error loading audit logs:', error);
+    }
+}
+loadAuditLogs();
+setInterval(loadAuditLogs, 30000);
+<% } %>
+</script>

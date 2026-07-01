@@ -1,0 +1,485 @@
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-undo-alt"></i> Production Return</h4>
+                <small>Record returned pieces from karigar (Partial returns allowed)</small>
+            </div>
+            <div class="card-body">
+                <form action="/production/return" method="POST" id="returnForm">
+                    
+                    <!-- Select Assignment -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Select Assignment *</label>
+                        <select class="form-control" id="assignmentSelect" name="assignment" required>
+                            <option value="">-- Select Assignment --</option>
+                            <% if (assignments && assignments.length) { %>
+                                <% assignments.forEach(assignment => { %>
+                                    <option value="<%= assignment._id %>"
+                                            data-assignment='<%= JSON.stringify(assignment) %>'
+                                            data-remaining="<%= assignment.remainingTotal %>">
+                                        <%= assignment.assignmentId %> - <%= assignment.karigar?.name %> - <%= assignment.productName %>
+                                        | Given: <%= assignment.givenPieces %> 
+                                        | Returned: <%= assignment.totalReturnedSoFar %> 
+                                        | Remaining: <%= assignment.remainingTotal %>
+                                    </option>
+                                <% }) %>
+                            <% } else { %>
+                                <option value="">No pending assignments</option>
+                            <% } %>
+                        </select>
+                    </div>
+                    
+                    <!-- Assignment Details Panel -->
+                    <div id="assignmentDetailsPanel" class="card mb-4" style="display: none;">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0"><i class="fas fa-info-circle"></i> Assignment Details</h5>
+                        </div>
+                        <div class="card-body" id="assignmentDetails"></div>
+                    </div>
+                    
+                    <!-- Return Form Panel -->
+                    <div id="returnFormPanel" style="display: none;">
+                        <!-- Size-wise Return Cards -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Select Sizes & Return Pieces *</label>
+                            <div id="sizesContainer" class="border rounded p-3 bg-light">
+                                <p class="text-muted text-center">Select an assignment first</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Damage & Missing Reasons -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label">Damage Reason (if any)</label>
+                                <textarea class="form-control" name="damageReason" id="damageReason" rows="2" placeholder="Why were pieces damaged?"></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Missing Reason (if any)</label>
+                                <textarea class="form-control" name="missingReason" id="missingReason" rows="2" placeholder="Why are pieces missing?"></textarea>
+                            </div>
+                        </div>
+                        
+                        <!-- Remark -->
+                        <div class="mb-4">
+                            <label class="form-label">Remark</label>
+                            <textarea class="form-control" name="remark" rows="2" placeholder="Any additional notes?"></textarea>
+                        </div>
+                        
+                        <!-- Summary -->
+                        <div class="alert alert-info">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <strong>Total Pieces Returning:</strong>
+                                    <span id="totalReturningDisplay" class="fw-bold fs-4">0</span>
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>Total Given:</strong>
+                                    <span id="totalGivenDisplay" class="fw-bold">0</span>
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>Remaining After This:</strong>
+                                    <span id="totalRemainingDisplay" class="fw-bold text-warning">0</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-primary btn-lg px-5">
+                                <i class="fas fa-save"></i> Record Return
+                            </button>
+                            <a href="/production" class="btn btn-secondary btn-lg px-5">Cancel</a>
+                        </div>
+                    </div>
+                    
+                </form>
+            </div>
+        </div>
+    </div>
+    
+</div>
+
+<style>
+    .size-return-card {
+        background: white;
+        border-radius: 12px;
+        padding: 15px;
+        margin-bottom: 15px;
+        border-left: 4px solid #3b82f6;
+        transition: all 0.3s;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .size-return-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .size-return-card.fully-returned {
+        opacity: 0.6;
+        background: #f8f9fa;
+        border-left-color: #6c757d;
+    }
+    .size-return-card.partially-returned {
+        border-left-color: #f59e0b;
+        background: #fffbeb;
+    }
+    .size-name {
+        font-size: 1.1rem;
+        font-weight: bold;
+        color: #3b82f6;
+    }
+    .return-input {
+        width: 90px;
+        padding: 6px 10px;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 14px;
+        text-align: center;
+    }
+    .return-input:focus {
+        border-color: #3b82f6;
+        outline: none;
+    }
+    .badge-remaining {
+        background: #10b981;
+        color: white;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+    }
+    .badge-returned {
+        background: #6c757d;
+        color: white;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+    }
+    .badge-partial {
+        background: #f59e0b;
+        color: white;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+    }
+    .input-group-custom {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-top: 10px;
+    }
+    .input-group-custom label {
+        font-weight: 500;
+        font-size: 12px;
+        margin-bottom: 0;
+        display: block;
+    }
+    .input-group-custom .form-control {
+        width: 80px;
+        display: inline-block;
+    }
+    .input-group-custom > div {
+        text-align: center;
+    }
+</style>
+
+<script>
+    let currentAssignment = null;
+    let returnData = {};
+    let remainingPerSize = {};
+    
+    // Assignment selection handler
+    document.getElementById('assignmentSelect').addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        
+        if (!this.value) {
+            document.getElementById('assignmentDetailsPanel').style.display = 'none';
+            document.getElementById('returnFormPanel').style.display = 'none';
+            return;
+        }
+        
+        try {
+            currentAssignment = JSON.parse(selectedOption.dataset.assignment);
+            console.log('Selected Assignment:', currentAssignment);
+            console.log('Sizes with remaining:', currentAssignment.sizesWithRemaining);
+        } catch(e) {
+            console.error('Error parsing assignment:', e);
+            alert('Error loading assignment data');
+            return;
+        }
+        
+        document.getElementById('assignmentDetailsPanel').style.display = 'block';
+        document.getElementById('returnFormPanel').style.display = 'block';
+        
+        displayAssignmentDetails(currentAssignment);
+        loadSizesForReturn(currentAssignment);
+    });
+    
+    function displayAssignmentDetails(assignment) {
+        const detailsDiv = document.getElementById('assignmentDetails');
+        
+        let sizesHtml = '';
+        if (assignment.sizesWithRemaining && assignment.sizesWithRemaining.length) {
+            sizesHtml = '<div class="row mt-2">';
+            assignment.sizesWithRemaining.forEach(s => {
+                let statusBadge = '';
+                if (s.remaining === 0) {
+                    statusBadge = '<span class="badge bg-secondary">Complete</span>';
+                } else if (s.alreadyReturned > 0) {
+                    statusBadge = '<span class="badge bg-warning">Partial</span>';
+                } else {
+                    statusBadge = '<span class="badge bg-success">Pending</span>';
+                }
+                
+                sizesHtml += `
+                    <div class="col-md-3 mb-2">
+                        <div class="border rounded p-2">
+                            <strong>Size ${s.size}</strong><br>
+                            <small>Given: ${s.given}</small><br>
+                            <small>Returned: ${s.alreadyReturned}</small><br>
+                            <small class="text-${s.remaining > 0 ? 'success' : 'muted'}">Remaining: ${s.remaining}</small>
+                            ${statusBadge}
+                        </div>
+                    </div>
+                `;
+            });
+            sizesHtml += '</div>';
+        } else {
+            sizesHtml = '<p class="text-muted">No size data available</p>';
+        }
+        
+        detailsDiv.innerHTML = `
+            <div class="row">
+                <div class="col-md-6">
+                    <table class="table table-sm table-borderless">
+                        <tr><td><strong>Assignment ID:</strong></td><td>${assignment.assignmentId}</td></tr>
+                        <tr><td><strong>Karigar:</strong></td><td>${assignment.karigar?.name || 'N/A'}</td></tr>
+                        <tr><td><strong>Product:</strong></td><td>${assignment.productName}</td></tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <table class="table table-sm table-borderless">
+                        <tr><td><strong>Given Pieces:</strong></td><td>${assignment.givenPieces}</td></tr>
+                        <tr><td><strong>Already Returned:</strong></td><td><span class="text-danger fw-bold">${assignment.totalReturnedSoFar || 0}</span></td></tr>
+                        <tr><td><strong>Remaining:</strong></td><td><span class="text-success fw-bold">${assignment.remainingTotal || 0}</span></td></tr>
+                    </table>
+                </div>
+            </div>
+            <hr>
+            <strong>📏 Size-wise Status:</strong>
+            ${sizesHtml}
+        `;
+    }
+    
+    function loadSizesForReturn(assignment) {
+        const container = document.getElementById('sizesContainer');
+        
+        if (!assignment.sizesWithRemaining || assignment.sizesWithRemaining.length === 0) {
+            container.innerHTML = '<div class="alert alert-warning">No sizes available for this assignment. The cutting may not have size details.</div>';
+            return;
+        }
+        
+        // Reset return data
+        returnData = {};
+        remainingPerSize = {};
+        
+        let html = '<div class="row">';
+        
+        assignment.sizesWithRemaining.forEach(s => {
+            const isFullyReturned = s.remaining === 0;
+            const isPartiallyReturned = s.alreadyReturned > 0 && s.remaining > 0;
+            remainingPerSize[s.size] = s.remaining;
+            
+            let cardClass = 'size-return-card';
+            let badgeHtml = '';
+            
+            if (isFullyReturned) {
+                cardClass += ' fully-returned';
+                badgeHtml = '<span class="badge-returned"><i class="fas fa-check-circle"></i> Fully Returned</span>';
+            } else if (isPartiallyReturned) {
+                cardClass += ' partially-returned';
+                badgeHtml = `<span class="badge-partial"><i class="fas fa-hourglass-half"></i> Already: ${s.alreadyReturned}/${s.given}</span>`;
+            } else {
+                badgeHtml = `<span class="badge-remaining"><i class="fas fa-box-open"></i> Available: ${s.remaining} pcs</span>`;
+            }
+            
+            html += `
+                <div class="col-md-6">
+                    <div class="${cardClass}" data-size="${s.size}">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="size-name">📏 Size ${s.size}</span>
+                            ${badgeHtml}
+                        </div>
+                        <div class="mb-2">
+                            <small class="text-muted">Total: ${s.given} | Returned: ${s.alreadyReturned} | Damage: ${s.alreadyDamaged} | Missing: ${s.alreadyMissing}</small>
+                        </div>
+                        ${!isFullyReturned ? `
+                            <div class="input-group-custom">
+                                <div>
+                                    <label><i class="fas fa-check-circle text-success"></i> Good</label>
+                                    <input type="number" class="form-control return-input" 
+                                           id="returned_${s.size}" data-size="${s.size}" data-type="returned"
+                                           min="0" max="${s.remaining}" value="0"
+                                           onchange="updateReturn('${s.size}', 'returned', this.value)">
+                                </div>
+                                <div>
+                                    <label><i class="fas fa-heart-broken text-danger"></i> Damage</label>
+                                    <input type="number" class="form-control return-input" 
+                                           id="damage_${s.size}" data-size="${s.size}" data-type="damage"
+                                           min="0" value="0"
+                                           onchange="updateReturn('${s.size}', 'damage', this.value)">
+                                </div>
+                                <div>
+                                    <label><i class="fas fa-question-circle text-warning"></i> Missing</label>
+                                    <input type="number" class="form-control return-input" 
+                                           id="missing_${s.size}" data-size="${s.size}" data-type="missing"
+                                           min="0" value="0"
+                                           onchange="updateReturn('${s.size}', 'missing', this.value)">
+                                </div>
+                            </div>
+                            <small class="text-muted">Max: ${s.remaining} pieces</small>
+                        ` : `
+                            <div class="alert alert-secondary text-center mb-0 mt-2">
+                                <i class="fas fa-check-circle"></i> This size is fully returned
+                            </div>
+                        `}
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+        container.innerHTML = html;
+        updateTotalReturning();
+    }
+    
+    function updateReturn(size, type, value) {
+        const pieces = parseInt(value) || 0;
+        
+        if (!returnData[size]) {
+            returnData[size] = { returned: 0, damage: 0, missing: 0 };
+        }
+        
+        // Validate against remaining
+        const maxAllowed = remainingPerSize[size] || 0;
+        
+        if (type === 'returned') {
+            const currentDamage = returnData[size].damage || 0;
+            const currentMissing = returnData[size].missing || 0;
+            if (pieces + currentDamage + currentMissing > maxAllowed) {
+                alert(`❌ Cannot exceed ${maxAllowed} pieces for size ${size}`);
+                document.getElementById(`returned_${size}`).value = returnData[size].returned || 0;
+                return;
+            }
+            returnData[size].returned = pieces;
+        } else if (type === 'damage') {
+            const currentReturned = returnData[size].returned || 0;
+            const currentMissing = returnData[size].missing || 0;
+            if (currentReturned + pieces + currentMissing > maxAllowed) {
+                alert(`❌ Cannot exceed ${maxAllowed} pieces for size ${size}`);
+                document.getElementById(`damage_${size}`).value = returnData[size].damage || 0;
+                return;
+            }
+            returnData[size].damage = pieces;
+        } else if (type === 'missing') {
+            const currentReturned = returnData[size].returned || 0;
+            const currentDamage = returnData[size].damage || 0;
+            if (currentReturned + currentDamage + pieces > maxAllowed) {
+                alert(`❌ Cannot exceed ${maxAllowed} pieces for size ${size}`);
+                document.getElementById(`missing_${size}`).value = returnData[size].missing || 0;
+                return;
+            }
+            returnData[size].missing = pieces;
+        }
+        
+        updateTotalReturning();
+        
+        // Update the max hint for this size
+        const newTotal = (returnData[size].returned || 0) + (returnData[size].damage || 0) + (returnData[size].missing || 0);
+        const remainingAfter = maxAllowed - newTotal;
+        const hintElement = document.querySelector(`#returned_${size}`).closest('.size-return-card')?.querySelector('small.text-muted');
+        if (hintElement && remainingAfter >= 0) {
+            hintElement.innerText = `Remaining: ${remainingAfter} pieces`;
+            if (remainingAfter === 0) {
+                hintElement.style.color = '#10b981';
+                hintElement.innerHTML = '<i class="fas fa-check"></i> All pieces accounted for!';
+            }
+        }
+    }
+    
+    function updateTotalReturning() {
+        let totalReturned = 0;
+        let totalDamage = 0;
+        let totalMissing = 0;
+        
+        for (const size in returnData) {
+            totalReturned += returnData[size].returned || 0;
+            totalDamage += returnData[size].damage || 0;
+            totalMissing += returnData[size].missing || 0;
+        }
+        
+        const grandTotal = totalReturned + totalDamage + totalMissing;
+        const remainingAfter = (currentAssignment?.remainingTotal || 0) - grandTotal;
+        
+        document.getElementById('totalReturningDisplay').innerText = grandTotal;
+        document.getElementById('totalGivenDisplay').innerText = currentAssignment?.givenPieces || 0;
+        document.getElementById('totalRemainingDisplay').innerText = remainingAfter >= 0 ? remainingAfter : 0;
+        
+        // Color code the total
+        const totalSpan = document.getElementById('totalReturningDisplay');
+        if (grandTotal === 0) {
+            totalSpan.style.color = '#dc3545';
+        } else if (grandTotal >= (currentAssignment?.remainingTotal || 0)) {
+            totalSpan.style.color = '#28a745';
+        } else {
+            totalSpan.style.color = '#f59e0b';
+        }
+    }
+    
+    // Form submission
+    document.getElementById('returnForm').addEventListener('submit', function(e) {
+        // Calculate totals
+        let totalReturned = 0;
+        let totalDamage = 0;
+        let totalMissing = 0;
+        
+        for (const size in returnData) {
+            totalReturned += returnData[size].returned || 0;
+            totalDamage += returnData[size].damage || 0;
+            totalMissing += returnData[size].missing || 0;
+        }
+        
+        if (totalReturned === 0 && totalDamage === 0 && totalMissing === 0) {
+            e.preventDefault();
+            alert('❌ Please enter at least one piece to return');
+            return false;
+        }
+        
+        // Validate no negative remaining
+        const remainingAfter = (currentAssignment?.remainingTotal || 0) - (totalReturned + totalDamage + totalMissing);
+        if (remainingAfter < 0) {
+            e.preventDefault();
+            alert('❌ Cannot return more than remaining pieces!');
+            return false;
+        }
+        
+        // Prepare submission data
+        const submissionData = {
+            sizes: returnData,
+            totalReturned: totalReturned,
+            totalDamage: totalDamage,
+            totalMissing: totalMissing
+        };
+        
+        // Add hidden input
+        let input = document.getElementById('returnDataInput');
+        if (!input) {
+            input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'returnData';
+            input.id = 'returnDataInput';
+            this.appendChild(input);
+        }
+        input.value = JSON.stringify(submissionData);
+        
+        return true;
+    });
+</script>

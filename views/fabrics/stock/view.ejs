@@ -1,0 +1,269 @@
+<%
+currentPage = 'fabrics';
+%>
+
+<%- include('../../layouts/admin-layout') %>
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fas fa-warehouse text-primary"></i> Stock Details</h2>
+            <p class="text-muted">Batch: <%= stock.batchNumber %></p>
+        </div>
+        <div>
+            <a href="/fabrics/stock" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Stock
+            </a>
+            <button class="btn btn-primary" onclick="editStock()">
+                <i class="fas fa-edit"></i> Edit
+            </button>
+        </div>
+    </div>
+
+    <!-- Stock Info Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h6>Total Meters</h6>
+                    <h3><%= stock.totalMeters.toFixed(2) %> m</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h6>Remaining</h6>
+                    <h3><%= stock.remainingMeters.toFixed(2) %> m</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h6>Consumed</h6>
+                    <h3><%= (stock.consumedMeters || 0).toFixed(2) %> m</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <h6>Wasted</h6>
+                    <h3><%= (stock.wastedMeters || 0).toFixed(2) %> m</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stock Details -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white">
+            <i class="fas fa-info-circle"></i> Batch Information
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <strong>Fabric Type:</strong> <%= stock.fabricType %><br>
+                    <strong>Fabric Name:</strong> <%= stock.fabricName %><br>
+                    <strong>Color:</strong> <%= stock.color || '-' %>
+                </div>
+                <div class="col-md-4">
+                    <strong>Supplier:</strong> <%= stock.supplier || '-' %><br>
+                    <strong>Invoice #:</strong> <%= stock.invoiceNumber || '-' %><br>
+                    <strong>Purchase Date:</strong> <%= new Date(stock.purchaseDate).toLocaleDateString() %>
+                </div>
+                <div class="col-md-4">
+                    <strong>Roll #:</strong> <%= stock.rollNumber || '-' %><br>
+                    <strong>Meters/Roll:</strong> <%= stock.metersPerRoll || '-' %><br>
+                    <strong>Total Rolls:</strong> <%= stock.totalRolls %>
+                </div>
+            </div>
+            <% if (stock.remark) { %>
+            <hr>
+            <strong>Remark:</strong> <%= stock.remark %>
+            <% } %>
+        </div>
+    </div>
+
+    <!-- Add Consumption Form -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-success text-white">
+            <i class="fas fa-industry"></i> Record Consumption
+        </div>
+        <div class="card-body">
+            <form method="POST" action="/fabrics/stock/consumption">
+                <input type="hidden" name="fabricStockId" value="<%= stock._id %>">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Select Cutting *</label>
+                        <select class="form-control" name="cuttingId" required>
+                            <option value="">-- Select Cutting --</option>
+                            <!-- Cuttings will be loaded via API -->
+                        </select>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label class="form-label">Meters/Piece</label>
+                        <input type="number" class="form-control" name="metersPerPiece" step="0.01" required>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label class="form-label">Consumed (m) *</label>
+                        <input type="number" class="form-control" name="consumedMeters" step="0.01" required>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label class="form-label">Wasted (m)</label>
+                        <input type="number" class="form-control" name="wastedMeters" step="0.01" value="0">
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label class="form-label">&nbsp;</label>
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="fas fa-check"></i> Record
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Waste Form -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-danger text-white">
+            <i class="fas fa-trash-alt"></i> Record Waste
+        </div>
+        <div class="card-body">
+            <form method="POST" action="/fabrics/stock/waste">
+                <input type="hidden" name="fabricStockId" value="<%= stock._id %>">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">Waste Type *</label>
+                        <select class="form-control" name="wasteType" required>
+                            <option value="cutting_waste">Cutting Waste</option>
+                            <option value="damage">Damage</option>
+                            <option value="defective">Defective</option>
+                            <option value="sample">Sample</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">Wasted Meters *</label>
+                        <input type="number" class="form-control" name="wastedMeters" step="0.01" required>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Reason *</label>
+                        <input type="text" class="form-control" name="wasteReason" required placeholder="Why was this wasted?">
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label class="form-label">&nbsp;</label>
+                        <button type="submit" class="btn btn-danger w-100">
+                            <i class="fas fa-trash"></i> Record Waste
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Consumption History -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white">
+            <i class="fas fa-chart-line"></i> Consumption History
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Date</th>
+                            <th>Consumption #</th>
+                            <th>Cutting #</th>
+                            <th>Product</th>
+                            <th>Pieces</th>
+                            <th>Meters/Piece</th>
+                            <th>Consumed (m)</th>
+                            <th>Wasted (m)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% if (consumptions && consumptions.length) { %>
+                            <% consumptions.forEach(c => { %>
+                                <tr>
+                                    <td><%= new Date(c.consumptionDate).toLocaleDateString() %></td>
+                                    <td><strong><%= c.consumptionNumber %></strong></td>
+                                    <td><%= c.cutting?.cuttingNumber || '-' %></td>
+                                    <td><%= c.productName %></td>
+                                    <td class="text-end"><%= c.totalPieces %></td>
+                                    <td class="text-end"><%= c.metersPerPiece.toFixed(2) %></td>
+                                    <td class="text-end text-success"><%= c.consumedMeters.toFixed(2) %></td>
+                                    <td class="text-end text-danger"><%= c.wastedMeters.toFixed(2) %></td>
+                                </tr>
+                            <% }) %>
+                        <% } else { %>
+                            <tr><td colspan="8" class="text-center">No consumption records</td</tr>
+                        <% } %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Waste History -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-white">
+            <i class="fas fa-trash-alt"></i> Waste History
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Date</th>
+                            <th>Waste #</th>
+                            <th>Type</th>
+                            <th>Meters</th>
+                            <th>Reason</th>
+                            <th>Remark</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% if (wastes && wastes.length) { %>
+                            <% wastes.forEach(w => { %>
+                                <tr>
+                                    <td><%= new Date(w.wasteDate).toLocaleDateString() %></td>
+                                    <td><strong><%= w.wasteNumber %></strong></td>
+                                    <td><%= w.wasteType.replace('_', ' ') %></td>
+                                    <td class="text-end text-danger"><%= w.wastedMeters.toFixed(2) %></td>
+                                    <td><%= w.wasteReason %></td>
+                                    <td><%= w.remark || '-' %></td>
+                                </tr>
+                            <% }) %>
+                        <% } else { %>
+                            <tr><td colspan="6" class="text-center">No waste records</td</tr>
+                        <% } %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function editStock() {
+    // Implement edit functionality
+    alert('Edit feature - Click on fields to edit');
+}
+
+// Load cuttings for dropdown
+async function loadCuttings() {
+    try {
+        const response = await fetch('/cutting/api/list');
+        const cuttings = await response.json();
+        const select = document.querySelector('select[name="cuttingId"]');
+        select.innerHTML = '<option value="">-- Select Cutting --</option>' + 
+            cuttings.map(c => `<option value="${c._id}">${c.cuttingNumber} - ${c.productName} (${c.totalPieces} pieces)</option>`).join('');
+    } catch (error) {
+        console.error('Error loading cuttings:', error);
+    }
+}
+
+loadCuttings();
+</script>

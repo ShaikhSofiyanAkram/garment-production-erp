@@ -1,0 +1,835 @@
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-cut"></i> New Cutting Entry</h4>
+                <small>Select product, then click on sizes to add pieces</small>
+            </div>
+            <div class="card-body">
+                <form action="/cutting/create" method="POST" id="cuttingForm">
+                    
+                    <!-- Client Name (Optional) -->
+                    <div class="mb-3">
+                        <label class="form-label">Client Name <span class="text-muted">(Optional)</span></label>
+                        <select class="form-control" id="clientSelect" name="client">
+                            <option value="">-- Select Client (Optional) --</option>
+                            <% if (clients && clients.length) { %>
+                                <% clients.forEach(client => { %>
+                                    <option value="<%= client.name %>"><%= client.name %> - <%= client.phone %></option>
+                                <% }) %>
+                            <% } %>
+                        </select>
+                        <small class="text-muted">Order module is optional. Cutting can be done without order.</small>
+                    </div>
+                    
+                    <!-- Product Selection -->
+                    <div class="mb-3">
+                        <label class="form-label">Select Product *</label>
+                        <select class="form-control" id="productSelect" name="productSelect" required>
+                            <option value="">-- Select Product --</option>
+                            <% if (products && products.length) { %>
+                                <% 
+                                    const kidsProducts = [];
+                                    const mensProducts = [];
+                                    const otherProducts = [];
+                                    const uniqueNames = new Set();
+                                    
+                                    products.forEach(product => {
+                                        if (!uniqueNames.has(product.name)) {
+                                            uniqueNames.add(product.name);
+                                            if (product.category === 'Kids') {
+                                                kidsProducts.push(product);
+                                            } else if (product.category === 'Mens') {
+                                                mensProducts.push(product);
+                                            } else {
+                                                otherProducts.push(product);
+                                            }
+                                        }
+                                    });
+                                %>
+                                
+                                <% if (kidsProducts.length > 0) { %>
+                                    <optgroup label="👶 Kids Wear (Size 1-12)">
+                                        <% kidsProducts.forEach(product => { %>
+                                            <option value="<%= product.name %>" data-category="<%= product.category %>">
+                                                <%= product.name %>
+                                            </option>
+                                        <% }) %>
+                                    </optgroup>
+                                <% } %>
+                                
+                                <% if (mensProducts.length > 0) { %>
+                                    <optgroup label="👔 Mens Wear (Size 26-60)">
+                                        <% mensProducts.forEach(product => { %>
+                                            <option value="<%= product.name %>" data-category="<%= product.category %>">
+                                                <%= product.name %>
+                                            </option>
+                                        <% }) %>
+                                    </optgroup>
+                                <% } %>
+                                
+                                <% if (otherProducts.length > 0) { %>
+                                    <optgroup label="📦 Other Products">
+                                        <% otherProducts.forEach(product => { %>
+                                            <option value="<%= product.name %>" data-category="<%= product.category %>">
+                                                <%= product.name %>
+                                            </option>
+                                        <% }) %>
+                                    </optgroup>
+                                <% } %>
+                            <% } %>
+                            <!-- 👇 YAHAN YE LINE ADD KARO (sabse last option) -->
+                            <option value="other" data-category="other">➕ Other (Manual Entry)</option>
+                            <!-- 👆 YAHAN TAK -->
+                        </select>
+                        <input type="hidden" name="productName" id="productName">
+                        <input type="hidden" name="productCategory" id="productCategory">
+                    </div>
+                    
+
+                    <!-- 👇 YAHAN SE MANUAL PRODUCT OPTION DAALO -->
+                    <!-- Manual Product Name Option -->
+                    <div class="mb-3" id="manualProductDiv" style="display: none;">
+                        <label class="form-label">Manual Product Name <span class="text-muted">(Enter custom product)</span></label>
+                        <input type="text" class="form-control" id="manualProductName" name="manualProductName" placeholder="Enter product name manually">
+                        <small class="text-muted">Use this if product is not in the list above</small>
+                    </div>
+                    <!-- 👆 YAHAN TAK -->
+
+
+                    <!-- Size Selection Area -->
+                    <div id="sizeSection" style="display: none;">
+                        <!-- Manual Size Add -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Add Size Manually</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="manualSizeInput" placeholder="Enter size (e.g., 36, XL, 42)">
+                                <button class="btn btn-success" type="button" onclick="addManualSize()">
+                                    <i class="fas fa-plus"></i> Add Size
+                                </button>
+                            </div>
+                            <small class="text-muted">Enter any size - numbers or text (e.g., 36, XL, XXL, 42)</small>
+                        </div>
+                        
+                        <!-- OR Preset Sizes -->
+                        <div class="mb-3" id="presetSizesDiv" style="display: none;">
+                            <label class="form-label fw-bold">OR Select from Preset Sizes</label>
+                            <div id="sizeChipsContainer" class="d-flex flex-wrap gap-2" style="min-height: 60px; padding: 10px; border: 1px solid #dee2e6; border-radius: 8px; background: #f8fafc;">
+                                <!-- Preset sizes will appear here -->
+                            </div>
+                        </div>
+                        
+                        <!-- Added Sizes List -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Added Sizes & Cutting Pieces</label>
+                            <div id="addedSizesContainer" class="border rounded p-3 bg-light" style="min-height: 150px;">
+                                <div id="sizeRowsList">
+                                    <p class="text-muted text-center">Click "Add Size" button above to add sizes with cutting pieces</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Total Pieces -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Total Cutting Pieces</label>
+                        <input type="text" class="form-control" id="totalPieces" readonly 
+                               style="background:#e9ecef; font-weight:bold; font-size:1.2rem;">
+                    </div>
+                    
+                    <!-- Cutting Worker -->
+                    <div class="mb-3">
+                        <label class="form-label">Cutting Worker <span class="text-muted">(Optional)</span></label>
+                        <select class="form-control" name="cuttingWorker">
+                            <option value="">Select Worker</option>
+                            <% if (workers && workers.length) { %>
+                                <% workers.forEach(worker => { %>
+                                    <option value="<%= worker._id %>"><%= worker.name %></option>
+                                <% }) %>
+                            <% } %>
+                        </select>
+                    </div>
+                    
+                    <!-- Remark -->
+                    <div class="mb-3">
+                        <label class="form-label">Remark</label>
+                        <textarea class="form-control" name="remark" rows="2" placeholder="Any special instructions?"></textarea>
+                    </div>
+                    
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-primary btn-lg px-5">
+                            <i class="fas fa-save"></i> Save Cutting Entry
+                        </button>
+                        <a href="/cutting" class="btn btn-secondary btn-lg px-5">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .size-chip {
+        display: inline-block;
+        background: white;
+        border: 2px solid #dee2e6;
+        border-radius: 10px;
+        padding: 10px 20px;
+        margin: 5px;
+        cursor: pointer;
+        transition: all 0.3s;
+        font-weight: 500;
+        font-size: 16px;
+        color: #334155;
+    }
+    .size-chip:hover {
+        background: #2196f3;
+        color: white;
+        border-color: #2196f3;
+        transform: scale(1.02);
+    }
+    .size-chip.disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        background: #e9ecef;
+        transform: none;
+    }
+    .size-row {
+        background: white;
+        border-radius: 12px;
+        padding: 12px 15px;
+        margin-bottom: 10px;
+        border-left: 4px solid #2196f3;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .size-name {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #1e293b;
+    }
+    .piece-input {
+        width: 130px;
+        padding: 8px 12px;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 14px;
+        text-align: center;
+        font-weight: 500;
+    }
+    .piece-input:focus {
+        border-color: #2196f3;
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(33,150,243,0.1);
+    }
+    .piece-input.invalid {
+        border-color: #dc3545;
+        background: #fff0f0;
+    }
+    .remove-size-btn {
+        background: #dc3545;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 6px 14px;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 13px;
+    }
+    .remove-size-btn:hover {
+        background: #c82333;
+    }
+    optgroup {
+        font-weight: bold;
+        background: #f8f9fa;
+        padding: 5px 0;
+    }
+    optgroup option {
+        font-weight: normal;
+        padding-left: 20px;
+    }
+    @media (max-width: 768px) {
+        .size-row {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .piece-input {
+            width: 100%;
+        }
+        .remove-size-btn {
+            width: 100%;
+        }
+    }
+</style>
+
+<script>
+      let selectedSizesData = {};
+    let currentCategory = null;
+    
+    // Product selection
+    document.getElementById('productSelect').addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        const productName = selectedOption.value;
+        const category = selectedOption.dataset.category;
+        
+        if (!productName || productName === '') {
+            document.getElementById('sizeSection').style.display = 'none';
+            return;
+        }
+        
+        document.getElementById('productName').value = productName;
+        document.getElementById('productCategory').value = category || 'Other';
+        currentCategory = category;
+        
+        // Show size section
+        document.getElementById('sizeSection').style.display = 'block';
+        
+        // Show preset sizes only for Kids/Mens
+        const presetSizesDiv = document.getElementById('presetSizesDiv');
+        if (category === 'Kids') {
+            presetSizesDiv.style.display = 'block';
+            loadPresetSizes(kidsSizes);
+            document.getElementById('categoryLabel').innerHTML = '👶 Kids Sizes (1 to 12 Years)';
+        } else if (category === 'Mens') {
+            presetSizesDiv.style.display = 'block';
+            loadPresetSizes(mensSizes);
+            document.getElementById('categoryLabel').innerHTML = '👔 Mens Sizes (26 to 60)';
+        } else {
+            presetSizesDiv.style.display = 'none';
+        }
+        
+        // Reset selected sizes
+        selectedSizesData = {};
+        document.getElementById('sizeRowsList').innerHTML = '<p class="text-muted text-center">Click "Add Size" button above to add sizes with cutting pieces</p>';
+        calculateTotal();
+    });
+    
+    // Preset sizes
+    const kidsSizes = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
+    const mensSizes = [];
+    for (let i = 26; i <= 60; i += 2) {
+        mensSizes.push(i.toString());
+    }
+    
+    function addCustomSizeInput() {
+        const container = document.getElementById('sizeChipsContainer');
+        container.innerHTML = '';
+        
+        const inputGroup = document.createElement('div');
+        inputGroup.className = 'input-group';
+        inputGroup.style.width = '100%';
+        inputGroup.innerHTML = `
+            <input type="text" class="form-control" id="customSizeInput" placeholder="Enter size (e.g., XL, XXL, 42)">
+            <button class="btn btn-primary" type="button" onclick="addCustomSize()">
+                <i class="fas fa-plus"></i> Add Size
+            </button>
+        `;
+        container.appendChild(inputGroup);
+    }
+    
+    window.addCustomSize = function() {
+        const input = document.getElementById('customSizeInput');
+        const size = input.value.trim();
+        
+        if (!size) {
+            alert('Please enter a size');
+            return;
+        }
+        
+        if (selectedSizesData[size] !== undefined) {
+            alert(`Size ${size} is already added!`);
+            return;
+        }
+        
+        selectedSizesData[size] = 0;
+        
+        const rowsList = document.getElementById('sizeRowsList');
+        if (rowsList.innerHTML.includes('Click on sizes above')) {
+            rowsList.innerHTML = '';
+        }
+        
+        const rowDiv = document.createElement('div');
+        rowDiv.className = 'size-row';
+        rowDiv.id = `size-row-${size}`;
+        rowDiv.innerHTML = `
+            <div>
+                <span class="size-name">📏 Size ${size}</span>
+            </div>
+            <div>
+                <input type="number" class="piece-input" data-size="${size}" 
+                       placeholder="Enter pieces" min="0" value="0"
+                       onchange="updatePieces('${size}', this.value)"
+                       onkeyup="updatePieces('${size}', this.value)">
+                <button type="button" class="remove-size-btn ms-2" onclick="removeSizeRow('${size}')">
+                    <i class="fas fa-trash"></i> Remove
+                </button>
+            </div>
+        `;
+        rowsList.appendChild(rowDiv);
+        
+        input.value = '';
+        calculateTotal();
+    };
+    
+    function loadSizeChips(sizes) {
+        const container = document.getElementById('sizeChipsContainer');
+        container.innerHTML = '';
+        
+        sizes.forEach(size => {
+            const chip = document.createElement('span');
+            chip.className = 'size-chip';
+            chip.textContent = size;
+            chip.dataset.size = size;
+            chip.onclick = () => addSizeRow(size);
+            container.appendChild(chip);
+        });
+    }
+    
+    function addSizeRow(size) {
+        if (selectedSizesData[size] !== undefined) {
+            alert(`Size ${size} is already added!`);
+            return;
+        }
+        
+        selectedSizesData[size] = 0;
+        
+        const rowsList = document.getElementById('sizeRowsList');
+        if (rowsList.innerHTML.includes('Click on sizes above')) {
+            rowsList.innerHTML = '';
+        }
+        
+        const rowDiv = document.createElement('div');
+        rowDiv.className = 'size-row';
+        rowDiv.id = `size-row-${size}`;
+        rowDiv.innerHTML = `
+            <div>
+                <span class="size-name">📏 Size ${size}</span>
+            </div>
+            <div>
+                <input type="number" class="piece-input" data-size="${size}" 
+                       placeholder="Enter pieces" min="0" value="0"
+                       onchange="updatePieces('${size}', this.value)"
+                       onkeyup="updatePieces('${size}', this.value)">
+                <button type="button" class="remove-size-btn ms-2" onclick="removeSizeRow('${size}')">
+                    <i class="fas fa-trash"></i> Remove
+                </button>
+            </div>
+        `;
+        rowsList.appendChild(rowDiv);
+        
+        // Disable the size chip
+        const chip = document.querySelector(`.size-chip[data-size="${size}"]`);
+        if (chip) {
+            chip.classList.add('disabled');
+            chip.onclick = null;
+        }
+        
+        setTimeout(() => {
+            const input = rowDiv.querySelector('.piece-input');
+            if (input) input.focus();
+        }, 100);
+        
+        calculateTotal();
+    }
+    
+    window.removeSizeRow = function(size) {
+        delete selectedSizesData[size];
+        const row = document.getElementById(`size-row-${size}`);
+        if (row) row.remove();
+        
+        const chip = document.querySelector(`.size-chip[data-size="${size}"]`);
+        if (chip) {
+            chip.classList.remove('disabled');
+            chip.onclick = () => addSizeRow(size);
+        }
+        
+        const rowsList = document.getElementById('sizeRowsList');
+        if (rowsList.children.length === 0) {
+            rowsList.innerHTML = '<p class="text-muted text-center">Click on sizes above to add cutting pieces</p>';
+        }
+        
+        calculateTotal();
+    };
+    
+    window.updatePieces = function(size, value) {
+        let pieces = parseInt(value) || 0;
+        if (pieces < 0) pieces = 0;
+        selectedSizesData[size] = pieces;
+        
+        const input = document.querySelector(`#size-row-${size} .piece-input`);
+        if (input) {
+            if (pieces === 0) {
+                input.classList.add('invalid');
+            } else {
+                input.classList.remove('invalid');
+            }
+        }
+        calculateTotal();
+    };
+    
+    function calculateTotal() {
+        let total = 0;
+        for (let size in selectedSizesData) {
+            total += selectedSizesData[size];
+        }
+        const totalInput = document.getElementById('totalPieces');
+        totalInput.value = total;
+        
+        if (total === 0) {
+            totalInput.style.borderColor = '#dc3545';
+            totalInput.style.backgroundColor = '#fff0f0';
+        } else {
+            totalInput.style.borderColor = '#28a745';
+            totalInput.style.backgroundColor = '#e9ecef';
+        }
+    }
+    
+    document.getElementById('cuttingForm').addEventListener('submit', function(e) {
+        let total = 0;
+        for (let size in selectedSizesData) {
+            total += selectedSizesData[size];
+        }
+        
+        if (total === 0) {
+            e.preventDefault();
+            alert('❌ Please add at least one size with cutting pieces');
+            return false;
+        }
+        
+        const sizesToSubmit = {};
+        for (let size in selectedSizesData) {
+            if (selectedSizesData[size] > 0) {
+                sizesToSubmit[size] = selectedSizesData[size];
+            }
+        }
+        
+        let sizesInput = document.getElementById('sizesDataInput');
+        if (!sizesInput) {
+            sizesInput = document.createElement('input');
+            sizesInput.type = 'hidden';
+            sizesInput.name = 'sizesData';
+            sizesInput.id = 'sizesDataInput';
+            this.appendChild(sizesInput);
+        }
+        sizesInput.value = JSON.stringify(sizesToSubmit);
+        
+        return true;
+    });
+
+
+
+
+
+    function loadPresetSizes(sizes) {
+        const container = document.getElementById('sizeChipsContainer');
+        container.innerHTML = '';
+        
+        sizes.forEach(size => {
+            const chip = document.createElement('span');
+            chip.className = 'size-chip';
+            chip.textContent = size;
+            chip.dataset.size = size;
+            chip.onclick = () => addSizeFromPreset(size);
+            container.appendChild(chip);
+        });
+    }
+
+    function addSizeFromPreset(size) {
+        if (selectedSizesData[size] !== undefined) {
+            alert(`Size ${size} is already added!`);
+            return;
+        }
+        addSizeRow(size);
+        
+        // Disable the chip
+        const chip = document.querySelector(`.size-chip[data-size="${size}"]`);
+        if (chip) {
+            chip.classList.add('disabled');
+            chip.onclick = null;
+        }
+    };
+
+    // Manual size add
+    window.addManualSize = function() {
+        const input = document.getElementById('manualSizeInput');
+        const size = input.value.trim();
+        
+        if (!size) {
+            alert('Please enter a size');
+            return;
+        }
+        
+        if (selectedSizesData[size] !== undefined) {
+            alert(`Size ${size} is already added!`);
+            return;
+        }
+        
+        addSizeRow(size);
+        input.value = '';
+    };
+
+
+    function addSizeRow(size) {
+        selectedSizesData[size] = 0;
+        
+        const rowsList = document.getElementById('sizeRowsList');
+        if (rowsList.innerHTML.includes('Click "Add Size" button')) {
+            rowsList.innerHTML = '';
+        }
+        
+        const rowDiv = document.createElement('div');
+        rowDiv.className = 'size-row';
+        rowDiv.id = `size-row-${size}`;
+        rowDiv.innerHTML = `
+            <div>
+                <span class="size-name">📏 Size ${size}</span>
+            </div>
+            <div>
+                <input type="number" class="piece-input" data-size="${size}" 
+                       placeholder="Enter pieces" min="0" value="0"
+                       onchange="updatePieces('${size}', this.value)"
+                       onkeyup="updatePieces('${size}', this.value)">
+                <button type="button" class="remove-size-btn ms-2" onclick="removeSizeRow('${size}')">
+                    <i class="fas fa-trash"></i> Remove
+                </button>
+            </div>
+        `;
+        rowsList.appendChild(rowDiv);
+        
+        setTimeout(() => {
+            const input = rowDiv.querySelector('.piece-input');
+            if (input) input.focus();
+        }, 100);
+        
+        calculateTotal();
+    }
+    
+    window.removeSizeRow = function(size) {
+        delete selectedSizesData[size];
+        const row = document.getElementById(`size-row-${size}`);
+        if (row) row.remove();
+        
+        // Re-enable preset chip if exists
+        const chip = document.querySelector(`.size-chip[data-size="${size}"]`);
+        if (chip) {
+            chip.classList.remove('disabled');
+            chip.onclick = () => addSizeFromPreset(size);
+        }
+        
+        const rowsList = document.getElementById('sizeRowsList');
+        if (rowsList.children.length === 0) {
+            rowsList.innerHTML = '<p class="text-muted text-center">Click "Add Size" button above to add sizes with cutting pieces</p>';
+        }
+        
+        calculateTotal();
+    };
+    
+    window.updatePieces = function(size, value) {
+        let pieces = parseInt(value) || 0;
+        if (pieces < 0) pieces = 0;
+        selectedSizesData[size] = pieces;
+        
+        const input = document.querySelector(`#size-row-${size} .piece-input`);
+        if (input) {
+            if (pieces === 0) {
+                input.classList.add('invalid');
+            } else {
+                input.classList.remove('invalid');
+            }
+        }
+        calculateTotal();
+    };
+    
+    function calculateTotal() {
+        let total = 0;
+        for (let size in selectedSizesData) {
+            total += selectedSizesData[size];
+        }
+        const totalInput = document.getElementById('totalPieces');
+        totalInput.value = total;
+        
+        if (total === 0) {
+            totalInput.style.borderColor = '#dc3545';
+            totalInput.style.backgroundColor = '#fff0f0';
+        } else {
+            totalInput.style.borderColor = '#28a745';
+            totalInput.style.backgroundColor = '#e9ecef';
+        }
+    }
+    
+    document.getElementById('cuttingForm').addEventListener('submit', function(e) {
+        let total = 0;
+        for (let size in selectedSizesData) {
+            total += selectedSizesData[size];
+        }
+        
+        if (total === 0) {
+            e.preventDefault();
+            alert('❌ Please add at least one size with cutting pieces');
+            return false;
+        }
+        
+        const sizesToSubmit = {};
+        for (let size in selectedSizesData) {
+            if (selectedSizesData[size] > 0) {
+                sizesToSubmit[size] = selectedSizesData[size];
+            }
+        }
+        
+        let sizesInput = document.getElementById('sizesDataInput');
+        if (!sizesInput) {
+            sizesInput = document.createElement('input');
+            sizesInput.type = 'hidden';
+            sizesInput.name = 'sizesData';
+            sizesInput.id = 'sizesDataInput';
+            this.appendChild(sizesInput);
+        }
+        sizesInput.value = JSON.stringify(sizesToSubmit);
+        
+        return true;
+    });
+
+
+
+
+
+    // ============ MANUAL PRODUCT HANDLING ============
+// Get references
+const productSelect = document.getElementById('productSelect');
+const manualProductDiv = document.getElementById('manualProductDiv');
+const manualProductName = document.getElementById('manualProductName');
+const productNameHidden = document.getElementById('productName');
+const productCategoryHidden = document.getElementById('productCategory');
+
+// Add change event listener if not already there (wrap existing or add new)
+if (productSelect) {
+    // Store original change handler
+    const originalChangeHandler = productSelect.onchange;
+    
+    productSelect.addEventListener('change', function() {
+        const selectedValue = this.value;
+        
+        if (selectedValue === 'other') {
+            manualProductDiv.style.display = 'block';
+            manualProductName.required = true;
+            productNameHidden.value = '';
+            productCategoryHidden.value = 'Other';
+            document.getElementById('sizeSection').style.display = 'block';
+            document.getElementById('presetSizesDiv').style.display = 'none';
+            
+            // Clear existing sizes
+            selectedSizesData = {};
+            document.getElementById('sizeRowsList').innerHTML = '<p class="text-muted text-center">Click "Add Size" button above to add sizes with cutting pieces</p>';
+            calculateTotal();
+        } 
+        else if (selectedValue && selectedValue !== '') {
+            manualProductDiv.style.display = 'none';
+            manualProductName.required = false;
+            manualProductName.value = '';
+            
+            const selectedOption = this.options[this.selectedIndex];
+            const category = selectedOption.dataset.category;
+            productNameHidden.value = selectedValue;
+            productCategoryHidden.value = category || 'Other';
+            
+            if (category === 'Kids') {
+                document.getElementById('presetSizesDiv').style.display = 'block';
+                if (typeof loadPresetSizes === 'function') loadPresetSizes(kidsSizes);
+            } else if (category === 'Mens') {
+                document.getElementById('presetSizesDiv').style.display = 'block';
+                if (typeof loadPresetSizes === 'function') loadPresetSizes(mensSizes);
+            } else {
+                document.getElementById('presetSizesDiv').style.display = 'none';
+            }
+            
+            document.getElementById('sizeSection').style.display = 'block';
+            
+            selectedSizesData = {};
+            document.getElementById('sizeRowsList').innerHTML = '<p class="text-muted text-center">Click "Add Size" button above to add sizes with cutting pieces</p>';
+            calculateTotal();
+        }
+    });
+}
+
+// Update submit handler to include manual product
+const originalSubmitHandler = document.getElementById('cuttingForm').onsubmit;
+document.getElementById('cuttingForm').addEventListener('submit', function(e) {
+    const productSelectVal = productSelect.value;
+    
+    // Manual product validation
+    if (productSelectVal === 'other') {
+        if (!manualProductName.value.trim()) {
+            e.preventDefault();
+            alert('❌ Please enter manual product name');
+            return false;
+        }
+        productNameHidden.value = manualProductName.value.trim();
+        productCategoryHidden.value = 'Other';
+    }
+    
+    // Rest of validation (total pieces check)
+    let total = 0;
+    for (let size in selectedSizesData) {
+        total += selectedSizesData[size];
+    }
+    
+    if (total === 0) {
+        e.preventDefault();
+        alert('❌ Please add at least one size with cutting pieces');
+        return false;
+    }
+    
+    // Prepare sizes data
+    const sizesToSubmit = {};
+    for (let size in selectedSizesData) {
+        if (selectedSizesData[size] > 0) {
+            sizesToSubmit[size] = selectedSizesData[size];
+        }
+    }
+    
+    let sizesInput = document.getElementById('sizesDataInput');
+    if (!sizesInput) {
+        sizesInput = document.createElement('input');
+        sizesInput.type = 'hidden';
+        sizesInput.name = 'sizesData';
+        sizesInput.id = 'sizesDataInput';
+        this.appendChild(sizesInput);
+    }
+    sizesInput.value = JSON.stringify(sizesToSubmit);
+});
+
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

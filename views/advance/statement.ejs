@@ -1,0 +1,89 @@
+<%
+currentPage = 'advance';
+%>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %> | Garment ERP</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #f1f5f9; }
+        .statement-container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .card-premium { background: white; border-radius: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); margin-bottom: 25px; overflow: hidden; }
+        .card-header-premium { padding: 20px 25px; border-bottom: 1px solid #e2e8f0; }
+        .btn-premium { background: linear-gradient(135deg, #4361ee, #8b5cf6); border: none; border-radius: 12px; padding: 10px 20px; color: white; }
+        @media print { .no-print { display: none; } }
+    </style>
+</head>
+<body>
+
+<div class="statement-container">
+    <div class="d-flex justify-content-between align-items-center mb-4 no-print">
+        <h2><i class="fas fa-file-alt"></i> Advance Statement</h2>
+        <div>
+            <button onclick="window.print()" class="btn-premium me-2"><i class="fas fa-print"></i> Print</button>
+            <a href="/advance" class="btn btn-outline-secondary">Back</a>
+        </div>
+    </div>
+    
+    <div class="card-premium">
+        <div class="card-header-premium">
+            <h5>Advance Payment Statement</h5>
+            <p class="text-muted mb-0">Generated on: <%= new Date().toLocaleString() %></p>
+        </div>
+        <div class="card-body-premium p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Date</th>
+                            <th>Client</th>
+                            <th>Amount (₹)</th>
+                            <th>Method</th>
+                            <th>Reference</th>
+                            <th>Adjusted Against</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% if (advances && advances.length) { %>
+                            <% advances.forEach(advance => { 
+                                const adjustedTotal = advance.adjustedBills.reduce((s, adj) => s + adj.amount, 0);
+                                const adjustedBills = advance.adjustedBills.map(adj => adj.bill?.billNumber).filter(Boolean).join(', ');
+                            %>
+                                <tr>
+                                    <td><%= new Date(advance.paymentDate).toLocaleDateString() %></td>
+                                    <td><%= advance.client?.name %></td>
+                                    <td><strong>₹<%= advance.amount.toLocaleString() %></strong></td>
+                                    <td><%= advance.paymentMethod.toUpperCase() %></td>
+                                    <td><%= advance.reference || '-' %></td>
+                                    <td><%= adjustedBills || '-' %> (<%= adjustedTotal > 0 ? `₹${adjustedTotal.toLocaleString()}` : '' %>)</td>
+                                    <td><span class="badge bg-<%= advance.status === 'active' ? 'success' : advance.status === 'partial' ? 'warning' : 'secondary' %>"><%= advance.status %></span></td>
+                                </tr>
+                            <% }) %>
+                        <% } else { %>
+                            <tr><td colspan="7" class="text-center py-4">No advance records found</td></tr>
+                        <% } %>
+                    </tbody>
+                    <tfoot class="table-light">
+                        <tr class="fw-bold">
+                            <td colspan="2" class="text-end">Total:</td>
+                            <td>₹<%= advances.reduce((s, a) => s + a.amount, 0).toLocaleString() %></td>
+                            <td colspan="4"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

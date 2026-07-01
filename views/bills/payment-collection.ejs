@@ -1,0 +1,287 @@
+<%
+currentPage = 'payment-collection';
+%>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Collection | Garment ERP</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+
+<div class="container-custom" style="max-width:1400px;margin:0 auto;padding:20px;">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fas fa-money-bill-wave text-success"></i> Payment Collection</h2>
+            <p class="text-muted">Collect payments with advance adjustment</p>
+        </div>
+        <a href="/bills/pending-summary" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back
+        </a>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="stat-card" style="background:white;border-radius:20px;padding:20px;text-align:center;border:1px solid #e2e8f0;">
+                <div class="stat-label" style="font-size:0.75rem;color:#64748b;text-transform:uppercase;">Total Bills</div>
+                <div class="stat-value text-primary" style="font-size:2rem;font-weight:700;" id="totalBills">0</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card" style="background:white;border-radius:20px;padding:20px;text-align:center;border:1px solid #e2e8f0;">
+                <div class="stat-label" style="font-size:0.75rem;color:#64748b;text-transform:uppercase;">Total Amount</div>
+                <div class="stat-value text-success" style="font-size:2rem;font-weight:700;" id="totalAmount">₹0</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card" style="background:white;border-radius:20px;padding:20px;text-align:center;border:1px solid #e2e8f0;">
+                <div class="stat-label" style="font-size:0.75rem;color:#64748b;text-transform:uppercase;">Already Paid</div>
+                <div class="stat-value text-warning" style="font-size:2rem;font-weight:700;" id="alreadyPaid">₹0</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card" style="background:white;border-radius:20px;padding:20px;text-align:center;border:1px solid #e2e8f0;">
+                <div class="stat-label" style="font-size:0.75rem;color:#64748b;text-transform:uppercase;">Pending Amount</div>
+                <div class="stat-value text-danger" style="font-size:2rem;font-weight:700;" id="pendingAmount">₹0</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Advance Balance Box -->
+    <div class="advance-box mb-4" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:2px solid #bbf7d0;border-radius:16px;padding:20px;">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h5><i class="fas fa-hand-holding-usd text-success"></i> Available Advance Balance</h5>
+                <p class="text-muted mb-0">Advance will be automatically adjusted against the bill payment.</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="amount" style="font-size:2.5rem;font-weight:800;color:#16a34a;" id="availableAdvance">₹0</div>
+                <small class="text-muted">Available to use</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Summary -->
+    <div id="paymentSummary" class="alert alert-info mb-4">
+        <i class="fas fa-info-circle"></i> 
+        Will use <strong id="advanceToUse">₹0</strong> from advance + <strong id="cashToPay">₹0</strong> cash
+    </div>
+
+    <!-- Selected Bills -->
+    <div class="card-premium mb-4" style="background:white;border:none;border-radius:24px;box-shadow:0 4px 20px rgba(0,0,0,0.05);overflow:hidden;">
+        <div class="card-header-premium" style="padding:20px 25px;border-bottom:1px solid #e2e8f0;">
+            <h5><i class="fas fa-file-invoice"></i> Selected Bills</h5>
+        </div>
+        <div class="card-body-premium p-0" style="padding:25px;">
+            <div class="table-responsive">
+                <table class="table-premium" style="width:100%;border-collapse:collapse;">
+                    <thead>
+                        <tr>
+                            <th style="padding:12px;background:#f8fafc;font-weight:600;border-bottom:2px solid #e2e8f0;">Bill #</th>
+                            <th style="padding:12px;background:#f8fafc;font-weight:600;border-bottom:2px solid #e2e8f0;">Date</th>
+                            <th style="padding:12px;background:#f8fafc;font-weight:600;border-bottom:2px solid #e2e8f0;">Client</th>
+                            <th style="padding:12px;background:#f8fafc;font-weight:600;border-bottom:2px solid #e2e8f0;">Items</th>
+                            <th style="padding:12px;background:#f8fafc;font-weight:600;border-bottom:2px solid #e2e8f0;text-align:end;">Total (₹)</th>
+                            <th style="padding:12px;background:#f8fafc;font-weight:600;border-bottom:2px solid #e2e8f0;text-align:end;">Paid (₹)</th>
+                            <th style="padding:12px;background:#f8fafc;font-weight:600;border-bottom:2px solid #e2e8f0;text-align:end;">Pending (₹)</th>
+                            <th style="padding:12px;background:#f8fafc;font-weight:600;border-bottom:2px solid #e2e8f0;text-align:end;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="billsTableBody">
+                        <tr><td colspan="8" class="text-center py-4">Loading bills...</td></tr>
+                    </tbody>
+                    <tfoot class="table-light fw-bold">
+                        <tr>
+                            <td colspan="4" class="text-end">Total:</td>
+                            <td class="text-end" id="footerTotal">₹0</td>
+                            <td class="text-end" id="footerPaid">₹0</td>
+                            <td class="text-end text-danger" id="footerPending">₹0</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Form -->
+    <div class="card-premium" style="background:white;border:none;border-radius:24px;box-shadow:0 4px 20px rgba(0,0,0,0.05);overflow:hidden;">
+        <div class="card-header-premium bg-primary text-white" style="padding:20px 25px;border-bottom:1px solid #e2e8f0;background:#4361ee;">
+            <h5 class="text-white"><i class="fas fa-credit-card"></i> Process Payment</h5>
+        </div>
+        <div class="card-body-premium" style="padding:25px;">
+            <form id="paymentForm" method="POST" action="/bills/api/process-payment">
+                <input type="hidden" name="billIds" id="billIdsInput">
+                <input type="hidden" name="amount" id="amountInput">
+                <input type="hidden" name="paymentMethod" id="methodInput">
+                <input type="hidden" name="reference" id="referenceInput">
+                <input type="hidden" name="paymentDate" id="dateInput">
+                <input type="hidden" name="remark" id="remarkInput">
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Payment Amount (₹) *</label>
+                        <input type="number" class="form-control-premium" id="paymentAmount" name="paymentAmount" required>
+                        <small class="text-muted" id="maxPaymentHint">Max: ₹0</small>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Payment Method *</label>
+                        <select class="form-control-premium" id="paymentMethod" name="paymentMethod" required>
+                            <option value="cash">💵 Cash</option>
+                            <option value="bank_transfer">🏦 Bank Transfer</option>
+                            <option value="cheque">📝 Cheque</option>
+                            <option value="upi">📱 UPI</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Reference</label>
+                        <input type="text" class="form-control-premium" id="reference" name="reference">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Payment Date</label>
+                        <input type="date" class="form-control-premium" id="paymentDate" name="paymentDate" value="<%= new Date().toISOString().split('T')[0] %>">
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Remark</label>
+                    <textarea class="form-control-premium" id="remark" name="remark" rows="2"></textarea>
+                </div>
+
+                <div class="text-center">
+                    <button type="submit" class="btn-success-custom btn-lg px-5" style="background:linear-gradient(135deg,#10b981,#059669);border:none;border-radius:12px;padding:12px 30px;color:white;font-weight:600;">
+                        <i class="fas fa-check"></i> Process Payment
+                    </button>
+                    <a href="/bills/pending-summary" class="btn btn-secondary btn-lg px-5">
+                        <i class="fas fa-times"></i> Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const billIdsParam = urlParams.get('bills');
+    let totalPending = 0;
+    let availableAdvance = 0;
+
+    async function loadSelectedBills() {
+        if (!billIdsParam) {
+            document.getElementById('billsTableBody').innerHTML = 
+                '<tr><td colspan="8" class="text-center text-danger">No bills selected</td></tr>';
+            return;
+        }
+
+        const ids = billIdsParam.split(',');
+        try {
+            const res = await fetch('/bills/api/selected', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ billIds: ids })
+            });
+            const data = await res.json();
+
+            if (data.success && data.bills) {
+                renderBills(data.bills);
+                calculateTotals(data.bills);
+                if (data.bills.length > 0 && data.bills[0].client) {
+                    await fetchClientAdvance(data.bills[0].client._id);
+                }
+            }
+        } catch (e) {
+            console.error('Error:', e);
+        }
+    }
+
+    function renderBills(bills) {
+        const tbody = document.getElementById('billsTableBody');
+        tbody.innerHTML = bills.map(bill => `
+            <tr>
+                <td><strong>${bill.billNumber}</strong></td>
+                <td>${new Date(bill.billDate).toLocaleDateString()}</td>
+                <td>${bill.client?.name || 'N/A'}</td>
+                <td>${bill.items?.length || 0} items</td>
+                <td class="text-end">₹${(bill.totalAmount || 0).toLocaleString()}</td>
+                <td class="text-end">₹${(bill.paidAmount || 0).toLocaleString()}</td>
+                <td class="text-end fw-bold text-danger">₹${(bill.pendingAmount || 0).toLocaleString()}</td>
+                <td><span class="${bill.status === 'paid' ? 'badge-status-paid' : 'badge-status-pending'}">${bill.status}</span></td>
+            </tr>
+        `).join('');
+    }
+
+    function calculateTotals(bills) {
+        let pending = 0;
+        bills.forEach(b => { pending += b.pendingAmount || 0; });
+        totalPending = pending;
+        
+        document.getElementById('totalBills').innerText = bills.length;
+        document.getElementById('pendingAmount').innerText = '₹' + pending.toLocaleString();
+        document.getElementById('footerPending').innerText = '₹' + pending.toLocaleString();
+        document.getElementById('billIdsInput').value = bills.map(b => b._id).join(',');
+        
+        const paymentInput = document.getElementById('paymentAmount');
+        paymentInput.max = pending;
+        paymentInput.value = pending;
+        document.getElementById('maxPaymentHint').innerText = `Max: ₹${pending.toLocaleString()}`;
+        updatePaymentSummary();
+    }
+
+    async function fetchClientAdvance(clientId) {
+        try {
+            const res = await fetch(`/advance/client/${clientId}`);
+            const data = await res.json();
+            if (data.success) {
+                availableAdvance = Math.min(data.availableAdvance || 0, totalPending);
+                document.getElementById('availableAdvance').innerHTML = '₹' + (data.availableAdvance || 0).toLocaleString();
+                updatePaymentSummary();
+            }
+        } catch (e) {
+            console.error('Error:', e);
+        }
+    }
+
+    function updatePaymentSummary() {
+        const paymentAmount = parseFloat(document.getElementById('paymentAmount').value) || 0;
+        const advanceToUse = Math.min(paymentAmount, availableAdvance);
+        const cashToPay = Math.max(0, paymentAmount - advanceToUse);
+        
+        document.getElementById('advanceToUse').innerText = '₹' + advanceToUse.toLocaleString();
+        document.getElementById('cashToPay').innerText = '₹' + cashToPay.toLocaleString();
+        
+        document.getElementById('amountInput').value = paymentAmount;
+        document.getElementById('methodInput').value = document.getElementById('paymentMethod').value;
+        document.getElementById('referenceInput').value = document.getElementById('reference').value;
+        document.getElementById('dateInput').value = document.getElementById('paymentDate').value;
+        document.getElementById('remarkInput').value = document.getElementById('remark').value;
+        
+        const summary = document.getElementById('paymentSummary');
+        if (advanceToUse > 0 && cashToPay > 0) {
+            summary.innerHTML = `<i class="fas fa-info-circle"></i> Will use <strong>₹${advanceToUse.toLocaleString()}</strong> from advance + <strong>₹${cashToPay.toLocaleString()}</strong> cash`;
+        } else if (advanceToUse > 0) {
+            summary.innerHTML = `<i class="fas fa-check-circle text-success"></i> Will use <strong>₹${advanceToUse.toLocaleString()}</strong> from advance. No cash required!`;
+        } else {
+            summary.innerHTML = `<i class="fas fa-info-circle"></i> No advance available. Pay <strong>₹${cashToPay.toLocaleString()}</strong> in cash.`;
+        }
+    }
+
+    document.getElementById('paymentAmount').addEventListener('input', updatePaymentSummary);
+    document.getElementById('paymentMethod').addEventListener('change', updatePaymentSummary);
+    document.getElementById('reference').addEventListener('input', updatePaymentSummary);
+    document.getElementById('paymentDate').addEventListener('change', updatePaymentSummary);
+    document.getElementById('remark').addEventListener('input', updatePaymentSummary);
+
+    document.addEventListener('DOMContentLoaded', loadSelectedBills);
+</script>
+
+</body>
+</html>

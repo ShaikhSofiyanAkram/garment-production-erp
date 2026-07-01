@@ -1,0 +1,61 @@
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-money-bill"></i> Record Payment</h4>
+                </div>
+                <div class="card-body">
+                    <form action="/payments/create" method="POST">
+                        <div class="mb-3">
+                            <label for="bill" class="form-label">Select Bill *</label>
+                            <select class="form-control" id="bill" name="bill" required>
+                                <option value="">Select Bill</option>
+                                <% bills.forEach(bill => { %>
+                                    <option value="<%= bill._id %>" <%= req.query.bill === bill._id ? 'selected' : '' %>>
+                                        <%= bill.billNumber %> - <%= bill.client %> (Pending: ₹<%= bill.pendingAmount %>)
+                                    </option>
+                                <% }) %>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="amount" class="form-label">Payment Amount *</label>
+                            <input type="number" class="form-control" id="amount" name="amount" required step="0.01" min="1">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="paymentMethod" class="form-label">Payment Method *</label>
+                            <select class="form-control" id="paymentMethod" name="paymentMethod" required>
+                                <option value="cash">Cash</option>
+                                <option value="cheque">Cheque</option>
+                                <option value="bank_transfer">Bank Transfer</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="reference" class="form-label">Reference/Cheque No.</label>
+                            <input type="text" class="form-control" id="reference" name="reference">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="remark" class="form-label">Remark</label>
+                            <textarea class="form-control" id="remark" name="remark" rows="2"></textarea>
+                        </div>
+                        
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Record Payment
+                            </button>
+                            <a href="/payments" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    document.getElementById('bill').addEventListener('change', function() {
+        // You can add AJAX to show pending amount
+    });
+    </script>

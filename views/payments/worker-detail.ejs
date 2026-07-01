@@ -1,0 +1,402 @@
+<%
+const currentPage = 'payments';
+%>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %> | Garment ERP</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+    
+    <style>
+        .stat-card { background: white; border-radius: 16px; padding: 15px; text-align: center; border: 1px solid #e2e8f0; }
+        .stat-value { font-size: 1.5rem; font-weight: 700; }
+        .stat-label { font-size: 0.7rem; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
+        .badge-status { padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; }
+        .table-premium { width: 100%; border-collapse: collapse; }
+        .table-premium th { padding: 10px; background: #f8fafc; font-weight: 600; border-bottom: 2px solid #e2e8f0; }
+        .table-premium td { padding: 10px; border-bottom: 1px solid #e2e8f0; }
+        .amount-positive { color: #22c55e; }
+        .amount-negative { color: #ef4444; }
+        .amount-zero { color: #94a3b8; }
+        .nav-tabs .nav-link { font-weight: 600; padding: 10px 20px; }
+        .nav-tabs .nav-link.active { border-bottom: 3px solid #4361ee; color: #4361ee; }
+    </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/dashboard">
+            <i class="fas fa-tshirt"></i> Garment ERP
+        </a>
+        <div class="ms-auto">
+            <span class="text-white me-3">
+                <i class="fas fa-user"></i> <%= user ? user.username : 'Admin' %>
+            </span>
+            <a href="/auth/logout" class="btn btn-sm btn-outline-light">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid mt-4">
+    <!-- Flash Messages -->
+    <% if (success_msg && success_msg.length) { %>
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="fas fa-check-circle"></i> <%= success_msg %>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    <% } %>
+    <% if (error_msg && error_msg.length) { %>
+        <div class="alert alert-danger alert-dismissible fade show">
+            <i class="fas fa-exclamation-circle"></i> <%= error_msg %>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    <% } %>
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3><i class="fas fa-user-circle text-primary"></i> <%= worker.name %></h3>
+            <p class="text-muted">
+                <span class="badge bg-<%= worker.workerType === 'karigar' ? 'primary' : worker.workerType === 'pressman' ? 'info' : worker.workerType === 'helper' ? 'warning' : 'danger' %>">
+                    <%= worker.workerType.toUpperCase() %>
+                </span>
+                <span class="badge-status badge bg-<%= worker.isActive ? 'success' : 'secondary' %> ms-2">
+                    <%= worker.isActive ? 'Active' : 'Inactive' %>
+                </span>
+                <span class="ms-2"><i class="fas fa-phone"></i> <%= worker.phone || 'N/A' %></span>
+            </p>
+        </div>
+        <div>
+           <!-- Statement Button -->
+            <a href="/payments/worker/<%= worker._id %>/statement?period=month" class="btn btn-outline-primary">
+                <i class="fas fa-file-invoice"></i> Statement
+            </a>
+            <a href="/payments" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-label">Total Pieces</div>
+                <div class="stat-value text-primary"><%= totalPieces || 0 %></div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-label">Total Earnings</div>
+                <div class="stat-value text-success">₹<%= totalEarnings || 0 %></div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-label">Total Paid</div>
+                <div class="stat-value text-info">₹<%= totalPaid || 0 %></div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-label">Net Payable</div>
+                <div class="stat-value <%= netPayable > 0 ? 'text-success' : netPayable < 0 ? 'text-danger' : 'text-secondary' %>">
+                    ₹<%= netPayable || 0 %>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <ul class="nav nav-tabs mb-3" id="workerTabs">
+        <li class="nav-item">
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#workTab">
+                <i class="fas fa-tasks"></i> Work Details
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#paymentTab">
+                <i class="fas fa-money-bill-wave"></i> Payments
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#advanceTab">
+                <i class="fas fa-hand-holding-usd"></i> Advances
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#recordTab">
+                <i class="fas fa-plus-circle"></i> Record Payment
+            </button>
+        </li>
+    </ul>
+
+    <!-- Tab Content -->
+    <div class="tab-content">
+        <!-- Work Details Tab -->
+        <div class="tab-pane fade show active" id="workTab">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white py-2">
+                    <h6 class="mb-0"><i class="fas fa-list"></i> Work Details</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table-premium">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>ID</th>
+                                    <th>Product</th>
+                                    <th>Size</th>
+                                    <th class="text-end">Pieces</th>
+                                    <th class="text-end">Rate (₹)</th>
+                                    <th class="text-end">Amount (₹)</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% if (workDetails && workDetails.length > 0) { %>
+                                    <% workDetails.forEach(w => { %>
+                                        <tr>
+                                            <td><%= new Date(w.date).toLocaleDateString('en-IN') %></td>
+                                            <td><%= w.assignmentId || w.entryNumber || '-' %></td>
+                                            <td><%= w.productName || '-' %></td>
+                                            <td><%= w.size || 'N/A' %></td>
+                                            <td class="text-end"><%= w.pieces || 0 %></td>
+                                           <!-- Rate display fix -->
+                                            <td class="text-end">₹<%= w.rate || 0 %></td>
+                                            <td class="text-end fw-bold">₹<%= w.amount || 0 %></td>
+                                            <td>
+                                                <span class="badge-status badge bg-<%= w.status === 'paid' ? 'success' : w.status === 'pending' ? 'warning' : 'secondary' %>">
+                                                    <%= w.status || 'N/A' %>
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    <% }) %>
+                                <% } else { %>
+                                    <tr><td colspan="8" class="text-center py-3 text-muted">No work records found</td></tr>
+                                <% } %>
+                            </tbody>
+                            <tfoot class="table-light fw-bold">
+                                <tr>
+                                    <td colspan="4" class="text-end">Total:</td>
+                                    <td class="text-end"><%= totalPieces || 0 %></td>
+                                    <td></td>
+                                    <td class="text-end text-success">₹<%= totalEarnings || 0 %></td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payments Tab -->
+        <div class="tab-pane fade" id="paymentTab">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white py-2">
+                    <h6 class="mb-0"><i class="fas fa-history"></i> Payment History</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table-premium">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th class="text-end">Amount (₹)</th>
+                                    <th>Method</th>
+                                    <th>Reference</th>
+                                    <th>Remark</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% if (payments && payments.length > 0) { %>
+                                    <% payments.forEach(p => { %>
+                                        <tr>
+                                            <td><%= new Date(p.paymentDate).toLocaleDateString('en-IN') %></td>
+                                            <td class="text-end fw-bold text-success">₹<%= p.amount || 0 %></td>
+                                            <td><%= p.paymentMethod || 'Cash' %></td>
+                                            <td><%= p.reference || '-' %></td>
+                                            <td><%= p.remark || '-' %></td>
+                                        </tr>
+                                    <% }) %>
+                                <% } else { %>
+                                    <tr><td colspan="5" class="text-center py-3 text-muted">No payments found</td></tr>
+                                <% } %>
+                            </tbody>
+                            <tfoot class="table-light fw-bold">
+                                <tr>
+                                    <td class="text-end">Total:</td>
+                                    <td class="text-end text-success">₹<%= totalPaid || 0 %></td>
+                                    <td colspan="3"></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Advances Tab -->
+        <div class="tab-pane fade" id="advanceTab">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white py-2">
+                    <h6 class="mb-0"><i class="fas fa-hand-holding-usd"></i> Advance History</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table-premium">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th class="text-end">Amount (₹)</th>
+                                    <th>Purpose</th>
+                                    <th>Status</th>
+                                    <th>Remark</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% if (advances && advances.length > 0) { %>
+                                    <% advances.forEach(a => { %>
+                                        <tr>
+                                            <td><%= new Date(a.date).toLocaleDateString('en-IN') %></td>
+                                            <td class="text-end fw-bold text-danger">₹<%= a.amount || 0 %></td>
+                                            <td><%= a.purpose || '-' %></td>
+                                            <td>
+                                                <span class="badge-status badge bg-<%= a.status === 'adjusted' ? 'success' : a.status === 'pending' ? 'warning' : 'secondary' %>">
+                                                    <%= a.status || 'pending' %>
+                                                </span>
+                                            </td>
+                                            <td><%= a.remark || '-' %></td>
+                                        </tr>
+                                    <% }) %>
+                                <% } else { %>
+                                    <tr><td colspan="5" class="text-center py-3 text-muted">No advances found</td></tr>
+                                <% } %>
+                            </tbody>
+                            <tfoot class="table-light fw-bold">
+                                <tr>
+                                    <td class="text-end">Total:</td>
+                                    <td class="text-end text-danger">₹<%= totalAdvances || 0 %></td>
+                                    <td colspan="3"></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Record Payment Tab -->
+        <div class="tab-pane fade" id="recordTab">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white py-2">
+                    <h6 class="mb-0"><i class="fas fa-plus-circle"></i> Record Payment</h6>
+                </div>
+                <div class="card-body">
+                    <form id="paymentForm">
+                        <input type="hidden" name="workerId" value="<%= worker._id %>">
+                        <input type="hidden" name="workerType" value="<%= worker.workerType %>">
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Amount (₹)</label>
+                                <input type="number" name="amount" id="paymentAmount" class="form-control" 
+                                       placeholder="Enter amount" min="1" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Payment Method</label>
+                                <select name="paymentMethod" class="form-control" required>
+                                    <option value="Cash">Cash</option>
+                                    <option value="Bank Transfer">Bank Transfer</option>
+                                    <option value="UPI">UPI</option>
+                                    <option value="Cheque">Cheque</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Reference</label>
+                                <input type="text" name="reference" class="form-control" placeholder="Reference number (optional)">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Date</label>
+                                <input type="date" name="paymentDate" class="form-control" 
+                                       value="<%= new Date().toISOString().split('T')[0] %>">
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label fw-bold">Remark</label>
+                                <textarea name="remark" class="form-control" rows="2" placeholder="Optional remark..."></textarea>
+                            </div>
+                            <div class="col-md-12">
+                                <div class="alert alert-info">
+                                    <strong>Net Payable:</strong> ₹<%= netPayable || 0 %>
+                                    <span class="ms-3"><strong>Pending Advances:</strong> ₹<%= totalAdvances || 0 %></span>
+                                </div>
+                            </div>
+                            <div class="col-md-12">
+                                <button type="submit" class="btn btn-primary" id="paymentSubmitBtn">
+                                    <i class="fas fa-save"></i> Record Payment
+                                </button>
+                                <button type="reset" class="btn btn-secondary">Clear</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const paymentForm = document.getElementById('paymentForm');
+    
+    paymentForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const data = Object.fromEntries(formData.entries());
+        
+        const submitBtn = document.getElementById('paymentSubmitBtn');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        
+        try {
+            const response = await fetch('/payments/api/record-payment', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                alert('✅ Payment recorded successfully!');
+                window.location.reload();
+            } else {
+                alert('❌ Error: ' + (result.error || 'Unknown error'));
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-save"></i> Record Payment';
+            }
+        } catch (error) {
+            alert('❌ Error: ' + error.message);
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-save"></i> Record Payment';
+        }
+    });
+});
+</script>
+</body>
+</html>

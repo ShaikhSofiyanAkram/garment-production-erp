@@ -1,0 +1,743 @@
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-iron"></i> Finishing Entry</h4>
+                <small>Helper receives finished pieces from karigar</small>
+            </div>
+            <div class="card-body">
+                <form action="/finishing/create" method="POST" id="finishingForm">
+                    
+                    <!-- Step 1: Select Karigar -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">🧑‍🏭 Step 1: Select Karigar *</label>
+                        <select class="form-control" id="karigarSelect" required>
+                            <option value="">-- Select Karigar --</option>
+                            <% if (karigars && karigars.length) { %>
+                                <% karigars.forEach(karigar => { %>
+                                    <option value="<%= karigar._id %>"><%= karigar.name %></option>
+                                <% }) %>
+                            <% } %>
+                        </select>
+                        <small class="text-muted">Karigar ka naam select karein jiska kaam finish karna hai</small>
+                    </div>
+                    
+                    <!-- Step 2: Pending Production Returns Summary Card -->
+                    <div id="pendingReturnsCard" class="card mb-4" style="display: none;">
+                        <div class="card-header bg-warning text-dark">
+                            <i class="fas fa-clock"></i> Pending Production Returns
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Assignment ID</th>
+                                            <th>Product</th>
+                                            <th>Returned</th>
+                                            <th>Damage</th>
+                                            <th>Missing</th>
+                                            <th>Available</th>
+                                            <th>Status</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="pendingReturnsBody">
+                                        <tr><td colspan="8" class="text-center text-muted">Select karigar first</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Step 3: Selected Production Return Details -->
+                    <div id="selectedReturnCard" class="card mb-4" style="display: none;">
+                        <div class="card-header bg-info text-white">
+                            <i class="fas fa-info-circle"></i> Selected Production Return Details
+                        </div>
+                        <div class="card-body">
+                            <input type="hidden" id="selectedProductionReturnId" name="productionReturnId">
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <strong>Assignment ID:</strong> <span id="displayAssignmentId">-</span>
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>Product:</strong> <span id="displayProduct">-</span>
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>Karigar:</strong> <span id="displayKarigar">-</span>
+                                </div>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Size</th>
+                                            <th>Given</th>
+                                            <th>Returned</th>
+                                            <th>Damage</th>
+                                            <th>Missing</th>
+                                            <th>Already Finished</th>
+                                            <th>Available</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="sizeDetailsBody">
+                                        <tr><td colspan="8" class="text-center">Select a production return</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Step 4: Finishing Entry Fields -->
+                    <div id="finishingFields" class="card mb-4" style="display: none;">
+                        <div class="card-header bg-success text-white">
+                            <i class="fas fa-check-circle"></i> Step 4: Enter Finishing Details
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Select Helper *</label>
+                                    <select class="form-control" name="helper" id="helperSelect" required>
+                                        <option value="">-- Select Helper --</option>
+                                        <% if (helpers && helpers.length) { %>
+                                            <% helpers.forEach(helper => { %>
+                                                <option value="<%= helper._id %>"><%= helper.name %></option>
+                                            <% }) %>
+                                        <% } %>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Finishing Date</label>
+                                    <input type="date" class="form-control" name="finishingDate" value="<%= new Date().toISOString().split('T')[0] %>">
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label fw-bold">Received Pieces *</label>
+                                    <input type="number" class="form-control" id="receivedPieces" name="receivedPieces" min="0" required>
+                                    <small class="text-muted" id="maxReceivedHint">Max: 0 pieces</small>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label fw-bold">Rejected Pieces</label>
+                                    <input type="number" class="form-control" id="rejectedPieces" name="rejectedPieces" min="0" value="0">
+                                    <small class="text-muted">Defective pieces</small>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label fw-bold">Passed Pieces (Auto)</label>
+                                    <input type="text" class="form-control" id="passedPieces" readonly style="background:#e9ecef; font-weight:bold;">
+                                </div>
+                            </div>
+                            
+                            <div class="alert alert-warning" id="validationWarning" style="display: none;">
+                                <i class="fas fa-exclamation-triangle"></i> 
+                                Cannot receive more than available pieces! Max available: <span id="maxAvailable">0</span>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Remark</label>
+                                <textarea class="form-control" name="remark" rows="2" placeholder="Optional - any quality issues or notes"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-success btn-lg px-5" id="submitBtn" disabled>
+                            <i class="fas fa-save"></i> Save Finishing Entry
+                        </button>
+                        <a href="/finishing" class="btn btn-secondary btn-lg px-5">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .pending-return-row {
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .pending-return-row:hover {
+        background: #e3f2fd;
+        transform: scale(1.01);
+    }
+    .pending-return-row.selected {
+        background: #c8e6c9;
+        border-left: 3px solid #4caf50;
+    }
+    .badge-available {
+        background: #4caf50;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: 12px;
+    }
+    .badge-partial {
+        background: #ff9800;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: 12px;
+    }
+    .badge-pending {
+        background: #f44336;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: 12px;
+    }
+    .badge-completed {
+        background: #4caf50;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: 12px;
+    }
+    .size-available {
+        background: #d4edda;
+        font-weight: bold;
+    }
+    .size-finished {
+        background: #f8d7da;
+        text-decoration: line-through;
+    }
+</style>
+
+<script>
+    let pendingReturnsList = [];
+    let selectedReturnData = null;
+    let currentAvailablePieces = 0;
+    let alreadyFinishedPieces = 0;
+    
+    // Helper references
+    const karigarSelect = document.getElementById('karigarSelect');
+    const pendingReturnsCard = document.getElementById('pendingReturnsCard');
+    const selectedReturnCard = document.getElementById('selectedReturnCard');
+    const finishingFields = document.getElementById('finishingFields');
+    const submitBtn = document.getElementById('submitBtn');
+    const pendingReturnsBody = document.getElementById('pendingReturnsBody');
+    const sizeDetailsBody = document.getElementById('sizeDetailsBody');
+    
+    // ============ STEP 1: KARIGAR SELECT ============
+    karigarSelect.addEventListener('change', async function() {
+        const karigarId = this.value;
+        
+        if (!karigarId) {
+            pendingReturnsCard.style.display = 'none';
+            selectedReturnCard.style.display = 'none';
+            finishingFields.style.display = 'none';
+            submitBtn.disabled = true;
+            return;
+        }
+        
+        // Show loading
+        pendingReturnsBody.innerHTML = '<tr><td colspan="8" class="text-center"><i class="fas fa-spinner fa-pulse"></i> Loading production returns...</td></tr>';
+        pendingReturnsCard.style.display = 'block';
+        selectedReturnCard.style.display = 'none';
+        finishingFields.style.display = 'none';
+        submitBtn.disabled = true;
+        
+        try {
+            const response = await fetch(`/finishing/api/pending-returns/${karigarId}`);
+            const data = await response.json();
+            
+            console.log('Pending Returns Data:', data); // Debug
+            
+            if (data.success && data.returns && data.returns.length > 0) {
+                pendingReturnsList = data.returns;
+                renderPendingReturns(pendingReturnsList);
+            } else {
+                pendingReturnsBody.innerHTML = '<tr><td colspan="8" class="text-center text-success">✓ No pending production returns! All work completed.</td></tr>';
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            pendingReturnsBody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error loading production returns</td></tr>';
+        }
+    });
+    
+    // ============ RENDER PENDING RETURNS TABLE ============
+   // ============ RENDER PENDING RETURNS TABLE (FIXED) ============
+function renderPendingReturns(returns) {
+    if (!returns || returns.length === 0) {
+        pendingReturnsBody.innerHTML = '<tr><td colspan="8" class="text-center text-success">✓ No pending production returns! All work completed.</td></tr>';
+        return;
+    }
+    
+    let html = '';
+    returns.forEach((returnItem, index) => {
+        const available = returnItem.availablePieces || 0;
+        let statusBadge = '';
+        let statusClass = '';
+        
+        if (available === 0) {
+            statusBadge = '<span class="badge-completed">✅ Completed</span>';
+            statusClass = 'size-finished';
+        } else if (returnItem.alreadyFinished > 0) {
+            statusBadge = '<span class="badge-partial">⚠️ Partial</span>';
+            statusClass = 'size-available';
+        } else {
+            statusBadge = '<span class="badge-pending">⏰ Pending</span>';
+            statusClass = '';
+        }
+        
+        html += `
+            <tr class="pending-return-row ${statusClass}" data-returnid="${returnItem._id}" onclick="selectProductionReturn('${returnItem._id}')">
+                <td><strong>${escapeHtml(returnItem.assignmentId) || 'N/A'}</strong></td>
+                <td>${escapeHtml(returnItem.productName) || 'N/A'}</td>
+                <td class="text-end">${returnItem.totalReturned || 0}</td>
+                <td class="text-end">${returnItem.totalDamage || 0}</td>
+                <td class="text-end">${returnItem.totalMissing || 0}</td>
+                <td class="text-end"><span class="badge-available">${available} pcs</span></td>
+                <td>${statusBadge}</td>
+                <td>
+                    <button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); selectProductionReturn('${returnItem._id}')">
+                        <i class="fas fa-check"></i> Select
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+    pendingReturnsBody.innerHTML = html;
+}
+
+// ============ SELECT PRODUCTION RETURN (FIXED) ============
+window.selectProductionReturn = async function(returnId) {
+    console.log('🔍 Selecting return ID:', returnId);
+    
+    // ✅ Highlight selected row
+    document.querySelectorAll('.pending-return-row').forEach(row => {
+        row.classList.remove('selected');
+    });
+    const selectedRow = document.querySelector(`.pending-return-row[data-returnid="${returnId}"]`);
+    if (selectedRow) {
+        selectedRow.classList.add('selected');
+        console.log('✅ Row highlighted');
+    } else {
+        console.log('⚠️ Row not found for ID:', returnId);
+    }
+    
+    // ✅ Show loading in details section
+    if (sizeDetailsBody) {
+        sizeDetailsBody.innerHTML = `<tr><td colspan="8" class="text-center"><i class="fas fa-spinner fa-pulse"></i> Loading details...</td></tr>`;
+        console.log('⏳ Loading indicator shown');
+    }
+    
+    try {
+        console.log('📡 Fetching from API: /finishing/api/production-return/${returnId}');
+        const response = await fetch(`/finishing/api/production-return/${returnId}`);
+        const result = await response.json();
+        
+        console.log('📦 API Response status:', result.success);
+        console.log('📦 API Response data:', result.data);
+        
+        if (result.success && result.data) {
+            selectedReturnData = result.data;
+            displayReturnDetails(selectedReturnData);
+            
+            // ✅ Show cards
+            document.getElementById('selectedReturnCard').style.display = 'block';
+            document.getElementById('finishingFields').style.display = 'block';
+            
+            console.log('✅ Details displayed successfully');
+        } else {
+            console.log('❌ API Error:', result.error);
+            alert('Error: ' + (result.error || 'Could not load details'));
+            document.getElementById('selectedReturnCard').style.display = 'none';
+            document.getElementById('finishingFields').style.display = 'none';
+        }
+    } catch (error) {
+        console.error('❌ Fetch Error:', error);
+        alert('Error loading production return details: ' + error.message);
+        document.getElementById('selectedReturnCard').style.display = 'none';
+        document.getElementById('finishingFields').style.display = 'none';
+    }
+};
+
+// ============ DISPLAY RETURN DETAILS (FIXED) ============
+function displayReturnDetails(data) {
+    console.log('📊 Displaying return details:', data);
+    
+    // ✅ Set header info
+    const selectedIdElem = document.getElementById('selectedProductionReturnId');
+    if (selectedIdElem) {
+        selectedIdElem.value = data._id || '';
+        console.log('✅ Set production return ID:', data._id);
+    }
+    
+    const assignElem = document.getElementById('displayAssignmentId');
+    if (assignElem) {
+        assignElem.innerText = data.assignmentId || '-';
+        console.log('✅ Set assignment ID:', data.assignmentId);
+    }
+    
+    const productElem = document.getElementById('displayProduct');
+    if (productElem) {
+        productElem.innerText = data.productName || '-';
+        console.log('✅ Set product name:', data.productName);
+    }
+    
+    const karigarElem = document.getElementById('displayKarigar');
+    if (karigarElem) {
+        karigarElem.innerText = data.karigarName || '-';
+        console.log('✅ Set karigar name:', data.karigarName);
+    }
+    
+    // ✅ Calculate total available and build size table
+    let totalAvailable = 0;
+    let sizeHtml = '';
+    
+    const sizes = data.sizes || [];
+    console.log('📊 Sizes data length:', sizes.length);
+    
+    if (sizes.length === 0) {
+        sizeHtml = `<tr><td colspan="8" class="text-center text-muted">No size details available</td></tr>`;
+        console.log('⚠️ No sizes found');
+    } else {
+        for (const size of sizes) {
+            const returned = parseInt(size.returned) || 0;
+            const alreadyFinished = parseInt(size.alreadyFinished) || 0;
+            const available = Math.max(0, returned - alreadyFinished);
+            totalAvailable += available;
+            
+            let statusText = '';
+            let rowClass = '';
+            
+            if (available <= 0) {
+                statusText = '<span class="badge-completed">✅ Finished</span>';
+                rowClass = 'size-finished';
+            } else if (alreadyFinished > 0) {
+                statusText = `<span class="badge-partial">⏳ Partial (${alreadyFinished}/${returned})</span>`;
+                rowClass = 'size-available';
+            } else {
+                statusText = '<span class="badge-pending">⏰ Pending</span>';
+                rowClass = '';
+            }
+            
+            sizeHtml += `
+                <tr class="${rowClass}">
+                    <td><strong>${escapeHtml(size.size)}</strong></td>
+                    <td class="text-end">${parseInt(size.given) || 0}</td>
+                    <td class="text-end">${returned}</td>
+                    <td class="text-end">${parseInt(size.damage) || 0}</td>
+                    <td class="text-end">${parseInt(size.missing) || 0}</td>
+                    <td class="text-end">${alreadyFinished}</td>
+                    <td class="text-end fw-bold ${available > 0 ? 'text-success' : 'text-muted'}">${available}</td>
+                    <td>${statusText}</td>
+                </tr>
+            `;
+        }
+        console.log('✅ Size table built with', sizes.length, 'rows');
+    }
+    
+    if (sizeDetailsBody) {
+        sizeDetailsBody.innerHTML = sizeHtml;
+        console.log('✅ Size table rendered');
+    }
+    
+    currentAvailablePieces = totalAvailable;
+    alreadyFinishedPieces = data.alreadyFinishedTotal || 0;
+    
+    console.log('📊 Total available pieces:', currentAvailablePieces);
+    
+    // ✅ Update max hint
+    const maxHint = document.getElementById('maxReceivedHint');
+    if (maxHint) {
+        maxHint.innerHTML = `Max: ${totalAvailable} pieces`;
+        console.log('✅ Max hint updated');
+    }
+    
+    const maxAvail = document.getElementById('maxAvailable');
+    if (maxAvail) {
+        maxAvail.innerText = totalAvailable;
+    }
+    
+    // ✅ Set received pieces input
+    const receivedInput = document.getElementById('receivedPieces');
+    if (receivedInput) {
+        receivedInput.max = totalAvailable;
+        receivedInput.value = '';
+        receivedInput.placeholder = `Max ${totalAvailable}`;
+        receivedInput.disabled = false;
+        receivedInput.focus();
+        console.log('✅ Received input enabled');
+    }
+    
+    const rejectedInput = document.getElementById('rejectedPieces');
+    if (rejectedInput) {
+        rejectedInput.value = 0;
+        rejectedInput.disabled = false;
+    }
+    
+    // ✅ Enable helper select
+    const helperSelect = document.getElementById('helperSelect');
+    if (helperSelect) {
+        helperSelect.disabled = false;
+    }
+    
+    // ✅ Show fields
+    document.getElementById('selectedReturnCard').style.display = 'block';
+    document.getElementById('finishingFields').style.display = 'block';
+    document.getElementById('submitBtn').disabled = true;
+    
+    calculatePassed();
+    validateSubmit();
+    
+    console.log('✅ Display complete');
+}
+    
+    // ============ ESCAPE HTML ============
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+    
+    // ============ STEP 2: SELECT PRODUCTION RETURN ============
+    window.selectProductionReturn = async function(returnId) {
+        console.log('Selecting return ID:', returnId); // Debug
+        
+        // Highlight selected row
+        document.querySelectorAll('.pending-return-row').forEach(row => {
+            row.classList.remove('selected');
+        });
+        const selectedRow = document.querySelector(`.pending-return-row[data-returnid="${returnId}"]`);
+        if (selectedRow) selectedRow.classList.add('selected');
+        
+        // Show loading
+        if (sizeDetailsBody) {
+            sizeDetailsBody.innerHTML = '<tr><td colspan="8" class="text-center"><i class="fas fa-spinner fa-pulse"></i> Loading details...</td></tr>';
+        }
+        
+        try {
+            const response = await fetch(`/finishing/api/production-return/${returnId}`);
+            const result = await response.json();
+            
+            console.log('API Response:', result); // Debug
+            
+            if (result.success && result.data) {
+                selectedReturnData = result.data;
+                displayReturnDetails(selectedReturnData);
+                document.getElementById('selectedReturnCard').style.display = 'block';
+                document.getElementById('finishingFields').style.display = 'block';
+            } else {
+                alert('Error: ' + (result.error || 'Could not load details'));
+                document.getElementById('selectedReturnCard').style.display = 'none';
+                document.getElementById('finishingFields').style.display = 'none';
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error loading production return details: ' + error.message);
+            document.getElementById('selectedReturnCard').style.display = 'none';
+            document.getElementById('finishingFields').style.display = 'none';
+        }
+    };
+    
+    // ============ DISPLAY RETURN DETAILS ============
+    function displayReturnDetails(data) {
+        console.log('Displaying data:', data); // Debug
+        
+        // ✅ Set header info
+        const selectedIdElem = document.getElementById('selectedProductionReturnId');
+        if (selectedIdElem) selectedIdElem.value = data._id || '';
+        
+        const assignElem = document.getElementById('displayAssignmentId');
+        if (assignElem) assignElem.innerText = data.assignmentId || '-';
+        
+        const productElem = document.getElementById('displayProduct');
+        if (productElem) productElem.innerText = data.productName || '-';
+        
+        const karigarElem = document.getElementById('displayKarigar');
+        if (karigarElem) karigarElem.innerText = data.karigarName || '-';
+        
+        // ✅ Calculate total available
+        let totalAvailable = 0;
+        let sizeHtml = '';
+        
+        const sizes = data.sizes || [];
+        console.log('Sizes data:', sizes); // Debug
+        
+        if (sizes.length === 0) {
+            sizeHtml = '<tr><td colspan="8" class="text-center text-muted">No size details available</td></tr>';
+        } else {
+            for (const size of sizes) {
+                // ✅ Ensure we have proper numbers
+                const returned = parseInt(size.returned) || 0;
+                const alreadyFinished = parseInt(size.alreadyFinished) || 0;
+                const available = returned - alreadyFinished;
+                totalAvailable += Math.max(0, available);
+                
+                let statusText = '';
+                let rowClass = '';
+                
+                if (available <= 0) {
+                    statusText = '<span class="badge-completed">✅ Finished</span>';
+                    rowClass = 'size-finished';
+                } else if (alreadyFinished > 0) {
+                    statusText = `<span class="badge-partial">⏳ Partial (${alreadyFinished}/${returned})</span>`;
+                    rowClass = 'size-available';
+                } else {
+                    statusText = '<span class="badge-pending">⏰ Pending</span>';
+                    rowClass = '';
+                }
+                
+                sizeHtml += `
+                    <tr class="${rowClass}">
+                        <td><strong>${escapeHtml(size.size)}</strong></td>
+                        <td class="text-end">${parseInt(size.given) || 0}</td>
+                        <td class="text-end">${returned}</td>
+                        <td class="text-end">${parseInt(size.damage) || 0}</td>
+                        <td class="text-end">${parseInt(size.missing) || 0}</td>
+                        <td class="text-end">${alreadyFinished}</td>
+                        <td class="text-end fw-bold ${available > 0 ? 'text-success' : 'text-muted'}">${available}</td>
+                        <td>${statusText}</td>
+                    </tr>
+                `;
+            }
+        }
+        
+        if (sizeDetailsBody) {
+            sizeDetailsBody.innerHTML = sizeHtml;
+        }
+        
+        currentAvailablePieces = totalAvailable;
+        alreadyFinishedPieces = data.alreadyFinishedTotal || 0;
+        
+        console.log('Total Available:', currentAvailablePieces); // Debug
+        
+        // ✅ Update max hint
+        const maxHint = document.getElementById('maxReceivedHint');
+        if (maxHint) maxHint.innerHTML = `Max: ${totalAvailable} pieces`;
+        
+        const maxAvail = document.getElementById('maxAvailable');
+        if (maxAvail) maxAvail.innerText = totalAvailable;
+        
+        // ✅ Set received pieces input
+        const receivedInput = document.getElementById('receivedPieces');
+        if (receivedInput) {
+            receivedInput.max = totalAvailable;
+            receivedInput.value = '';
+            receivedInput.placeholder = `Max ${totalAvailable}`;
+            receivedInput.disabled = false;
+            receivedInput.focus();
+        }
+        
+        const rejectedInput = document.getElementById('rejectedPieces');
+        if (rejectedInput) {
+            rejectedInput.value = 0;
+            rejectedInput.disabled = false;
+        }
+        
+        // ✅ Enable helper select
+        const helperSelect = document.getElementById('helperSelect');
+        if (helperSelect) {
+            helperSelect.disabled = false;
+        }
+        
+        // ✅ Show fields
+        document.getElementById('selectedReturnCard').style.display = 'block';
+        document.getElementById('finishingFields').style.display = 'block';
+        document.getElementById('submitBtn').disabled = true;
+        
+        calculatePassed();
+        validateSubmit();
+    }
+    
+    // ============ CALCULATE PASSED PIECES ============
+    function calculatePassed() {
+        const received = parseInt(document.getElementById('receivedPieces')?.value) || 0;
+        const rejected = parseInt(document.getElementById('rejectedPieces')?.value) || 0;
+        const passed = Math.max(0, received - rejected);
+        
+        const passedElem = document.getElementById('passedPieces');
+        if (passedElem) passedElem.value = passed;
+        
+        const warning = document.getElementById('validationWarning');
+        const receivedInput = document.getElementById('receivedPieces');
+        
+        if (received > currentAvailablePieces) {
+            if (warning) warning.style.display = 'block';
+            if (receivedInput) receivedInput.classList.add('is-invalid');
+            if (submitBtn) submitBtn.disabled = true;
+        } else if (received === 0) {
+            if (warning) warning.style.display = 'none';
+            if (receivedInput) receivedInput.classList.remove('is-invalid');
+            if (submitBtn) submitBtn.disabled = true;
+        } else {
+            if (warning) warning.style.display = 'none';
+            if (receivedInput) receivedInput.classList.remove('is-invalid');
+            if (submitBtn) submitBtn.disabled = false;
+        }
+    }
+    
+    // ============ VALIDATE SUBMIT ============
+    function validateSubmit() {
+        const helper = document.getElementById('helperSelect')?.value;
+        const received = parseInt(document.getElementById('receivedPieces')?.value) || 0;
+        
+        if (!selectedReturnData || !helper || received === 0 || received > currentAvailablePieces) {
+            if (submitBtn) submitBtn.disabled = true;
+        } else {
+            if (submitBtn) submitBtn.disabled = false;
+        }
+    }
+    
+    // ============ EVENT LISTENERS ============
+    const receivedInput = document.getElementById('receivedPieces');
+    if (receivedInput) {
+        receivedInput.addEventListener('input', function() {
+            calculatePassed();
+            validateSubmit();
+        });
+    }
+    
+    const rejectedInput = document.getElementById('rejectedPieces');
+    if (rejectedInput) {
+        rejectedInput.addEventListener('input', function() {
+            calculatePassed();
+            validateSubmit();
+        });
+    }
+    
+    const helperSelect = document.getElementById('helperSelect');
+    if (helperSelect) {
+        helperSelect.addEventListener('change', function() {
+            validateSubmit();
+        });
+    }
+    
+    // ============ FORM SUBMIT ============
+    const finishingForm = document.getElementById('finishingForm');
+    if (finishingForm) {
+        finishingForm.addEventListener('submit', function(e) {
+            const received = parseInt(document.getElementById('receivedPieces')?.value) || 0;
+            
+            if (received === 0) {
+                e.preventDefault();
+                alert('❌ Please enter received pieces');
+                return false;
+            }
+            
+            if (received > currentAvailablePieces) {
+                e.preventDefault();
+                alert(`❌ Cannot receive more than ${currentAvailablePieces} pieces`);
+                return false;
+            }
+            
+            const helper = document.getElementById('helperSelect')?.value;
+            if (!helper) {
+                e.preventDefault();
+                alert('❌ Please select helper');
+                return false;
+            }
+            
+            return true;
+        });
+    }
+</script>

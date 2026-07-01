@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Karigar Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f6f9; }
+        .navbar { background: linear-gradient(135deg, #1e3c72, #2a5298); padding: 1rem; }
+        .navbar-brand { color: white !important; font-weight: bold; }
+        .card { border: none; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .stats-card { background: white; border-radius: 15px; padding: 20px; text-align: center; margin-bottom: 20px; }
+        .stats-value { font-size: 2rem; font-weight: bold; color: #2a5298; }
+        .badge-pending { background: #ffc107; color: #000; }
+        .badge-completed { background: #28a745; color: #fff; }
+        .badge-partial { background: #17a2b8; color: #fff; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-user-check"></i> Karigar Panel
+            </a>
+            <div class="text-white">
+                <i class="fas fa-user"></i> <%= user.name %>
+                <a href="/auth/logout" class="btn btn-sm btn-outline-light ms-3">Logout</a>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-body">
+                        <h4>Welcome, <%= user.name %>!</h4>
+                        <p>You are logged in as <strong>Karigar (Piece-based Worker)</strong></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mt-4">
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <i class="fas fa-tasks fa-2x text-primary"></i>
+                    <div class="stats-value" id="totalAssignments">0</div>
+                    <div>Total Assignments</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <i class="fas fa-check-circle fa-2x text-success"></i>
+                    <div class="stats-value" id="completedAssignments">0</div>
+                    <div>Completed</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <i class="fas fa-clock fa-2x text-warning"></i>
+                    <div class="stats-value" id="pendingAssignments">0</div>
+                    <div>Pending</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <i class="fas fa-rupee-sign fa-2x text-info"></i>
+                    <div class="stats-value" id="totalEarnings">0</div>
+                    <div>Total Earnings (₹)</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mt-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header bg-white">
+                        <strong>My Assigned Work</strong>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr><th>Assignment ID</th><th>Product</th><th>Given Pieces</th><th>Returned</th><th>Status</th><th>Action</th></tr>
+                            </thead>
+                            <tbody id="assignmentsList">
+                                <tr><td colspan="6" class="text-center">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mt-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header bg-white">
+                        <strong>My Production History</strong>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr><th>Date</th><th>Assignment</th><th>Product</th><th>Returned</th><th>Damage</th><th>Missing</th></tr>
+                            </thead>
+                            <tbody id="productionHistory">
+                                <tr><td colspan="6" class="text-center">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal fade" id="productionModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Submit Production Return</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="productionForm">
+                        <input type="hidden" id="returnAssignmentId">
+                        <div class="mb-3">
+                            <label>Assignment ID</label>
+                            <input type="text" id="returnAssignmentDisplay" class="form-control" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label>Product</label>
+                            <input type="text" id="returnProduct" class="form-control" readonly>
+                        </div>
+                        <div id="sizeFields"></div>
+                        <div class="mb-3">
+                            <label>Remark</label>
+                            <textarea id="returnRemark" class="form-control" rows="2"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="submitReturn()">Submit Return</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const userId = '<%= user.id %>';
+        const workerId = '<%= user.workerId %>';
+        let currentAssignment = null;
+        
+        async function loadDashboard() {
+            try {
+                const res = await fetch(`/api/worker/karigar-stats/${userId}`);
+                const data = await res.json();
+                
+                document.getElementById('totalAssignments').innerText = data.totalAssignments || 0;
+                document.getElementById('completedAssignments').innerText = data.completedAssignments || 0;
+                document.getElementById('pendingAssignments').innerText = data.pendingAssignments || 0;
+                document.getElementById('totalEarnings').innerText = data.totalEarnings || 0;
+                
+                if (data.assignments && data.assignments.length) {
+                    document.getElementById('assignmentsList').innerHTML = data.assignments.map(a => `
+                        <tr>
+                            <td><strong>${a.assignmentId}</strong></td>
+                            <td>${a.productName}</td>
+                            <td>${a.givenPieces}</td>
+                            <td>${a.returnedPieces || 0}</td>
+                            <td><span class="badge ${a.status === 'completed' ? 'bg-success' : a.status === 'partial' ? 'bg-info' : 'bg-warning'}">${a.status}</span></td>
+                            <td>${a.status !== 'completed' ? `<button class="btn btn-sm btn-primary" onclick="openReturnModal('${a._id}')">Return</button>` : '-'}</td>
+                        </tr>
+                    `).join('');
+                }
+                
+                if (data.productionHistory && data.productionHistory.length) {
+                    document.getElementById('productionHistory').innerHTML = data.productionHistory.map(p => `
+                        <tr>
+                            <td>${new Date(p.returnDate).toLocaleDateString()}</td>
+                            <td>${p.assignmentId}</td>
+                            <td>${p.productName}</td>
+                            <td>${p.totalReturned || 0}</td>
+                            <td>${p.totalDamage || 0}</td>
+                            <td>${p.totalMissing || 0}</td>
+                        </tr>
+                    `).join('');
+                }
+            } catch(e) { console.error(e); }
+        }
+        
+        async function openReturnModal(assignmentId) {
+            try {
+                const res = await fetch(`/api/worker/assignment/${assignmentId}`);
+                const assignment = await res.json();
+                currentAssignment = assignment;
+                
+                document.getElementById('returnAssignmentId').value = assignmentId;
+                document.getElementById('returnAssignmentDisplay').value = assignment.assignmentId;
+                document.getElementById('returnProduct').value = `${assignment.productName} (${assignment.productCategory})`;
+                
+                let sizeHtml = '<div class="mb-3"><label class="fw-bold">Size-wise Return</label><div class="table-responsive"><table class="table table-sm table-bordered"><thead><tr><th>Size</th><th>Given</th><th>Already Returned</th><th>Available</th><th>Returned ✓</th><th>Damage 💔</th><th>Missing ❓</th></tr></thead><tbody>';
+                
+                for (const size of (assignment.sizes || [])) {
+                    const alreadyReturned = 0; // Fetch from production returns
+                    const available = size.pieces - alreadyReturned;
+                    sizeHtml += `
+                        <tr>
+                            <td><strong>${size.size}</strong></td>
+                            <td>${size.pieces}</td>
+                            <td>${alreadyReturned}</td>
+                            <td class="${available > 0 ? 'text-success' : 'text-muted'}">${available}</td>
+                            <td><input type="number" class="form-control form-control-sm return-returned" data-size="${size.size}" style="width: 80px;" min="0" max="${available}" value="0"></td>
+                            <td><input type="number" class="form-control form-control-sm return-damage" data-size="${size.size}" style="width: 80px;" min="0" value="0"></td>
+                            <td><input type="number" class="form-control form-control-sm return-missing" data-size="${size.size}" style="width: 80px;" min="0" value="0"></td>
+                        </tr>
+                    `;
+                }
+                
+                sizeHtml += '</tbody></table></div></div>';
+                document.getElementById('sizeFields').innerHTML = sizeHtml;
+                
+                new bootstrap.Modal(document.getElementById('productionModal')).show();
+            } catch(e) { console.error(e); }
+        }
+        
+        async function submitReturn() {
+            const assignmentId = document.getElementById('returnAssignmentId').value;
+            const remark = document.getElementById('returnRemark').value;
+            
+            const sizes = {};
+            document.querySelectorAll('.return-returned').forEach(input => {
+                const size = input.dataset.size;
+                const returned = parseInt(input.value) || 0;
+                const damage = parseInt(document.querySelector(`.return-damage[data-size="${size}"]`).value) || 0;
+                const missing = parseInt(document.querySelector(`.return-missing[data-size="${size}"]`).value) || 0;
+                if (returned > 0 || damage > 0 || missing > 0) {
+                    sizes[size] = { returned, damage, missing };
+                }
+            });
+            
+            const totalReturned = Object.values(sizes).reduce((s, v) => s + v.returned, 0);
+            const totalDamage = Object.values(sizes).reduce((s, v) => s + v.damage, 0);
+            const totalMissing = Object.values(sizes).reduce((s, v) => s + v.missing, 0);
+            
+            if (totalReturned === 0 && totalDamage === 0 && totalMissing === 0) {
+                alert('Please enter at least one piece to return');
+                return;
+            }
+            
+            try {
+                const res = await fetch('/api/worker/production-return', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ assignmentId, sizes, totalReturned, totalDamage, totalMissing, remark })
+                });
+                
+                const result = await res.json();
+                if (res.ok) {
+                    alert('✅ Production return submitted successfully!');
+                    bootstrap.Modal.getInstance(document.getElementById('productionModal')).hide();
+                    loadDashboard();
+                } else {
+                    alert('❌ Error: ' + result.error);
+                }
+            } catch(e) {
+                alert('Error submitting return');
+            }
+        }
+        
+        loadDashboard();
+        setInterval(loadDashboard, 30000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,431 @@
+<%
+currentPage = 'dashboard';
+%>
+
+<%- include('../layouts/worker-layout') %>
+
+<div class="container-fluid">
+    <!-- Welcome Section -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card bg-gradient-purple text-white" style="background: linear-gradient(135deg, #7c3aed, #8b5cf6);">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h2 class="mb-2">Welcome back, <%= user ? user.username : 'Pressman' %>!</h2>
+                            <p class="mb-0">Track your daily pressing work and earnings</p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <i class="fas fa-industry fa-4x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-value" id="totalEntries">0</div>
+            <div class="stat-label">Total Entries</div>
+            <i class="fas fa-list fa-2x text-info mt-2 d-block"></i>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="todayEntries">0</div>
+            <div class="stat-label">Today's Entries</div>
+            <i class="fas fa-calendar-day fa-2x text-primary mt-2 d-block"></i>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="totalPieces">0</div>
+            <div class="stat-label">Total Pieces Pressed</div>
+            <i class="fas fa-boxes fa-2x text-success mt-2 d-block"></i>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="totalEarnings">₹0</div>
+            <div class="stat-label">Total Earnings</div>
+            <i class="fas fa-rupee-sign fa-2x text-warning mt-2 d-block"></i>
+        </div>
+    </div>
+
+    <!-- Pending Payment Card -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card shadow-sm border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <i class="fas fa-clock"></i> Pending Payment
+                </div>
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h2 class="text-warning mb-0" id="pendingAmount">₹0</h2>
+                            <small class="text-muted">Amount pending for payment</small>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <a href="/pressman" class="btn btn-outline-warning">
+                                <i class="fas fa-plus"></i> Add Entry
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Weekly Earnings Chart -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white">
+            <i class="fas fa-chart-line text-primary"></i> Weekly Earnings Trend
+        </div>
+        <div class="card-body">
+            <canvas id="weeklyEarningsChart" height="200"></canvas>
+        </div>
+    </div>
+
+    <!-- New Pressman Entry Form -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <i class="fas fa-plus-circle"></i> Daily Pressman Entry
+        </div>
+        <div class="card-body">
+            <form id="pressmanEntryForm">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Date *</label>
+                        <input type="date" class="form-control" id="entryDate" value="<%= new Date().toISOString().split('T')[0] %>" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Remark</label>
+                        <input type="text" class="form-control" id="entryRemark" placeholder="Optional notes">
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Products & Quantities</label>
+                    <div id="productsContainer">
+                        <div class="product-row row g-2 mb-2 align-items-center">
+                            <div class="col-md-4">
+                                <select class="form-control product-select" required>
+                                    <option value="">-- Select Product --</option>
+                                    <!-- Products will be loaded via API -->
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <input type="number" class="form-control quantity-input" placeholder="Quantity" min="0" value="0">
+                            </div>
+                            <div class="col-md-3">
+                                <input type="text" class="form-control rate-display" readonly placeholder="Rate" style="background:#e9ecef;">
+                            </div>
+                            <div class="col-md-2">
+                                <button type="button" class="btn btn-danger btn-sm remove-row" style="display: none;">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-success mt-2" id="addMoreProducts">
+                        <i class="fas fa-plus"></i> Add More Products
+                    </button>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="alert alert-info">
+                            <strong>Total Quantity:</strong> <span id="totalQuantity">0</span> pieces
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="alert alert-success">
+                            <strong>Total Amount:</strong> ₹<span id="totalAmount">0</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-success w-100">
+                    <i class="fas fa-save"></i> Save Entry
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Recent Pressman History -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <span><i class="fas fa-history"></i> My Pressman History</span>
+            <div>
+                <select id="historyFilterStatus" class="form-select form-select-sm d-inline-block w-auto me-2">
+                    <option value="">All Status</option>
+                    <option value="pending">Pending</option>
+                    <option value="approved">Approved</option>
+                    <option value="paid">Paid</option>
+                </select>
+                <button class="btn btn-sm btn-outline-primary" onclick="loadPressmanHistory()">
+                    <i class="fas fa-search"></i> Filter
+                </button>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Date</th>
+                            <th>Entry #</th>
+                            <th>Products</th>
+                            <th>Total Quantity</th>
+                            <th>Total Amount</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pressmanHistoryBody">
+                        <tr><td colspan="7" class="text-center">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let weeklyChart = null;
+let pressmanProducts = [];
+
+// Load pressman products for dropdown
+async function loadPressmanProducts() {
+    try {
+        const response = await fetch('/pressman/api/products');
+        pressmanProducts = await response.json();
+        
+        // Populate product selects
+        document.querySelectorAll('.product-select').forEach(select => {
+            select.innerHTML = '<option value="">-- Select Product --</option>' + 
+                pressmanProducts.map(p => `<option value="${p._id}" data-rate="${p.rate}">${p.name} - ₹${p.rate}/piece</option>`).join('');
+        });
+    } catch (error) {
+        console.error('Error loading products:', error);
+    }
+}
+
+// Load pressman dashboard data
+async function loadPressmanDashboard() {
+    try {
+        const response = await fetch('/dashboard/api/worker-stats');
+        const data = await response.json();
+        
+        if (data.success) {
+            const stats = data.stats;
+            document.getElementById('totalEntries').innerText = stats.totalEntries || 0;
+            document.getElementById('todayEntries').innerText = stats.todayEntries || 0;
+            document.getElementById('totalPieces').innerText = stats.totalQuantity || 0;
+            document.getElementById('totalEarnings').innerText = `₹${(stats.totalAmount || 0).toLocaleString()}`;
+            document.getElementById('pendingAmount').innerText = `₹${(stats.pendingAmount || 0).toLocaleString()}`;
+            
+            // Update weekly chart
+            updateWeeklyChart(stats.weeklyData || []);
+        }
+        
+        await loadPressmanHistory();
+        
+    } catch (error) {
+        console.error('Error loading dashboard:', error);
+    }
+}
+
+// Update weekly earnings chart
+function updateWeeklyChart(weeklyData) {
+    const ctx = document.getElementById('weeklyEarningsChart').getContext('2d');
+    if (weeklyChart) weeklyChart.destroy();
+    
+    const labels = weeklyData.map(d => d.week) || ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
+    const values = weeklyData.map(d => d.amount) || [0, 0, 0, 0];
+    
+    weeklyChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Earnings (₹)',
+                data: values,
+                backgroundColor: '#8b5cf6',
+                borderRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: { position: 'top' }
+            }
+        }
+    });
+}
+
+// Calculate totals
+function calculateTotals() {
+    let totalQty = 0;
+    let totalAmt = 0;
+    
+    document.querySelectorAll('.product-row').forEach(row => {
+        const qty = parseInt(row.querySelector('.quantity-input').value) || 0;
+        const rateSelect = row.querySelector('.product-select');
+        const rate = rateSelect.options[rateSelect.selectedIndex]?.dataset?.rate || 0;
+        const amount = qty * rate;
+        
+        row.querySelector('.rate-display').value = rate > 0 ? `₹${rate}/piece` : '';
+        totalQty += qty;
+        totalAmt += amount;
+    });
+    
+    document.getElementById('totalQuantity').innerText = totalQty;
+    document.getElementById('totalAmount').innerText = totalAmt.toLocaleString();
+}
+
+// Add new product row
+function addProductRow() {
+    const container = document.getElementById('productsContainer');
+    const newRow = container.children[0].cloneNode(true);
+    
+    newRow.querySelectorAll('input').forEach(input => {
+        if (input.type === 'number') input.value = 0;
+        else if (input.type === 'text') input.value = '';
+    });
+    newRow.querySelector('.product-select').value = '';
+    newRow.querySelector('.rate-display').value = '';
+    newRow.querySelector('.remove-row').style.display = 'inline-block';
+    
+    // Attach events
+    newRow.querySelector('.product-select').addEventListener('change', calculateTotals);
+    newRow.querySelector('.quantity-input').addEventListener('input', calculateTotals);
+    newRow.querySelector('.remove-row').addEventListener('click', function() {
+        if (document.querySelectorAll('.product-row').length > 1) {
+            newRow.remove();
+            calculateTotals();
+        } else {
+            alert('At least one product is required');
+        }
+    });
+    
+    container.appendChild(newRow);
+    
+    // Populate products for new row
+    const select = newRow.querySelector('.product-select');
+    select.innerHTML = '<option value="">-- Select Product --</option>' + 
+        pressmanProducts.map(p => `<option value="${p._id}" data-rate="${p.rate}">${p.name} - ₹${p.rate}/piece</option>`).join('');
+    
+    calculateTotals();
+}
+
+document.getElementById('addMoreProducts').addEventListener('click', addProductRow);
+
+// Submit pressman entry
+document.getElementById('pressmanEntryForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const date = document.getElementById('entryDate').value;
+    const remark = document.getElementById('entryRemark').value;
+    
+    const entries = [];
+    document.querySelectorAll('.product-row').forEach(row => {
+        const productId = row.querySelector('.product-select').value;
+        const quantity = parseInt(row.querySelector('.quantity-input').value) || 0;
+        if (productId && quantity > 0) {
+            entries.push({ product: productId, quantity });
+        }
+    });
+    
+    if (entries.length === 0) {
+        alert('Please add at least one product with quantity');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/pressman/api/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ date, entries, remark })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            alert('✅ Pressman entry saved successfully!');
+            document.getElementById('pressmanEntryForm').reset();
+            document.getElementById('productsContainer').innerHTML = '';
+            // Add initial row
+            addProductRow();
+            document.getElementById('entryDate').value = new Date().toISOString().split('T')[0];
+            loadPressmanDashboard();
+        } else {
+            alert('❌ Error: ' + (result.error || 'Something went wrong'));
+        }
+    } catch (error) {
+        console.error('Error saving entry:', error);
+        alert('❌ Error saving pressman entry');
+    }
+});
+
+// Load pressman history
+async function loadPressmanHistory() {
+    try {
+        const status = document.getElementById('historyFilterStatus').value;
+        let url = '/pressman/api/my-entries';
+        if (status) url += `?status=${status}`;
+        
+        const response = await fetch(url);
+        const entries = await response.json();
+        
+        const tbody = document.getElementById('pressmanHistoryBody');
+        if (entries && entries.length) {
+            tbody.innerHTML = entries.map(e => `
+                <tr>
+                    <td>${new Date(e.date).toLocaleDateString()}</td>
+                    <td><strong>${e.entryNumber}</strong></td>
+                    <td>${e.entries?.length || 0} items</td>
+                    <td class="text-end">${e.totalQuantity || 0}</td>
+                    <td class="text-end fw-bold">₹${(e.totalAmount || 0).toLocaleString()}</td>
+                    <td>
+                        <span class="badge ${e.status === 'paid' ? 'bg-success' : e.status === 'approved' ? 'bg-info' : 'bg-warning'}">
+                            ${e.status}
+                        </span>
+                    </td>
+                    <td>
+                        <a href="/pressman/view/${e._id}" class="btn btn-sm btn-info">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                    </td>
+                </tr>
+            `).join('');
+        } else {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center">No pressman entries found</td></tr>';
+        }
+    } catch (error) {
+        console.error('Error loading history:', error);
+    }
+}
+
+// Initialize
+loadPressmanProducts();
+loadPressmanDashboard();
+
+// Event listeners for dynamic elements
+document.addEventListener('change', (e) => {
+    if (e.target.classList && e.target.classList.contains('product-select')) {
+        calculateTotals();
+    }
+});
+document.addEventListener('input', (e) => {
+    if (e.target.classList && e.target.classList.contains('quantity-input')) {
+        calculateTotals();
+    }
+});
+
+// Add initial row
+setTimeout(() => {
+    if (document.querySelectorAll('.product-row').length === 0) {
+        addProductRow();
+    }
+}, 500);
+
+setInterval(loadPressmanDashboard, 30000);
+</script>

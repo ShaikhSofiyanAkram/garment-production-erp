@@ -1,0 +1,1520 @@
+<div class="container-fluid px-0">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fas fa-file-invoice text-primary"></i> Create New Bill</h2>
+            <p class="text-muted">Create bill with size-wise rates from products</p>
+        </div>
+        <a href="/bills" class="btn btn-secondary">← Back to Bills</a>
+    </div>
+
+    <form method="POST" action="/bills/create" id="billForm">
+        <!-- Tab Navigation -->
+        <ul class="nav nav-tabs mb-4" id="billTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="manual-tab" data-bs-toggle="tab" data-bs-target="#manualBill" type="button">
+                    <i class="fas fa-pen"></i> Manual Entry
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="auto-tab" data-bs-toggle="tab" data-bs-target="#autoBill" type="button">
+                    <i class="fas fa-boxes"></i> Auto from Packing
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="advance-tab" data-bs-toggle="tab" data-bs-target="#advanceBill" type="button">
+                    <i class="fas fa-hand-holding-usd"></i> Advance Payment
+                </button>
+            </li>
+        </ul>
+
+        <!-- Client Section -->
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5><i class="fas fa-user"></i> Bill Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-5">
+                        <label class="form-label fw-bold">Client *</label>
+                        <select name="client" id="clientSelect" class="form-control" required>
+                            <option value="">-- Select Client --</option>
+                            <% if(clients && clients.length) { %>
+                                <% clients.forEach(c => { %>
+                                    <option value="<%= c._id %>"><%= c.name %> (<%= c.phone %>)</option>
+                                <% }) %>
+                            <% } %>
+                        </select>
+                        <div id="clientAdvanceInfo" class="mt-1"></div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">Bill Date</label>
+                        <input type="date" name="billDate" class="form-control" value="<%= new Date().toISOString().split('T')[0] %>">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Due Date</label>
+                        <input type="date" name="dueDate" class="form-control">
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <a href="/clients" class="btn btn-sm btn-success" target="_blank">
+                        <i class="fas fa-plus"></i> New Client
+                    </a>
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="checkAdvance()">
+                        <i class="fas fa-hand-holding-usd"></i> Check Advance
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="tab-content">
+            <!-- Manual Entry Tab -->
+            <div class="tab-pane fade show active" id="manualBill" role="tabpanel">
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-header bg-success text-white">
+                        <h5><i class="fas fa-list"></i> Items</h5>
+                        <small>Select product → Size auto-loads → Rate auto-fetches</small>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-2 mb-2 px-2 fw-bold text-dark">
+                            <div class="col-md-3">Product Name</div>
+                            <div class="col-md-2">Category</div>
+                            <div class="col-md-2">Size</div>
+                            <div class="col-md-1">Qty</div>
+                            <div class="col-md-2">Rate (₹)</div>
+                            <div class="col-md-1">Amount (₹)</div>
+                            <div class="col-md-1">Actions</div>
+                        </div>
+                        <div id="itemsList"></div>
+                        <button type="button" class="btn btn-primary mt-2" id="addItemBtn">
+                            <i class="fas fa-plus"></i> Add Item
+                        </button>
+                        <button type="button" class="btn btn-info mt-2 ms-2" onclick="clearAllRows()">
+                            <i class="fas fa-trash"></i> Clear All
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Auto from Packing Tab -->
+           <!-- ============ AUTO FROM PACKING TAB (FIXED) ============ -->
+            <div class="tab-pane fade" id="autoBill" role="tabpanel">
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-header bg-info text-white">
+                        <h5><i class="fas fa-boxes"></i> Auto from Packing</h5>
+                        <small>Select packing records → Auto-add to bill with size-wise rates</small>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-7">
+                                <label class="form-label fw-bold">Select Packing Records</label>
+                                <select class="form-control" id="packingSelect" multiple style="height: 250px;">
+                                    <option value="">Loading packing records...</option>
+                                </select>
+                                <small class="text-muted">Click to select individual records. Hold Ctrl for multiple selection.</small>
+                            </div>
+                            <div class="col-md-5">
+                                <div class="card bg-light h-100">
+                                    <div class="card-body text-center">
+                                        <h5>Selected Records</h5>
+                                        <h2 class="text-primary" id="packingSelectedCount">0</h2>
+                                        <small class="text-muted">records selected</small>
+                                        <hr>
+                                        <div class="d-grid gap-2">
+                                            <button type="button" class="btn btn-warning" onclick="addPackingToBill()">
+                                                <i class="fas fa-plus-circle"></i> Add Selected to Bill
+                                            </button>
+                                            <button type="button" class="btn btn-info" onclick="selectAllPacking()">
+                                                <i class="fas fa-check-double"></i> Select All
+                                            </button>
+                                            <button type="button" class="btn btn-secondary" onclick="deselectAllPacking()">
+                                                <i class="fas fa-times"></i> Deselect All
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- ✅ Packing Items Preview (Like Manual Entry Table) -->
+                        <div id="packingPreviewCard" class="card mt-3" style="display: none;">
+                            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                                <span><i class="fas fa-list"></i> Packing Items (Ready to Add)</span>
+                                <span class="badge bg-light text-dark" id="packingPreviewCount">0 items</span>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>#</th>
+                                                <th>Packing #</th>
+                                                <th>Product Name</th>
+                                                <th>Category</th>
+                                                <th>Size</th>
+                                                <th class="text-end">Pieces</th>
+                                                <th class="text-end">Rate (₹)</th>
+                                                <th class="text-end">Amount (₹)</th>
+                                                <th class="text-center">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="packingPreviewBody">
+                                            <!-- Dynamic rows -->
+                                        </tbody>
+                                        <tfoot class="table-primary fw-bold">
+                                            <tr>
+                                                <td colspan="7" class="text-end">Total Pieces:</td>
+                                                <td class="text-end" id="packingPreviewTotalPieces">0</td>
+                                                <td></td>
+                                            </tr>
+                                            <tr class="table-success">
+                                                <td colspan="7" class="text-end fs-6">Total Amount:</td>
+                                                <td class="text-end fs-6" id="packingPreviewTotal">₹0.00</td>
+                                                <td></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="card-footer text-center">
+                                <button type="button" class="btn btn-success btn-lg" onclick="confirmPackingToBill()">
+                                    <i class="fas fa-check"></i> ✅ Add to Bill
+                                </button>
+                                <button type="button" class="btn btn-secondary btn-lg" onclick="clearPackingPreview()">
+                                    <i class="fas fa-times"></i> Cancel
+                                </button>
+                                <span class="ms-3 text-muted small">
+                                    <i class="fas fa-info-circle"></i> Items will be added to bill with auto-fetched rates
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Advance Payment Tab -->
+            <div class="tab-pane fade" id="advanceBill" role="tabpanel">
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-header bg-warning text-dark">
+                        <h5><i class="fas fa-hand-holding-usd"></i> Advance Payment</h5>
+                        <small>Record advance payment from client</small>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Select Client *</label>
+                                    <select class="form-control" id="advanceClientSelect">
+                                        <option value="">-- Select Client --</option>
+                                        <% if(clients && clients.length) { %>
+                                            <% clients.forEach(c => { %>
+                                                <option value="<%= c._id %>"><%= c.name %> (<%= c.phone %>)</option>
+                                            <% }) %>
+                                        <% } %>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Advance Amount (₹) *</label>
+                                    <input type="number" class="form-control" id="advanceAmount" min="1" placeholder="Enter amount">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Payment Method *</label>
+                                    <select class="form-control" id="advanceMethod">
+                                        <option value="cash">💵 Cash</option>
+                                        <option value="bank_transfer">🏦 Bank Transfer</option>
+                                        <option value="cheque">📝 Cheque</option>
+                                        <option value="upi">📱 UPI</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Reference / UTR</label>
+                                    <input type="text" class="form-control" id="advanceReference" placeholder="Cheque No / UTR">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-center">
+                            <button type="button" class="btn btn-warning btn-lg" onclick="recordAdvance()">
+                                <i class="fas fa-save"></i> Record Advance
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tax Summary -->
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header bg-info text-white">
+                <h5><i class="fas fa-calculator"></i> Tax & Summary</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">GST</label>
+                        <select name="gstPercent" id="gstSelect" class="form-control">
+                            <option value="18">GST 18%</option>
+                            <option value="12">GST 12%</option>
+                            <option value="5">GST 5%</option>
+                            <option value="0">Tax Free</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">Round Off</label>
+                        <select name="roundOff" id="roundOffSelect" class="form-control">
+                            <option value="none">None</option>
+                            <option value="up">Round Up</option>
+                            <option value="down">Round Down</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Payment Terms</label>
+                        <select name="paymentTerms" class="form-control">
+                            <option value="weekly">Weekly</option>
+                            <option value="monthly">Monthly</option>
+                            <option value="custom">Custom</option>
+                        </select>
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-md-6 offset-md-6">
+                        <table class="table table-bordered">
+                            <tr><td class="fw-bold">Subtotal:</td><td class="text-end">₹<span id="subtotal">0.00</span></td></tr>
+                            <tr><td class="fw-bold">CGST (9%):</td><td class="text-end">₹<span id="cgstAmount">0.00</span></td></tr>
+                            <tr><td class="fw-bold">SGST (9%):</td><td class="text-end">₹<span id="sgstAmount">0.00</span></td></tr>
+                            <tr><td class="fw-bold">Round Off:</td><td class="text-end">₹<span id="roundOffAmount">0.00</span></td></tr>
+                            <tr class="table-primary"><td class="fw-bold fs-5">GRAND TOTAL:</td><td class="text-end fs-5 fw-bold">₹<span id="grandTotal">0.00</span></td></tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Remark -->
+        <div class="card mb-4 shadow-sm">
+            <div class="card-body">
+                <label class="form-label fw-bold">Remark</label>
+                <textarea name="remark" class="form-control" rows="2" placeholder="Optional notes..."></textarea>
+            </div>
+        </div>
+
+        <!-- Submit -->
+        <div class="text-center">
+            <button type="submit" class="btn btn-success btn-lg px-5" id="submitBillBtn">
+                <i class="fas fa-save"></i> Save Bill
+            </button>
+            <a href="/bills" class="btn btn-secondary btn-lg px-5">
+                <i class="fas fa-times"></i> Cancel
+            </a>
+        </div>
+    </form>
+</div>
+
+<script>
+    // ============ GLOBALS ============
+    let allProducts = [];
+    let itemRows = [];
+    let rowCount = 0;
+    let packingItems = [];
+    let selectedPackingItems = [];
+    let usedPackingIds = new Set();
+
+    // ============ LOAD PRODUCTS ============
+    async function loadProductsForBill() {
+        try {
+            const res = await fetch('/products/api/list');
+            if (res.ok) {
+                const data = await res.json();
+                if (Array.isArray(data) && data.length > 0) {
+                    allProducts = data;
+                    console.log('✅ Products loaded:', allProducts.length);
+                    console.log('✅ Products:', allProducts.map(p => p.name + ' - ' + p.category));
+                }
+            }
+        } catch(e) {
+            console.error('Error loading products:', e);
+        }
+        addNewRow();
+    }
+
+    // ============ GET RATE FOR PRODUCT + SIZE ============
+    // ============ GET RATE FOR PRODUCT + SIZE (FIXED) ============
+// ============ GET RATE FOR PRODUCT + SIZE (CASE INSENSITIVE) ============
+function getRateForProduct(productName, size, category) {
+    if (!productName) return 0;
+    
+    // ✅ Case insensitive search
+    const product = allProducts.find(p => 
+        p.name.toLowerCase() === productName.toLowerCase() && 
+        p.category === category
+    );
+    
+    if (!product) {
+        // ✅ Fallback: search by name only (case insensitive)
+        const fallback = allProducts.find(p => 
+            p.name.toLowerCase() === productName.toLowerCase()
+        );
+        if (fallback) {
+            if (fallback.sizeRates && Array.isArray(fallback.sizeRates)) {
+                const sizeRate = fallback.sizeRates.find(sr => sr.size === size);
+                if (sizeRate) return sizeRate.clientRate || 0;
+            }
+            if (fallback.rates && fallback.rates.client) {
+                return fallback.rates.client;
+            }
+        }
+        return 0;
+    }
+    
+    // ✅ Check sizeRates array
+    if (product.sizeRates && Array.isArray(product.sizeRates)) {
+        const sizeRate = product.sizeRates.find(sr => sr.size === size);
+        if (sizeRate) return sizeRate.clientRate || 0;
+    }
+    
+    // Fallback: if product has rates object
+    if (product.rates && product.rates.client) {
+        return product.rates.client;
+    }
+    
+    return 0;
+}
+
+// ============ GET SIZES FOR PRODUCT (CASE INSENSITIVE) ============
+function getSizesForProduct(productName, category) {
+    if (!productName) return [];
+    
+    // ✅ Case insensitive search
+    const product = allProducts.find(p => 
+        p.name.toLowerCase() === productName.toLowerCase() && 
+        p.category === category
+    );
+    
+    if (!product) {
+        // ✅ Fallback: search by name only
+        const fallback = allProducts.find(p => 
+            p.name.toLowerCase() === productName.toLowerCase()
+        );
+        if (fallback) {
+            if (fallback.sizeRates && Array.isArray(fallback.sizeRates)) {
+                return fallback.sizeRates.map(sr => sr.size);
+            }
+            if (fallback.sizes && Array.isArray(fallback.sizes)) {
+                return fallback.sizes;
+            }
+        }
+        return [];
+    }
+    
+    if (product.sizeRates && Array.isArray(product.sizeRates)) {
+        return product.sizeRates.map(sr => sr.size);
+    }
+    if (product.sizes && Array.isArray(product.sizes)) {
+        return product.sizes;
+    }
+    return [];
+}
+
+// ============ GET CATEGORY FOR PRODUCT (CASE INSENSITIVE) ============
+function getCategoryForProduct(productName) {
+    if (!productName) return '';
+    const product = allProducts.find(p => 
+        p.name.toLowerCase() === productName.toLowerCase()
+    );
+    return product ? product.category : '';
+}
+
+    // ============ GET SIZES FOR PRODUCT ============
+    // ============ GET SIZES FOR PRODUCT (FIXED) ============
+function getSizesForProduct(productName, category) {
+    // ✅ Find product by name AND category
+    const product = allProducts.find(p => p.name === productName && p.category === category);
+    if (!product) {
+        // Fallback: find by name only
+        const fallback = allProducts.find(p => p.name === productName);
+        if (fallback) {
+            if (fallback.sizeRates && Array.isArray(fallback.sizeRates)) {
+                return fallback.sizeRates.map(sr => sr.size);
+            }
+            if (fallback.sizes && Array.isArray(fallback.sizes)) {
+                return fallback.sizes;
+            }
+        }
+        return [];
+    }
+    
+    // ✅ From sizeRates
+    if (product.sizeRates && Array.isArray(product.sizeRates)) {
+        return product.sizeRates.map(sr => sr.size);
+    }
+    
+    // ✅ From sizes array
+    if (product.sizes && Array.isArray(product.sizes)) {
+        return product.sizes;
+    }
+    
+    return [];
+}
+
+    // ============ GET CATEGORY FOR PRODUCT ============
+    function getCategoryForProduct(productName) {
+        const product = allProducts.find(p => p.name === productName);
+        return product ? product.category : '';
+    }
+
+    // ============ ADD NEW ROW (FIXED) ============
+    function addNewRow(copyFrom = null) {
+        const container = document.getElementById('itemsList');
+        const idx = rowCount++;
+        
+        let prod = copyFrom ? copyFrom.productName : '';
+        let cat = copyFrom ? copyFrom.category : '';
+        let sz = copyFrom ? copyFrom.size : '';
+        let qtyVal = copyFrom ? copyFrom.quantity : 1;
+        let rateVal = copyFrom ? copyFrom.rate : 0;
+        
+        const rowDiv = document.createElement('div');
+        rowDiv.className = 'row g-2 mb-2 p-2 border rounded bg-light';
+        rowDiv.id = 'row_' + idx;
+        rowDiv.style.borderLeft = '3px solid #4361ee';
+        
+        // ✅ BUILD PRODUCT OPTIONS WITH CATEGORY GROUPING
+        let prodOptions = '<option value="">-- Select Product --</option>';
+        
+        // ✅ Group by category
+        const kidsProducts = allProducts.filter(p => p.category === 'Kids');
+        const mensProducts = allProducts.filter(p => p.category === 'Mens');
+        const otherProducts = allProducts.filter(p => p.category === 'Other');
+        
+        // ✅ Kids Products
+        if (kidsProducts.length > 0) {
+            prodOptions += '<optgroup label="👶 Kids Wear">';
+            kidsProducts.forEach(p => {
+                let selected = (prod === p.name && cat === 'Kids') ? 'selected' : '';
+                prodOptions += `<option value="${p.name}|Kids" data-category="Kids" ${selected}>${p.name}</option>`;
+            });
+            prodOptions += '</optgroup>';
+        }
+        
+        // ✅ Mens Products
+        if (mensProducts.length > 0) {
+            prodOptions += '<optgroup label="👔 Mens Wear">';
+            mensProducts.forEach(p => {
+                let selected = (prod === p.name && cat === 'Mens') ? 'selected' : '';
+                prodOptions += `<option value="${p.name}|Mens" data-category="Mens" ${selected}>${p.name}</option>`;
+            });
+            prodOptions += '</optgroup>';
+        }
+        
+        // ✅ Other Products
+        if (otherProducts.length > 0) {
+            prodOptions += '<optgroup label="📦 Other">';
+            otherProducts.forEach(p => {
+                let selected = (prod === p.name && cat === p.category) ? 'selected' : '';
+                const displayName = p.customCategory ? `${p.name} (${p.customCategory})` : p.name;
+                prodOptions += `<option value="${p.name}|${p.category}" data-category="${p.category}" ${selected}>${displayName}</option>`;
+            });
+            prodOptions += '</optgroup>';
+        }
+        
+        prodOptions += '<option value="other">➕ Add New Product (Manual)</option>';
+        
+        rowDiv.innerHTML = `
+            <div class="col-md-3">
+                <select class="form-control prodSel" data-idx="${idx}" onchange="onProductChange(${idx})">
+                    ${prodOptions}
+                </select>
+                <input type="text" class="form-control mt-1 manualProd" id="manualProd_${idx}" style="display:none;" placeholder="Enter product name" onchange="onManualProductChange(${idx})">
+            </div>
+            <div class="col-md-2">
+                <select class="form-control catSel" id="catSel_${idx}" onchange="onCategoryChange(${idx})">
+                    <option value="">Select</option>
+                    <option value="Kids" ${cat === 'Kids' ? 'selected' : ''}>Kids</option>
+                    <option value="Mens" ${cat === 'Mens' ? 'selected' : ''}>Mens</option>
+                    <option value="Other">Other</option>
+                </select>
+                <input type="text" class="form-control mt-1 manualCat" id="manualCat_${idx}" style="display:none;" placeholder="Enter category" onchange="updateItem(${idx})">
+            </div>
+            <div class="col-md-2">
+                <select class="form-control sizeSel" id="sizeSel_${idx}" onchange="onSizeChange(${idx})">
+                    <option value="">Select Size</option>
+                </select>
+                <input type="text" class="form-control mt-1 manualSize" id="manualSize_${idx}" style="display:none;" placeholder="Enter size" onchange="updateItem(${idx})">
+                <small class="text-muted" id="sizeHint_${idx}"></small>
+            </div>
+            <div class="col-md-1">
+                <input type="number" class="form-control qtyInp" id="qty_${idx}" value="${qtyVal}" min="1" onchange="updateItem(${idx})" onkeyup="updateItem(${idx})">
+            </div>
+            <div class="col-md-2">
+                <input type="number" class="form-control rateInp" id="rate_${idx}" value="${rateVal}" step="0.01" onchange="updateItem(${idx})" onkeyup="updateItem(${idx})">
+                <small class="text-muted" id="rateSource_${idx}"></small>
+            </div>
+            <div class="col-md-1">
+                <input type="text" class="form-control amtInp" id="amt_${idx}" readonly style="background:#e9ecef; font-weight:bold;">
+            </div>
+            <div class="col-md-1">
+                <button type="button" class="btn btn-sm btn-info" onclick="copyRow(${idx})" title="Copy Row">
+                    <i class="fas fa-copy"></i>
+                </button>
+                <button type="button" class="btn btn-sm btn-danger" onclick="removeRow(${idx})" title="Remove Row">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        `;
+        
+        container.appendChild(rowDiv);
+        
+        if (copyFrom) {
+            setTimeout(() => {
+                const prodSelect = rowDiv.querySelector('.prodSel');
+                if (prodSelect) {
+                    // Find the option with matching product name
+                    const options = prodSelect.options;
+                    for (let i = 0; i < options.length; i++) {
+                        if (options[i].value.startsWith(prod + '|')) {
+                            prodSelect.value = options[i].value;
+                            break;
+                        }
+                    }
+                    // Trigger change event
+                    const event = new Event('change');
+                    prodSelect.dispatchEvent(event);
+                }
+                setTimeout(() => {
+                    const sizeSelect = rowDiv.querySelector('.sizeSel');
+                    if (sizeSelect && sz) {
+                        // Find the option with matching size
+                        const options = sizeSelect.options;
+                        for (let i = 0; i < options.length; i++) {
+                            if (options[i].value === sz) {
+                                sizeSelect.value = sz;
+                                break;
+                            }
+                        }
+                        const sizeEvent = new Event('change');
+                        sizeSelect.dispatchEvent(sizeEvent);
+                    }
+                    const qtyInput = rowDiv.querySelector('.qtyInp');
+                    if (qtyInput) qtyInput.value = qtyVal;
+                    updateItem(idx);
+                }, 150);
+            }, 50);
+        }
+        updateItem(idx);
+    }
+
+    // ============ PRODUCT CHANGE ============
+    // ============ PRODUCT CHANGE (FIXED) ============
+function onProductChange(idx) {
+    const rowDiv = document.getElementById('row_' + idx);
+    const prodSelect = rowDiv.querySelector('.prodSel');
+    const manualProd = rowDiv.querySelector('.manualProd');
+    const catSelect = rowDiv.querySelector('.catSel');
+    const sizeSelect = rowDiv.querySelector('.sizeSel');
+    const rateInput = rowDiv.querySelector('.rateInp');
+    const rateSource = document.getElementById('rateSource_' + idx);
+    const sizeHint = document.getElementById('sizeHint_' + idx);
+    
+    if (prodSelect.value === 'other') {
+        prodSelect.style.display = 'none';
+        manualProd.style.display = 'block';
+        manualProd.focus();
+        catSelect.value = '';
+        rateInput.value = '';
+        rateInput.readOnly = false;
+        rateSource.innerHTML = 'Manual';
+        sizeHint.innerHTML = '';
+        return;
+    }
+    
+    prodSelect.style.display = 'block';
+    manualProd.style.display = 'none';
+    
+    if (prodSelect.value) {
+        // ✅ Extract product name and category from value
+        const parts = prodSelect.value.split('|');
+        const productName = parts[0];
+        const category = parts[1] || '';
+        
+        // ✅ Set category
+        catSelect.value = category;
+        
+        // ✅ Load sizes for this product + category
+        loadSizesForRow(idx, productName, category);
+        
+        // ✅ Auto-fetch rate if size already selected
+        const size = sizeSelect ? sizeSelect.value : '';
+        if (size) {
+            const rate = getRateForProduct(productName, size, category);
+            if (rate > 0) {
+                rateInput.value = rate;
+                rateInput.readOnly = true;
+                rateSource.innerHTML = `✅ Auto (${size})`;
+            } else {
+                rateInput.readOnly = false;
+                rateSource.innerHTML = 'Manual';
+            }
+        } else {
+            rateInput.readOnly = false;
+            rateSource.innerHTML = 'Select size for auto rate';
+        }
+    }
+    updateItem(idx);
+}
+
+    // ============ MANUAL PRODUCT CHANGE ============
+    function onManualProductChange(idx) {
+        const rowDiv = document.getElementById('row_' + idx);
+        const manualProd = rowDiv.querySelector('.manualProd');
+        const prodSelect = rowDiv.querySelector('.prodSel');
+        const catSelect = rowDiv.querySelector('.catSel');
+        const rateInput = rowDiv.querySelector('.rateInp');
+        
+        if (manualProd.value.trim()) {
+            const product = allProducts.find(p => p.name.toLowerCase() === manualProd.value.trim().toLowerCase());
+            if (product) {
+                catSelect.value = product.category;
+                prodSelect.value = product.name;
+                prodSelect.style.display = 'block';
+                manualProd.style.display = 'none';
+                loadSizesForRow(idx, product.name);
+                rateInput.readOnly = true;
+                rateInput.value = getRateForProduct(product.name, '');
+            }
+        }
+        updateItem(idx);
+    }
+
+    // ============ CATEGORY CHANGE ============
+    function onCategoryChange(idx) {
+        const rowDiv = document.getElementById('row_' + idx);
+        const catSelect = rowDiv.querySelector('.catSel');
+        const manualCat = rowDiv.querySelector('.manualCat');
+        
+        if (catSelect.value === 'Other') {
+            manualCat.style.display = 'block';
+            manualCat.focus();
+        } else {
+            manualCat.style.display = 'none';
+        }
+        updateItem(idx);
+    }
+
+    // ============ SIZE CHANGE ============
+    // ============ SIZE CHANGE (FIXED) ============
+function onSizeChange(idx) {
+    const rowDiv = document.getElementById('row_' + idx);
+    const sizeSelect = rowDiv.querySelector('.sizeSel');
+    const manualSize = rowDiv.querySelector('.manualSize');
+    const prodSelect = rowDiv.querySelector('.prodSel');
+    const rateInput = rowDiv.querySelector('.rateInp');
+    const rateSource = document.getElementById('rateSource_' + idx);
+    const sizeHint = document.getElementById('sizeHint_' + idx);
+    
+    if (sizeSelect.value === 'other') {
+        manualSize.style.display = 'block';
+        manualSize.focus();
+        rateInput.readOnly = false;
+        rateSource.innerHTML = 'Manual size';
+        updateItem(idx);
+        return;
+    }
+    
+    manualSize.style.display = 'none';
+    
+    if (sizeSelect.value && prodSelect.value) {
+        const parts = prodSelect.value.split('|');
+        const productName = parts[0] || '';
+        const category = parts[1] || '';
+        
+        // ✅ Get rate with category
+        const rate = getRateForProduct(productName, sizeSelect.value, category);
+        if (rate > 0) {
+            rateInput.value = rate;
+            rateInput.readOnly = true;
+            rateSource.innerHTML = `✅ Auto rate (${sizeSelect.value})`;
+            sizeHint.innerHTML = `<span class="text-success">✓ Rate loaded</span>`;
+        } else {
+            rateInput.readOnly = false;
+            rateSource.innerHTML = '⚠️ Rate not found, enter manually';
+            sizeHint.innerHTML = `<span class="text-warning">⚠️ No rate for this size</span>`;
+        }
+    }
+    updateItem(idx);
+}
+
+    // ============ LOAD SIZES FOR ROW ============
+    // ============ LOAD SIZES FOR ROW (FIXED) ============
+function loadSizesForRow(idx, productName, category) {
+    const rowDiv = document.getElementById('row_' + idx);
+    const sizeSelect = rowDiv.querySelector('.sizeSel');
+    const manualSize = rowDiv.querySelector('.manualSize');
+    const sizeHint = document.getElementById('sizeHint_' + idx);
+    
+    // ✅ Get sizes with category filter
+    const sizes = getSizesForProduct(productName, category);
+    const currentValue = sizeSelect.value;
+    
+    sizeSelect.innerHTML = '<option value="">Select Size</option>';
+    if (sizes && sizes.length > 0) {
+        // Sort sizes numerically
+        const sortedSizes = [...sizes].sort((a, b) => {
+            const aNum = parseInt(a);
+            const bNum = parseInt(b);
+            if (!isNaN(aNum) && !isNaN(bNum)) return aNum - bNum;
+            return a.localeCompare(b);
+        });
+        sortedSizes.forEach(s => {
+            sizeSelect.innerHTML += `<option value="${s}">${s}</option>`;
+        });
+    }
+    sizeSelect.innerHTML += '<option value="other">+ Manual Size</option>';
+    
+    // ✅ Restore previous value if valid
+    if (currentValue && sizes.includes(currentValue)) {
+        sizeSelect.value = currentValue;
+    }
+    manualSize.style.display = 'none';
+    if (sizeHint) {
+        sizeHint.innerHTML = sizes.length > 0 ? `${sizes.length} sizes available` : 'No sizes available';
+        sizeHint.style.color = sizes.length > 0 ? '#28a745' : '#dc3545';
+    }
+}
+    // ============ UPDATE ITEM ============
+    function updateItem(idx) {
+        const rowDiv = document.getElementById('row_' + idx);
+        if (!rowDiv) return;
+        
+        const prodSelect = rowDiv.querySelector('.prodSel');
+        const manualProd = rowDiv.querySelector('.manualProd');
+        const catSelect = rowDiv.querySelector('.catSel');
+        const manualCat = rowDiv.querySelector('.manualCat');
+        const sizeSelect = rowDiv.querySelector('.sizeSel');
+        const manualSize = rowDiv.querySelector('.manualSize');
+        const qtyInput = rowDiv.querySelector('.qtyInp');
+        const rateInput = rowDiv.querySelector('.rateInp');
+        const amtInput = rowDiv.querySelector('.amtInp');
+        
+        let productName = '';
+        let category = '';
+        
+        if (prodSelect.value === 'other') {
+            productName = manualProd.value.trim();
+            category = catSelect.value === 'Other' ? manualCat.value.trim() : catSelect.value;
+        } else {
+            const parts = prodSelect.value.split('|');
+            productName = parts[0] || '';
+            category = parts[1] || catSelect.value;
+        }
+        
+        let size = sizeSelect.value === 'other' ? manualSize.value.trim() : sizeSelect.value;
+        let qty = parseInt(qtyInput.value) || 0;
+        let rate = parseFloat(rateInput.value) || 0;
+        
+        const isValid = productName && category && size && qty > 0 && rate > 0;
+        
+        if (isValid) {
+            const amount = qty * rate;
+            amtInput.value = amount.toFixed(2);
+            itemRows[idx] = { 
+                productName: productName, 
+                category: category, 
+                size: size, 
+                quantity: qty, 
+                rate: rate, 
+                amount: amount 
+            };
+            rowDiv.style.borderLeft = '3px solid #10b981';
+        } else {
+            amtInput.value = '';
+            itemRows[idx] = null;
+            rowDiv.style.borderLeft = '3px solid #ef4444';
+        }
+        calcTotal();
+    }
+
+    // ============ COPY ROW ============
+    function copyRow(idx) {
+        const src = itemRows[idx];
+        if (!src) { 
+            alert('Please fill current row first'); 
+            return; 
+        }
+        addNewRow(src);
+    }
+
+    // ============ REMOVE ROW ============
+    function removeRow(idx) {
+        const rowDiv = document.getElementById('row_' + idx);
+        if (rowDiv) rowDiv.remove();
+        itemRows[idx] = null;
+        calcTotal();
+    }
+
+    // ============ CLEAR ALL ROWS ============
+    function clearAllRows() {
+        if (!confirm('⚠️ Remove all items?')) return;
+        const container = document.getElementById('itemsList');
+        container.innerHTML = '';
+        itemRows = [];
+        rowCount = 0;
+        calcTotal();
+        addNewRow();
+    }
+
+    // ============ CALCULATE TOTAL ============
+    function calcTotal() {
+        let sub = 0;
+        for (let i of itemRows) {
+            if (i) sub += i.amount;
+        }
+        
+        let gst = parseInt(document.getElementById('gstSelect').value) || 0;
+        let cgst = sub * (gst/2) / 100;
+        let sgst = sub * (gst/2) / 100;
+        let total = sub + cgst + sgst;
+        
+        let roundType = document.getElementById('roundOffSelect').value;
+        let roundAmt = 0;
+        if (roundType === 'up') {
+            roundAmt = Math.ceil(total) - total;
+            total = Math.ceil(total);
+        } else if (roundType === 'down') {
+            roundAmt = total - Math.floor(total);
+            total = Math.floor(total);
+        }
+        
+        document.getElementById('subtotal').innerText = sub.toFixed(2);
+        document.getElementById('cgstAmount').innerText = cgst.toFixed(2);
+        document.getElementById('sgstAmount').innerText = sgst.toFixed(2);
+        document.getElementById('roundOffAmount').innerText = roundAmt.toFixed(2);
+        document.getElementById('grandTotal').innerText = total.toFixed(2);
+    }
+
+    // ============ FORM SUBMIT ============
+    document.getElementById('billForm').onsubmit = function(e) {
+        let client = document.getElementById('clientSelect').value;
+        if(!client) {
+            e.preventDefault();
+            alert('Please select a client');
+            return false;
+        }
+        
+        let validRows = [];
+        for (let i = 0; i < rowCount; i++) {
+            if (itemRows[i]) {
+                validRows.push(itemRows[i]);
+            }
+        }
+        
+        if(validRows.length === 0) {
+            e.preventDefault();
+            alert('Please add at least one item with product, category, size, quantity and rate');
+            return false;
+        }
+        
+        const existingInput = document.querySelector('input[name="items"]');
+        if (existingInput) existingInput.remove();
+        
+        let inp = document.createElement('input');
+        inp.type = 'hidden';
+        inp.name = 'items';
+        inp.value = JSON.stringify(validRows);
+        this.appendChild(inp);
+        
+        console.log('Submitting bill with items:', validRows);
+        return true;
+    };
+
+    // ============ CLIENT ADVANCE INFO ============
+    document.getElementById('clientSelect').addEventListener('change', async function() {
+        const clientId = this.value;
+        if (!clientId) return;
+        try {
+            const res = await fetch(`/advance/client/${clientId}`);
+            const data = await res.json();
+            const infoDiv = document.getElementById('clientAdvanceInfo');
+            if (data.success && data.availableAdvance > 0) {
+                infoDiv.innerHTML = 
+                    `<span class="badge bg-success fs-6">💰 Advance Available: ₹${data.availableAdvance.toLocaleString()}</span>
+                     <span class="badge bg-info ms-2">Total: ₹${data.totalAdvance.toLocaleString()}</span>`;
+            } else {
+                infoDiv.innerHTML = `<span class="badge bg-secondary">No advance available</span>`;
+            }
+        } catch(e) {
+            console.error('Error:', e);
+        }
+    });
+
+    function checkAdvance() {
+        const clientSelect = document.getElementById('clientSelect');
+        const clientId = clientSelect.value;
+        if (!clientId) {
+            alert('Please select a client first');
+            return;
+        }
+        const event = new Event('change');
+        clientSelect.dispatchEvent(event);
+    }
+
+
+
+
+
+    // ============ AUTO FROM PACKING ============
+    // ============ AUTO FROM PACKING (FIXED) ============
+
+async function loadPackingRecords() {
+    try {
+        const res = await fetch('/packing/api/list');
+        const data = await res.json();
+        const select = document.getElementById('packingSelect');
+        select.innerHTML = '';
+        
+        // ✅ Load products first if not loaded
+        if (allProducts.length === 0) {
+            await loadProductsForBill();
+        }
+        
+        console.log('📦 All products loaded:', allProducts.length);
+        console.log('📦 Product names:', allProducts.map(p => p.name));
+        
+        if (Array.isArray(data) && data.length > 0) {
+            let hasItems = false;
+            data.forEach(p => {
+                if (p.entries && p.entries.length > 0) {
+                    p.entries.forEach((e, index) => {
+                        const uniqueId = `${p._id}_${index}`;
+                        if (usedPackingIds.has(uniqueId)) return;
+                        
+                        // ✅ Check if product exists in database
+                        const productExists = allProducts.some(prod => 
+                            prod.name.toLowerCase() === e.productName.toLowerCase()
+                        );
+                        
+                        const option = document.createElement('option');
+                        option.value = uniqueId;
+                        option.dataset.packingId = p._id;
+                        option.dataset.productName = e.productName;
+                        option.dataset.category = e.category || 'Mens';
+                        option.dataset.size = e.size || 'N/A';
+                        option.dataset.pieces = e.packedPieces || 0;
+                        option.dataset.packingNumber = p.packingNumber;
+                        option.dataset.productExists = productExists;
+                        option.textContent = `${p.packingNumber} - ${e.productName} (${e.size}) - ${e.packedPieces} pcs ${!productExists ? '⚠️ No rate' : ''}`;
+                        select.appendChild(option);
+                        hasItems = true;
+                    });
+                }
+            });
+            
+            if (!hasItems) {
+                select.innerHTML = '<option value="">✅ All packing records have been used</option>';
+            }
+        } else {
+            select.innerHTML = '<option value="">No packing records available</option>';
+        }
+    } catch(e) {
+        console.error('Error loading packing records:', e);
+        document.getElementById('packingSelect').innerHTML = '<option value="">Error loading records</option>';
+    }
+}
+
+function selectAllPacking() {
+    const select = document.getElementById('packingSelect');
+    const options = select.options;
+    
+    if (options.length === 0 || options[0].value === '') {
+        showToast('No packing records to select', 'warning');
+        return;
+    }
+    
+    for (let i = 0; i < options.length; i++) {
+        options[i].selected = true;
+    }
+    updatePackingCount();
+    showToast('✅ All records selected', 'info');
+}
+
+function deselectAllPacking() {
+    const select = document.getElementById('packingSelect');
+    for (let i = 0; i < select.options.length; i++) {
+        select.options[i].selected = false;
+    }
+    updatePackingCount();
+    document.getElementById('packingPreviewCard').style.display = 'none';
+    showToast('❌ All records deselected', 'info');
+}
+
+function updatePackingCount() {
+    const select = document.getElementById('packingSelect');
+    const selected = Array.from(select.selectedOptions);
+    document.getElementById('packingSelectedCount').innerText = selected.length;
+}
+
+function addPackingToBill() {
+    const select = document.getElementById('packingSelect');
+    const selected = Array.from(select.selectedOptions);
+    
+    if (selected.length === 0) {
+        showToast('⚠️ Please select at least one packing record', 'warning');
+        return;
+    }
+    
+    let addedCount = 0;
+    let skipCount = 0;
+    
+    selected.forEach(opt => {
+        // ✅ Check if already in preview
+        const exists = selectedPackingItems.some(item => 
+            item.uniqueId === opt.value
+        );
+        
+        if (exists) {
+            skipCount++;
+            return;
+        }
+        
+        let productName = opt.dataset.productName || 'Unknown';
+        const category = opt.dataset.category || 'Mens';
+        const size = opt.dataset.size || 'N/A';
+        const pieces = parseInt(opt.dataset.pieces) || 0;
+        const packingNumber = opt.dataset.packingNumber || 'PAC-NA';
+        const uniqueId = opt.value;
+        
+        // ✅ Debug log
+        console.log(`🔍 Looking for rate: Product="${productName}", Size="${size}", Category="${category}"`);
+        
+        // ✅ Get rate from product (case insensitive)
+        const rate = getRateForProduct(productName, size, category);
+        const amount = pieces * rate;
+        
+        console.log(`💰 Rate found: ${rate}, Amount: ${amount}`);
+        
+        // ✅ Find actual product name from database for display
+        const product = allProducts.find(p => 
+            p.name.toLowerCase() === productName.toLowerCase()
+        );
+        if (product) {
+            productName = product.name; // Use correct case
+        }
+        
+        selectedPackingItems.push({
+            uniqueId: uniqueId,
+            productName: productName,
+            category: category,
+            size: size,
+            pieces: pieces,
+            rate: rate,
+            amount: amount,
+            packingNumber: packingNumber
+        });
+        
+        addedCount++;
+    });
+    
+    if (addedCount === 0 && skipCount > 0) {
+        showToast(`⚠️ ${skipCount} records already in list (duplicates skipped)`, 'warning');
+    } else if (addedCount > 0) {
+        showToast(`✅ ${addedCount} records added to packing list`, 'success');
+        if (skipCount > 0) {
+            showToast(`⚠️ ${skipCount} duplicates skipped`, 'warning');
+        }
+    }
+    
+    // ✅ Remove selected options from dropdown
+    selected.forEach(opt => {
+        opt.remove();
+    });
+    
+    updatePackingCount();
+    renderPackingPreview();
+}
+
+function renderPackingPreview() {
+    const card = document.getElementById('packingPreviewCard');
+    const body = document.getElementById('packingPreviewBody');
+    const totalPiecesElem = document.getElementById('packingPreviewTotalPieces');
+    const totalAmountElem = document.getElementById('packingPreviewTotal');
+    const countElem = document.getElementById('packingPreviewCount');
+    
+    if (selectedPackingItems.length === 0) {
+        card.style.display = 'none';
+        return;
+    }
+    
+    card.style.display = 'block';
+    countElem.innerText = `${selectedPackingItems.length} items`;
+    
+    let totalPieces = 0;
+    let totalAmount = 0;
+    
+    body.innerHTML = selectedPackingItems.map((item, index) => {
+        totalPieces += item.pieces;
+        totalAmount += item.amount;
+        
+        // ✅ Show rate status
+        const rateStatus = item.rate > 0 ? 
+            `<span class="text-success">✅ ₹${item.rate.toFixed(2)}</span>` : 
+            `<span class="text-danger">⚠️ No rate</span>`;
+        
+        return `
+            <tr>
+                <td>${index + 1}</td>
+                <td><span class="badge bg-info">${item.packingNumber}</span></td>
+                <td><strong>${item.productName}</strong></td>
+                <td><span class="badge bg-secondary">${item.category}</span></td>
+                <td><span class="badge bg-primary">${item.size}</span></td>
+                <td class="text-end fw-bold">${item.pieces}</td>
+                <td class="text-end">${rateStatus}</td>
+                <td class="text-end fw-bold ${item.amount > 0 ? 'text-success' : 'text-danger'}">${item.amount > 0 ? '₹' + item.amount.toFixed(2) : '₹0.00'}</td>
+                <td class="text-center">
+                    <button class="btn btn-sm btn-danger" onclick="removeFromPackingPreview(${index})" title="Remove from list">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+    
+    totalPiecesElem.innerText = totalPieces;
+    totalAmountElem.innerText = totalAmount > 0 ? '₹' + totalAmount.toFixed(2) : '₹0.00';
+}
+
+function removeFromPackingPreview(index) {
+    const removed = selectedPackingItems[index];
+    
+    // ✅ Add back to dropdown
+    const select = document.getElementById('packingSelect');
+    const option = document.createElement('option');
+    option.value = removed.uniqueId;
+    option.dataset.packingId = removed.uniqueId.split('_')[0];
+    option.dataset.productName = removed.productName;
+    option.dataset.category = removed.category;
+    option.dataset.size = removed.size;
+    option.dataset.pieces = removed.pieces;
+    option.dataset.packingNumber = removed.packingNumber;
+    option.textContent = `${removed.packingNumber} - ${removed.productName} (${removed.size}) - ${removed.pieces} pcs`;
+    select.appendChild(option);
+    
+    // ✅ Remove from selected items
+    selectedPackingItems.splice(index, 1);
+    renderPackingPreview();
+    updatePackingCount();
+    showToast('🗑️ Item removed from list', 'info');
+}
+
+function clearPackingPreview() {
+    if (selectedPackingItems.length === 0) return;
+    if (!confirm('⚠️ Clear all items from packing list?')) return;
+    
+    // ✅ Add all items back to dropdown
+    const select = document.getElementById('packingSelect');
+    selectedPackingItems.forEach(item => {
+        const option = document.createElement('option');
+        option.value = item.uniqueId;
+        option.dataset.packingId = item.uniqueId.split('_')[0];
+        option.dataset.productName = item.productName;
+        option.dataset.category = item.category;
+        option.dataset.size = item.size;
+        option.dataset.pieces = item.pieces;
+        option.dataset.packingNumber = item.packingNumber;
+        option.textContent = `${item.packingNumber} - ${item.productName} (${item.size}) - ${item.pieces} pcs`;
+        select.appendChild(option);
+    });
+    
+    selectedPackingItems = [];
+    renderPackingPreview();
+    updatePackingCount();
+    showToast('🗑️ All items cleared', 'info');
+}
+
+function confirmPackingToBill() {
+    if (selectedPackingItems.length === 0) {
+        showToast('⚠️ No items to add to bill', 'warning');
+        return;
+    }
+    
+    let addedCount = 0;
+    let duplicateCount = 0;
+    const existingKeys = new Set();
+    
+    // ✅ Check existing manual entries
+    itemRows.forEach(row => {
+        if (row) {
+            existingKeys.add(`${row.productName}|${row.category}|${row.size}`);
+        }
+    });
+    
+    selectedPackingItems.forEach(item => {
+        const key = `${item.productName}|${item.category}|${item.size}`;
+        
+        // ✅ Check if already exists in manual entries
+        if (existingKeys.has(key)) {
+            // Update existing row
+            const existingIndex = itemRows.findIndex(row => 
+                row && row.productName === item.productName && 
+                row.category === item.category && 
+                row.size === item.size
+            );
+            if (existingIndex !== -1) {
+                itemRows[existingIndex].quantity += item.pieces;
+                itemRows[existingIndex].amount = itemRows[existingIndex].quantity * itemRows[existingIndex].rate;
+                // Update UI
+                const rowDiv = document.getElementById('row_' + existingIndex);
+                if (rowDiv) {
+                    const qtyInput = rowDiv.querySelector('.qtyInp');
+                    if (qtyInput) qtyInput.value = itemRows[existingIndex].quantity;
+                    const amtInput = rowDiv.querySelector('.amtInp');
+                    if (amtInput) amtInput.value = itemRows[existingIndex].amount.toFixed(2);
+                }
+            }
+            duplicateCount++;
+            return;
+        }
+        
+        // ✅ Add new row to manual entries
+        const container = document.getElementById('itemsList');
+        const idx = rowCount++;
+        
+        const rowDiv = document.createElement('div');
+        rowDiv.className = 'row g-2 mb-2 p-2 border rounded bg-light';
+        rowDiv.id = 'row_' + idx;
+        rowDiv.style.borderLeft = '4px solid #0dcaf0';
+        rowDiv.style.background = '#f0f9ff';
+        
+        // Build product options
+        let prodOptions = '<option value="">-- Select --</option>';
+        const kidsProducts = allProducts.filter(p => p.category === 'Kids');
+        const mensProducts = allProducts.filter(p => p.category === 'Mens');
+        const otherProducts = allProducts.filter(p => p.category === 'Other');
+        
+        if (kidsProducts.length > 0) {
+            prodOptions += '<optgroup label="👶 Kids Wear">';
+            kidsProducts.forEach(p => {
+                const selected = item.productName === p.name ? 'selected' : '';
+                prodOptions += `<option value="${p.name}|Kids" data-category="Kids" ${selected}>${p.name}</option>`;
+            });
+            prodOptions += '</optgroup>';
+        }
+        if (mensProducts.length > 0) {
+            prodOptions += '<optgroup label="👔 Mens Wear">';
+            mensProducts.forEach(p => {
+                const selected = item.productName === p.name ? 'selected' : '';
+                prodOptions += `<option value="${p.name}|Mens" data-category="Mens" ${selected}>${p.name}</option>`;
+            });
+            prodOptions += '</optgroup>';
+        }
+        if (otherProducts.length > 0) {
+            prodOptions += '<optgroup label="📦 Other">';
+            otherProducts.forEach(p => {
+                const selected = item.productName === p.name ? 'selected' : '';
+                prodOptions += `<option value="${p.name}|${p.category}" data-category="${p.category}" ${selected}>${p.name}</option>`;
+            });
+            prodOptions += '</optgroup>';
+        }
+        prodOptions += '<option value="other">+ Manual</option>';
+        
+        rowDiv.innerHTML = `
+            <div class="col-md-3">
+                <select class="form-control prodSel" data-idx="${idx}" onchange="onProductChange(${idx})">
+                    ${prodOptions}
+                </select>
+                <input type="text" class="form-control mt-1 manualProd" id="manualProd_${idx}" style="display:none;" placeholder="Enter product name" onchange="onManualProductChange(${idx})">
+            </div>
+            <div class="col-md-2">
+                <select class="form-control catSel" id="catSel_${idx}" onchange="onCategoryChange(${idx})">
+                    <option value="">Select</option>
+                    <option value="Kids" ${item.category === 'Kids' ? 'selected' : ''}>Kids</option>
+                    <option value="Mens" ${item.category === 'Mens' ? 'selected' : ''}>Mens</option>
+                    <option value="Other">Other</option>
+                </select>
+                <input type="text" class="form-control mt-1 manualCat" id="manualCat_${idx}" style="display:none;" placeholder="Enter category" onchange="updateItem(${idx})">
+            </div>
+            <div class="col-md-2">
+                <select class="form-control sizeSel" id="sizeSel_${idx}" onchange="onSizeChange(${idx})">
+                    <option value="">Select Size</option>
+                </select>
+                <input type="text" class="form-control mt-1 manualSize" id="manualSize_${idx}" style="display:none;" placeholder="Enter size" onchange="updateItem(${idx})">
+                <small class="text-muted" id="sizeHint_${idx}"></small>
+            </div>
+            <div class="col-md-1">
+                <input type="number" class="form-control qtyInp" id="qty_${idx}" value="${item.pieces}" min="1" onchange="updateItem(${idx})" onkeyup="updateItem(${idx})">
+            </div>
+            <div class="col-md-2">
+                <input type="number" class="form-control rateInp" id="rate_${idx}" value="${item.rate}" step="0.01" onchange="updateItem(${idx})" onkeyup="updateItem(${idx})">
+                <small class="text-muted" id="rateSource_${idx}">✅ Auto from Packing</small>
+            </div>
+            <div class="col-md-1">
+                <input type="text" class="form-control amtInp" id="amt_${idx}" readonly style="background:#e9ecef; font-weight:bold;" value="${item.amount.toFixed(2)}">
+            </div>
+            <div class="col-md-1">
+                <button type="button" class="btn btn-sm btn-info" onclick="copyRow(${idx})" title="Copy Row">
+                    <i class="fas fa-copy"></i>
+                </button>
+                <button type="button" class="btn btn-sm btn-danger" onclick="removeRow(${idx})" title="Remove Row">
+                    <i class="fas fa-trash"></i>
+                </button>
+                <span class="badge bg-info ms-1 d-flex align-items-center mt-1">📦 Packing</span>
+            </div>
+        `;
+        container.appendChild(rowDiv);
+        
+        // ✅ Load sizes and set value
+        loadSizesForRow(idx, item.productName, item.category);
+        setTimeout(() => {
+            const sizeSelect = rowDiv.querySelector('.sizeSel');
+            if (sizeSelect) {
+                const options = sizeSelect.options;
+                for (let i = 0; i < options.length; i++) {
+                    if (options[i].value === item.size) {
+                        sizeSelect.value = item.size;
+                        break;
+                    }
+                }
+                const event = new Event('change');
+                sizeSelect.dispatchEvent(event);
+            }
+            updateItem(idx);
+        }, 100);
+        
+        existingKeys.add(key);
+        addedCount++;
+        itemRows[idx] = { 
+            productName: item.productName,
+            category: item.category,
+            size: item.size,
+            quantity: item.pieces,
+            rate: item.rate,
+            amount: item.amount
+        };
+    });
+    
+    // ✅ Clear packing preview
+    selectedPackingItems = [];
+    renderPackingPreview();
+    calcTotal();
+    
+    if (addedCount > 0) {
+        showToast(`✅ ${addedCount} packing items added to bill!`, 'success');
+        if (duplicateCount > 0) {
+            showToast(`⚠️ ${duplicateCount} items already existed, quantities updated`, 'warning');
+        }
+    } else {
+        showToast(`⚠️ No new items added. ${duplicateCount} duplicates found.`, 'warning');
+    }
+}
+
+// ✅ Update packing select change listener
+document.getElementById('packingSelect').addEventListener('change', updatePackingCount);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    // ============ ADVANCE PAYMENT ============
+    async function recordAdvance() {
+        const client = document.getElementById('advanceClientSelect').value;
+        const amount = document.getElementById('advanceAmount').value;
+        const method = document.getElementById('advanceMethod').value;
+        const reference = document.getElementById('advanceReference').value;
+        
+        if (!client || !amount || amount <= 0) {
+            alert('Please select client and enter valid amount');
+            return;
+        }
+        
+        try {
+            const res = await fetch('/advance/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    client: client,
+                    amount: parseFloat(amount),
+                    paymentMethod: method,
+                    reference: reference,
+                    paymentDate: new Date().toISOString().split('T')[0]
+                })
+            });
+            
+            if (res.ok) {
+                showToast(`✅ Advance of ₹${parseFloat(amount).toLocaleString()} recorded`, 'success');
+                document.getElementById('advanceAmount').value = '';
+                document.getElementById('advanceReference').value = '';
+                document.getElementById('clientSelect').value = client;
+                const event = new Event('change');
+                document.getElementById('clientSelect').dispatchEvent(event);
+            } else {
+                const data = await res.json();
+                alert('Error: ' + (data.error || 'Failed to record advance'));
+            }
+        } catch(e) {
+            console.error('Error:', e);
+            alert('Error recording advance');
+        }
+    }
+
+    // ============ TOAST NOTIFICATIONS ============
+    function showToast(message, type) {
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type} alert-dismissible fade show position-fixed top-0 end-0 m-3`;
+        toast.style.zIndex = '9999';
+        toast.style.minWidth = '300px';
+        toast.innerHTML = `${message} <button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
+    }
+
+    // ============ EVENT LISTENERS ============
+    document.getElementById('addItemBtn').onclick = function() { addNewRow(); };
+    document.getElementById('gstSelect').onchange = function() { calcTotal(); };
+    document.getElementById('roundOffSelect').onchange = function() { calcTotal(); };
+    document.getElementById('packingSelect').addEventListener('change', updatePackingCount);
+
+    // ============ INITIALIZE ============
+    document.addEventListener('DOMContentLoaded', function() {
+        loadProductsForBill();
+        loadPackingRecords();
+        updatePackingCount();
+    });
+</script>
+
+<style>
+    .nav-tabs .nav-link {
+        font-weight: 600;
+        padding: 12px 25px;
+        border-radius: 10px 10px 0 0;
+    }
+    .nav-tabs .nav-link.active {
+        border-bottom: 3px solid #4361ee;
+        color: #4361ee;
+    }
+    .form-control:focus {
+        border-color: #4361ee;
+        box-shadow: 0 0 0 2px rgba(67,97,238,0.1);
+    }
+    .btn-group-sm .btn {
+        padding: 4px 8px;
+        font-size: 11px;
+    }
+    .table-responsive {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+</style>

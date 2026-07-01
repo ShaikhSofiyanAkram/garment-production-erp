@@ -1,0 +1,310 @@
+<%
+const currentPage = 'payments';
+%>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %> | Garment ERP</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+    
+    <style>
+        .stat-card { background: white; border-radius: 12px; padding: 15px; border: 1px solid #e2e8f0; }
+        .stat-value { font-size: 1.25rem; font-weight: 700; }
+        .stat-label { font-size: 0.7rem; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
+        .table-premium { width: 100%; border-collapse: collapse; }
+        .table-premium th { padding: 8px; background: #f8fafc; font-weight: 600; border-bottom: 2px solid #e2e8f0; }
+        .table-premium td { padding: 8px; border-bottom: 1px solid #e2e8f0; }
+        @media print { .no-print { display: none !important; } }
+        .filter-btn { cursor: pointer; }
+        .filter-btn.active { background: #4361ee; color: white; }
+    </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary no-print">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/dashboard">
+            <i class="fas fa-tshirt"></i> Garment ERP
+        </a>
+        <div class="ms-auto">
+            <span class="text-white me-3">
+                <i class="fas fa-user"></i> <%= user ? user.username : 'Admin' %>
+            </span>
+            <a href="/auth/logout" class="btn btn-sm btn-outline-light">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid mt-3">
+
+    <!-- ============================================================ -->
+    <!-- ✅ HEADER - Print & Back Buttons -->
+    <!-- ============================================================ -->
+    <div class="d-flex justify-content-between align-items-center mb-3 no-print">
+        <div>
+            <h4><i class="fas fa-file-invoice"></i> Payment Statement</h4>
+            <p class="text-muted"><%= worker.name %> - <%= worker.workerType.toUpperCase() %></p>
+        </div>
+        <div>
+            <!-- ✅ FIXED: Print button with filter data -->
+            <button onclick="printStatement()" class="btn btn-primary me-2">
+                <i class="fas fa-print"></i> Print
+            </button>
+            <a href="/payments/worker/<%= worker._id %>" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back
+            </a>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- ✅ PERIOD FILTER - With Hidden Inputs for Print -->
+    <!-- ============================================================ -->
+    <div class="card mb-3 no-print">
+        <div class="card-body">
+            <form method="GET" action="/payments/worker/<%= worker._id %>/statement" class="row g-2 align-items-end" id="filterForm">
+                <div class="col-auto">
+                    <a href="?period=week" class="btn btn-sm <%= period === 'week' ? 'btn-primary' : 'btn-outline-primary' %>">
+                        This Week
+                    </a>
+                </div>
+                <div class="col-auto">
+                    <a href="?period=month" class="btn btn-sm <%= period === 'month' ? 'btn-primary' : 'btn-outline-primary' %>">
+                        This Month
+                    </a>
+                </div>
+                <div class="col-auto">
+                    <a href="?period=all" class="btn btn-sm <%= period === 'all' ? 'btn-primary' : 'btn-outline-primary' %>">
+                        All Time
+                    </a>
+                </div>
+                <div class="col-auto">
+                    <input type="date" name="fromDate" class="form-control form-control-sm" style="width:150px;" value="<%= fromDate || '' %>" id="fromDate">
+                </div>
+                <div class="col-auto">
+                    <span>to</span>
+                </div>
+                <div class="col-auto">
+                    <input type="date" name="toDate" class="form-control form-control-sm" style="width:150px;" value="<%= toDate || '' %>" id="toDate">
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-sm btn-success">Apply</button>
+                </div>
+                <div class="col-auto">
+                    <a href="?period=all" class="btn btn-sm btn-secondary">Reset</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- ✅ STATS CARDS -->
+    <!-- ============================================================ -->
+    <div class="row g-3 mb-3">
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-label">Total Pieces</div>
+                <div class="stat-value text-primary"><%= totalPieces || 0 %></div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-label">Total Earnings</div>
+                <div class="stat-value text-success">₹<%= totalEarnings || 0 %></div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-label">Total Paid</div>
+                <div class="stat-value text-info">₹<%= totalPaid || 0 %></div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-label">Net Payable</div>
+                <div class="stat-value <%= netPayable > 0 ? 'text-success' : netPayable < 0 ? 'text-danger' : 'text-secondary' %>">
+                    ₹<%= netPayable || 0 %>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- ✅ WORK DETAILS TABLE -->
+    <!-- ============================================================ -->
+    <div class="card shadow-sm mb-3">
+        <div class="card-header bg-white py-2">
+            <h6 class="mb-0"><i class="fas fa-tasks"></i> Work Details</h6>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table-premium">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>ID</th>
+                            <th>Product</th>
+                            <th>Size</th>
+                            <th class="text-end">Pieces</th>
+                            <th class="text-end">Rate (₹)</th>
+                            <th class="text-end">Amount (₹)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% if (workDetails && workDetails.length > 0) { %>
+                            <% workDetails.forEach(w => { %>
+                                <tr>
+                                    <td><%= new Date(w.date).toLocaleDateString('en-IN') %></td>
+                                    <td><%= w.assignmentId || w.entryNumber || '-' %></td>
+                                    <td><%= w.productName || '-' %></td>
+                                    <td><%= w.size || 'N/A' %></td>
+                                    <td class="text-end"><%= w.pieces || 0 %></td>
+                                    <td class="text-end">₹<%= w.rate || 0 %></td>
+                                    <td class="text-end fw-bold">₹<%= w.amount || 0 %></td>
+                                </tr>
+                            <% }) %>
+                        <% } else { %>
+                            <tr><td colspan="7" class="text-center py-3 text-muted">No work records found for this period</td></tr>
+                        <% } %>
+                    </tbody>
+                    <tfoot class="table-light fw-bold">
+                        <tr>
+                            <td colspan="4" class="text-end">Total:</td>
+                            <td class="text-end"><%= totalPieces || 0 %></td>
+                            <td></td>
+                            <td class="text-end text-success">₹<%= totalEarnings || 0 %></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- ✅ PAYMENTS & ADVANCES - Two Column -->
+    <!-- ============================================================ -->
+    <div class="row g-3">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white py-2">
+                    <h6 class="mb-0"><i class="fas fa-money-bill-wave text-success"></i> Payments</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table-premium">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th class="text-end">Amount</th>
+                                    <th>Method</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% if (payments && payments.length > 0) { %>
+                                    <% payments.forEach(p => { %>
+                                        <tr>
+                                            <td><%= new Date(p.paymentDate).toLocaleDateString('en-IN') %></td>
+                                            <td class="text-end text-success">₹<%= p.amount || 0 %></td>
+                                            <td><%= p.paymentMethod || 'Cash' %></td>
+                                        </tr>
+                                    <% }) %>
+                                <% } else { %>
+                                    <tr><td colspan="3" class="text-center py-2 text-muted">No payments for this period</td></tr>
+                                <% } %>
+                            </tbody>
+                            <tfoot class="table-light fw-bold">
+                                <tr>
+                                    <td class="text-end">Total:</td>
+                                    <td class="text-end text-success">₹<%= totalPaid || 0 %></td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white py-2">
+                    <h6 class="mb-0"><i class="fas fa-hand-holding-usd text-danger"></i> Advances</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table-premium">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th class="text-end">Amount</th>
+                                    <th>Purpose</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% if (advances && advances.length > 0) { %>
+                                    <% advances.forEach(a => { %>
+                                        <tr>
+                                            <td><%= new Date(a.date).toLocaleDateString('en-IN') %></td>
+                                            <td class="text-end text-danger">₹<%= a.amount || 0 %></td>
+                                            <td><%= a.purpose || '-' %></td>
+                                        </tr>
+                                    <% }) %>
+                                <% } else { %>
+                                    <tr><td colspan="3" class="text-center py-2 text-muted">No advances for this period</td></tr>
+                                <% } %>
+                            </tbody>
+                            <tfoot class="table-light fw-bold">
+                                <tr>
+                                    <td class="text-end">Total:</td>
+                                    <td class="text-end text-danger">₹<%= totalAdvances || 0 %></td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- ============================================================ -->
+<!-- ✅ PRINT STATEMENT SCRIPT - Opens in New Tab with Filter Data -->
+<!-- ============================================================ -->
+<script>
+function printStatement() {
+    const workerId = '<%= worker._id %>';
+    
+    // ✅ Get current filter values from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const period = urlParams.get('period') || 'month';
+    const fromDate = urlParams.get('fromDate') || '';
+    const toDate = urlParams.get('toDate') || '';
+    
+    // ✅ Build URL with ALL parameters
+    let url = `/payments/print-statement?workers=${workerId}`;
+    url += `&period=${period}`;
+    if (fromDate) url += `&fromDate=${fromDate}`;
+    if (toDate) url += `&toDate=${toDate}`;
+    url += `&_t=${Date.now()}`;
+    
+    console.log('🖨️ Print URL:', url);
+    console.log('📅 Filter Applied:', { period, fromDate, toDate });
+    
+    // ✅ Open in NEW TAB
+    window.open(url, '_blank');
+}
+</script>
+
+</body>
+</html>

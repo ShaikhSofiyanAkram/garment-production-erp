@@ -1,0 +1,172 @@
+<%
+currentPage = 'dashboard';
+%>
+
+<%- include('../layouts/worker-layout') %>
+
+<div class="container-fluid">
+    <!-- Welcome Section -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card bg-gradient-cyan text-white" style="background: linear-gradient(135deg, #0891b2, #06b6d4);">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h2 class="mb-2">Welcome back, <%= user ? user.username : 'Cutting Worker' %>!</h2>
+                            <p class="mb-0">Manage your cutting work and track assignments</p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <i class="fas fa-cut fa-4x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-value" id="totalCuttings">0</div>
+            <div class="stat-label">Total Cuttings</div>
+            <i class="fas fa-cut fa-2x text-primary mt-2 d-block"></i>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="todayCuttings">0</div>
+            <div class="stat-label">Today's Cuttings</div>
+            <i class="fas fa-calendar-day fa-2x text-info mt-2 d-block"></i>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="totalPieces">0</div>
+            <div class="stat-label">Total Pieces Cut</div>
+            <i class="fas fa-scissors fa-2x text-success mt-2 d-block"></i>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="monthlySalary">₹0</div>
+            <div class="stat-label">Monthly Salary</div>
+            <i class="fas fa-rupee-sign fa-2x text-warning mt-2 d-block"></i>
+        </div>
+    </div>
+
+    <!-- New Cutting Entry Button -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-body text-center">
+                    <a href="/cutting/create" class="btn btn-primary btn-lg">
+                        <i class="fas fa-plus-circle"></i> New Cutting Entry
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- My Cutting History -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <span><i class="fas fa-history"></i> My Cutting History</span>
+            <div>
+                <input type="date" id="historyFilterDate" class="form-control form-control-sm d-inline-block w-auto me-2">
+                <button class="btn btn-sm btn-outline-primary" onclick="loadCuttingHistory()">
+                    <i class="fas fa-search"></i> Filter
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" onclick="resetFilter()">
+                    <i class="fas fa-sync-alt"></i> Reset
+                </button>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Date</th>
+                            <th>Cutting #</th>
+                            <th>Product</th>
+                            <th>Sizes & Pieces</th>
+                            <th>Total</th>
+                            <th>Assigned</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cuttingHistoryBody">
+                        <tr><td colspan="7" class="text-center">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Load cutting worker dashboard
+async function loadCuttingDashboard() {
+    try {
+        const response = await fetch('/dashboard/api/worker-stats');
+        const data = await response.json();
+        
+        if (data.success) {
+            const stats = data.stats;
+            document.getElementById('totalCuttings').innerText = stats.totalCuttings || 0;
+            document.getElementById('todayCuttings').innerText = stats.todayCuttings || 0;
+            document.getElementById('totalPieces').innerText = stats.totalPieces || 0;
+            document.getElementById('monthlySalary').innerText = `₹${(stats.monthlySalary || 0).toLocaleString()}`;
+        }
+        
+        await loadCuttingHistory();
+        
+    } catch (error) {
+        console.error('Error loading dashboard:', error);
+    }
+}
+
+// Load cutting history
+async function loadCuttingHistory() {
+    try {
+        const filterDate = document.getElementById('historyFilterDate').value;
+        let url = '/cutting/api/my-entries';
+        if (filterDate) url += `?date=${filterDate}`;
+        
+        const response = await fetch(url);
+        const cuttings = await response.json();
+        
+        const tbody = document.getElementById('cuttingHistoryBody');
+        if (cuttings && cuttings.length) {
+            tbody.innerHTML = cuttings.map(c => {
+                let sizesHtml = '';
+                if (c.sizes && c.sizes.length) {
+                    sizesHtml = c.sizes.map(s => `<span class="badge bg-secondary me-1">${s.size}: ${s.pieces}</span>`).join('');
+                }
+                return `
+                    <tr>
+                        <td>${new Date(c.createdAt).toLocaleDateString()}</td>
+                        <td><strong>${c.cuttingNumber}</strong></td>
+                        <td>${c.productName}</td>
+                        <td>${sizesHtml}</td>
+                        <td class="text-end fw-bold">${c.totalPieces}</td>
+                        <td class="text-end">${c.assignedPieces || 0}</td>
+                        <td>
+                            <span class="badge ${c.status === 'completed' ? 'bg-success' : c.status === 'assigned' ? 'bg-info' : 'bg-warning'}">
+                                ${c.status}
+                            </span>
+                         </td>
+                     </tr>
+                `;
+            }).join('');
+        } else {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center">No cutting records found</td></tr>';
+        }
+    } catch (error) {
+        console.error('Error loading cutting history:', error);
+    }
+}
+
+function resetFilter() {
+    document.getElementById('historyFilterDate').value = '';
+    loadCuttingHistory();
+}
+
+// Initial load
+loadCuttingDashboard();
+setInterval(loadCuttingDashboard, 30000);
+</script>

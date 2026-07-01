@@ -1,0 +1,137 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-cut text-primary"></i> Cutting Management</h2>
+    <a href="/cutting/create" class="btn btn-primary btn-lg">
+        <i class="fas fa-plus"></i> New Cutting Entry
+    </a>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Cutting #</th>
+                        <th>Client</th>
+                        <th>Product</th>
+                        <th>Category</th>
+                        <th>Sizes & Pieces</th>
+                        <th>Colors</th>
+                        <th>Total</th>
+                        <th>Assigned</th>
+                        <th>Worker</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% if (cuttings && cuttings.length) { %>
+                        <% cuttings.forEach(cutting => { 
+                            const assignedPercent = cutting.totalPieces > 0 ? (cutting.assignedPieces / cutting.totalPieces * 100) : 0;
+                        %>
+                            <tr class="<%= assignedPercent === 100 ? 'table-success' : assignedPercent > 0 ? 'table-info' : '' %>">
+                                <td><strong><%= cutting.cuttingNumber %></strong></td>
+                                <td><%= cutting.client || '-' %></td>
+                                <td><%= cutting.productName %></td>
+                                <td>
+                                    <span class="badge <%= cutting.productCategory === 'Kids' ? 'bg-info' : 'bg-primary' %>">
+                                        <%= cutting.productCategory %>
+                                    </span>
+                                </td>
+                                <td>
+                                    <% if (cutting.sizes && cutting.sizes.length) { %>
+                                        <% cutting.sizes.forEach(s => { %>
+                                            <span class="badge bg-secondary mb-1 d-block">
+                                                📏 <%= s.size %>: <%= s.pieces %> pcs 
+                                                <% if (s.assignedPieces > 0) { %>
+                                                    <span class="text-warning">(Assigned: <%= s.assignedPieces %>)</span>
+                                                <% } %>
+                                            </span>
+                                        <% }) %>
+                                    <% } else { %>
+                                        <span class="text-muted">-</span>
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <% if (cutting.colors && cutting.colors.length) { %>
+                                        <% cutting.colors.forEach(c => { %>
+                                            <span class="badge bg-dark"><%= c %></span>
+                                        <% }) %>
+                                    <% } else { %>
+                                        <span class="text-muted">-</span>
+                                    <% } %>
+                                </td>
+                                <td><strong><%= cutting.totalPieces %></strong></td>
+                                <td>
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar <%= assignedPercent === 100 ? 'bg-success' : 'bg-info' %>" 
+                                             role="progressbar" 
+                                             style="width: <%= assignedPercent %>%;" 
+                                             aria-valuenow="<%= assignedPercent %>" 
+                                             aria-valuemin="0" 
+                                             aria-valuemax="100">
+                                            <%= cutting.assignedPieces %>/<%= cutting.totalPieces %>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><%= cutting.cuttingWorker?.name || '-' %></td>
+                                <td>
+                                    <% if (cutting.status === 'pending') { %>
+                                        <span class="badge bg-danger">Pending</span>
+                                    <% } else if (cutting.status === 'assigned') { %>
+                                        <span class="badge bg-info">Assigned</span>
+                                    <% } else if (cutting.status === 'partial') { %>
+                                        <span class="badge bg-warning">Partial</span>
+                                    <% } else { %>
+                                        <span class="badge bg-success">Completed</span>
+                                    <% } %>
+                                </td>
+                                <td><%= new Date(cutting.createdAt).toLocaleDateString() %></td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="/assignments/create?cutting=<%= cutting._id %>" 
+                                           class="btn btn-primary" 
+                                           title="Assign to Karigar">
+                                            <i class="fas fa-tasks"></i>
+                                        </a>
+                                        <form action="/cutting/delete/<%= cutting._id %>?_method=DELETE" 
+                                              method="POST" 
+                                              style="display: inline;"
+                                              onsubmit="return confirm('Delete this cutting entry? This will also delete all related assignments.');">
+                                            <button type="submit" class="btn btn-danger" title="Delete">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        <% }) %>
+                    <% } else { %>
+                        <tr><td colspan="12" class="text-center py-5">
+                            <i class="fas fa-cut fa-3x text-muted mb-3 d-block"></i>
+                            <p>No cutting entries found</p>
+                            <a href="/cutting/create" class="btn btn-primary">Create First Cutting Entry</a>
+                        </td></tr>
+                    <% } %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    .progress {
+        border-radius: 10px;
+        background-color: #e9ecef;
+    }
+    .progress-bar {
+        border-radius: 10px;
+        font-size: 11px;
+        line-height: 20px;
+    }
+    .badge {
+        font-size: 11px;
+        padding: 4px 8px;
+    }
+</style>

@@ -1,0 +1,670 @@
+<%
+const currentPage = 'payments';
+%>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %> | Garment ERP</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+    
+    <style>
+        .stat-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s;
+            height: 100%;
+        }
+        .stat-card:hover { transform: translateY(-3px); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); }
+        .stat-value { font-size: 1.75rem; font-weight: 700; }
+        .stat-label { font-size: 0.75rem; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
+        .worker-card {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        .worker-card:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.08); }
+        .badge-status { padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; }
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        .amount-positive { color: #22c55e; }
+        .amount-negative { color: #ef4444; }
+        .amount-zero { color: #94a3b8; }
+        
+        .filter-section {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 20px;
+        }
+        .filter-section .form-control,
+        .filter-section .form-select {
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+            padding: 10px 15px;
+        }
+        .filter-section .btn-filter {
+            background: #4361ee;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 10px 30px;
+            font-weight: 600;
+        }
+        .filter-section .btn-filter:hover {
+            background: #3651d4;
+        }
+        
+        .table-premium {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .table-premium th {
+            padding: 12px 15px;
+            background: #f8fafc;
+            font-weight: 600;
+            border-bottom: 2px solid #e2e8f0;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #64748b;
+        }
+        .table-premium td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e2e8f0;
+            vertical-align: middle;
+        }
+        .table-premium tfoot {
+            background: #f8fafc;
+            font-weight: 700;
+        }
+        
+        .select-checkbox {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #4361ee;
+        }
+        
+        .btn-print {
+            background: #22c55e;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 10px 25px;
+            font-weight: 600;
+        }
+        .btn-print:hover {
+            background: #16a34a;
+            color: white;
+        }
+        .btn-payment {
+            background: #4361ee;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 10px 25px;
+            font-weight: 600;
+        }
+        .btn-payment:hover {
+            background: #3651d4;
+            color: white;
+        }
+        
+        .select-all-label {
+            cursor: pointer;
+            font-size: 0.85rem;
+            color: #64748b;
+        }
+        .select-all-label:hover {
+            color: #4361ee;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/dashboard">
+            <i class="fas fa-tshirt"></i> Garment ERP
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <span class="nav-link">
+                        <i class="fas fa-user"></i> <%= user ? user.username : 'Admin' %>
+                    </span>
+                </li>
+                <li class="nav-item">
+                    <a href="/auth/logout" class="btn btn-sm btn-outline-light nav-link">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid mt-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3><i class="fas fa-money-bill-wave text-success"></i> Payment Management</h3>
+            <p class="text-muted">Manage worker payments, advances and statements</p>
+        </div>
+        <div>
+            <!-- Advances Button -->
+                <!-- Advances Button -->
+            <a href="/payments/advances" class="btn btn-outline-warning me-2">
+                <i class="fas fa-hand-holding-usd"></i> Advances
+            </a>
+            <a href="/reports/payment-summary" class="btn btn-outline-primary">
+                <i class="fas fa-file-alt"></i> Reports
+            </a>
+        </div>
+    </div>
+
+    <!-- Flash Messages -->
+    <% if (success_msg && success_msg.length) { %>
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="fas fa-check-circle"></i> <%= success_msg %>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    <% } %>
+    <% if (error_msg && error_msg.length) { %>
+        <div class="alert alert-danger alert-dismissible fade show">
+            <i class="fas fa-exclamation-circle"></i> <%= error_msg %>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    <% } %>
+
+    <!-- Stats -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-label">Total Workers</div>
+                <div class="stat-value text-primary"><%= totalWorkers || 0 %></div>
+                <small class="text-muted">
+                    K: <%= activeKarigars || 0 %> | P: <%= activePressmans || 0 %> | H: <%= activeHelpers || 0 %> | C: <%= activeCuttings || 0 %>
+                </small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-label">Monthly Payments</div>
+                <div class="stat-value text-success">₹<%= monthlyPayments || 0 %></div>
+                <small class="text-muted">This month</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-label">Pending Advances</div>
+                <div class="stat-value text-warning">₹<%= pendingAdvances || 0 %></div>
+                <small class="text-muted">To be adjusted</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-label">Total Paid</div>
+                <div class="stat-value text-info">₹<%= totalPaidThisMonth || 0 %></div>
+                <small class="text-muted">This month</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- ✅ FILTER SECTION -->
+    <div class="filter-section">
+        <form method="GET" action="/payments" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label fw-bold">Worker Type</label>
+                <select name="workerType" class="form-select" id="workerTypeFilter">
+                    <option value="">All Workers</option>
+                    <option value="karigar" <%= query && query.workerType === 'karigar' ? 'selected' : '' %>>Karigar</option>
+                    <option value="pressman" <%= query && query.workerType === 'pressman' ? 'selected' : '' %>>Pressman</option>
+                    <option value="helper" <%= query && query.workerType === 'helper' ? 'selected' : '' %>>Helper</option>
+                    <option value="cutting" <%= query && query.workerType === 'cutting' ? 'selected' : '' %>>Cutting</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-bold">From Date</label>
+                <input type="date" name="fromDate" class="form-control" value="<%= query && query.fromDate ? query.fromDate : '' %>">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-bold">To Date</label>
+                <input type="date" name="toDate" class="form-control" value="<%= query && query.toDate ? query.toDate : '' %>">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-bold">Status</label>
+                <select name="status" class="form-select">
+                    <option value="">All</option>
+                    <option value="active" <%= query && query.status === 'active' ? 'selected' : '' %>>Active</option>
+                    <option value="inactive" <%= query && query.status === 'inactive' ? 'selected' : '' %>>Inactive</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn-filter w-100">
+                    <i class="fas fa-filter"></i> Apply Filter
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- ✅ KARIGAR SECTION (ONLY WHEN ALL OR KARIGAR SELECTED) -->
+    <!-- ============================================================ -->
+    <% if (!query.workerType || query.workerType === 'karigar') { %>
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white py-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-user-cog text-primary"></i> Karigars</h5>
+                <div>
+                    <span class="badge bg-primary me-2"><%= karigars?.length || 0 %> workers</span>
+                    <span class="badge bg-success">Total Earnings: ₹<%= karigarEarnings?.reduce((sum, e) => sum + e.totalEarnings, 0) || 0 %></span>
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table-premium">
+                    <thead>
+                        <tr>
+                            <th style="width: 30px;"><input type="checkbox" class="select-checkbox" id="selectAllKarigar"></th>
+                            <th>Worker</th>
+                            <th>Type</th>
+                            <th class="text-end">Pieces</th>
+                            <th class="text-end">Earnings</th>
+                            <th class="text-end">Paid</th>
+                            <th class="text-end">Advances</th>
+                            <th class="text-end">Net Payable</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% if (karigars && karigars.length > 0) { %>
+                            <% karigars.forEach(k => { %>
+                                <% const earning = karigarEarnings?.find(e => e.worker._id.toString() === k._id.toString()) || {}; %>
+                                <tr>
+                                    <td><input type="checkbox" class="select-checkbox worker-check" data-id="<%= k._id %>" data-type="karigar"></td>
+                                    <td>
+                                        <strong><%= k.name %></strong>
+                                        <br><small class="text-muted"><%= k.phone || 'No phone' %></small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary">Karigar</span>
+                                        <span class="badge-status badge bg-<%= k.isActive ? 'success' : 'secondary' %> ms-1">
+                                            <%= k.isActive ? 'Active' : 'Inactive' %>
+                                        </span>
+                                    </td>
+                                    <td class="text-end"><%= earning.totalPieces || 0 %></td>
+                                    <td class="text-end text-success">₹<%= earning.totalEarnings || 0 %></td>
+                                    <td class="text-end text-info">₹<%= earning.totalPaid || 0 %></td>
+                                    <td class="text-end text-danger">₹<%= earning.totalAdvances || 0 %></td>
+                                    <td class="text-end fw-bold <%= earning.netPayable > 0 ? 'text-success' : earning.netPayable < 0 ? 'text-danger' : 'text-secondary' %>">
+                                        ₹<%= earning.netPayable || 0 %>
+                                    </td>
+                                    <td class="text-center">
+                                        <a href="/payments/worker/<%= k._id %>" class="btn btn-sm btn-outline-primary"><i class="fas fa-eye"></i></a>
+                                        <a href="/payments/worker/<%= k._id %>/statement?period=week" class="btn btn-sm btn-outline-info"><i class="fas fa-file-invoice"></i></a>
+                                    </td>
+                                </tr>
+                            <% }) %>
+                        <% } else { %>
+                            <tr><td colspan="9" class="text-center py-4 text-muted">No karigars found matching filter</td></tr>
+                        <% } %>
+                    </tbody>
+                    <% if (karigars && karigars.length > 0) { %>
+                    <tfoot>
+                        <tr>
+                            <td colspan="3" class="text-end">Total:</td>
+                            <td class="text-end"><%= karigarEarnings?.reduce((sum, e) => sum + e.totalPieces, 0) || 0 %></td>
+                            <td class="text-end text-success">₹<%= karigarEarnings?.reduce((sum, e) => sum + e.totalEarnings, 0) || 0 %></td>
+                            <td class="text-end text-info">₹<%= karigarEarnings?.reduce((sum, e) => sum + e.totalPaid, 0) || 0 %></td>
+                            <td class="text-end text-danger">₹<%= karigarEarnings?.reduce((sum, e) => sum + e.totalAdvances, 0) || 0 %></td>
+                            <td class="text-end text-warning">₹<%= karigarEarnings?.reduce((sum, e) => sum + e.netPayable, 0) || 0 %></td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                    <% } %>
+                </table>
+            </div>
+        </div>
+    </div>
+    <% } %>
+
+    <!-- ============================================================ -->
+    <!-- ✅ PRESSMAN SECTION (ONLY WHEN ALL OR PRESSMAN SELECTED) -->
+    <!-- ============================================================ -->
+    <% if (!query.workerType || query.workerType === 'pressman') { %>
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white py-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-tshirt text-info"></i> Pressmans</h5>
+                <div>
+                    <span class="badge bg-info me-2"><%= pressmans?.length || 0 %> workers</span>
+                    <span class="badge bg-success">Total Earnings: ₹<%= pressmanEarnings?.reduce((sum, e) => sum + e.totalEarnings, 0) || 0 %></span>
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table-premium">
+                    <thead>
+                        <tr>
+                            <th style="width: 30px;"><input type="checkbox" class="select-checkbox" id="selectAllPressman"></th>
+                            <th>Worker</th>
+                            <th>Type</th>
+                            <th class="text-end">Pieces</th>
+                            <th class="text-end">Earnings</th>
+                            <th class="text-end">Paid</th>
+                            <th class="text-end">Advances</th>
+                            <th class="text-end">Net Payable</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% if (pressmans && pressmans.length > 0) { %>
+                            <% pressmans.forEach(p => { %>
+                                <% const earning = pressmanEarnings?.find(e => e.worker._id.toString() === p._id.toString()) || {}; %>
+                                <tr>
+                                    <td><input type="checkbox" class="select-checkbox worker-check" data-id="<%= p._id %>" data-type="pressman"></td>
+                                    <td>
+                                        <strong><%= p.name %></strong>
+                                        <br><small class="text-muted"><%= p.phone || 'No phone' %></small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">Pressman</span>
+                                        <span class="badge-status badge bg-<%= p.isActive ? 'success' : 'secondary' %> ms-1">
+                                            <%= p.isActive ? 'Active' : 'Inactive' %>
+                                        </span>
+                                    </td>
+                                    <td class="text-end"><%= earning.totalPieces || 0 %></td>
+                                    <td class="text-end text-success">₹<%= earning.totalEarnings || 0 %></td>
+                                    <td class="text-end text-info">₹<%= earning.totalPaid || 0 %></td>
+                                    <td class="text-end text-danger">₹<%= earning.totalAdvances || 0 %></td>
+                                    <td class="text-end fw-bold <%= earning.netPayable > 0 ? 'text-success' : earning.netPayable < 0 ? 'text-danger' : 'text-secondary' %>">
+                                        ₹<%= earning.netPayable || 0 %>
+                                    </td>
+                                    <td class="text-center">
+                                        <a href="/payments/worker/<%= p._id %>" class="btn btn-sm btn-outline-primary"><i class="fas fa-eye"></i></a>
+                                        <a href="/payments/worker/<%= p._id %>/statement?period=week" class="btn btn-sm btn-outline-info"><i class="fas fa-file-invoice"></i></a>
+                                    </td>
+                                </tr>
+                            <% }) %>
+                        <% } else { %>
+                            <tr><td colspan="9" class="text-center py-4 text-muted">No pressmans found matching filter</td></tr>
+                        <% } %>
+                    </tbody>
+                    <% if (pressmans && pressmans.length > 0) { %>
+                    <tfoot>
+                        <tr>
+                            <td colspan="3" class="text-end">Total:</td>
+                            <td class="text-end"><%= pressmanEarnings?.reduce((sum, e) => sum + e.totalPieces, 0) || 0 %></td>
+                            <td class="text-end text-success">₹<%= pressmanEarnings?.reduce((sum, e) => sum + e.totalEarnings, 0) || 0 %></td>
+                            <td class="text-end text-info">₹<%= pressmanEarnings?.reduce((sum, e) => sum + e.totalPaid, 0) || 0 %></td>
+                            <td class="text-end text-danger">₹<%= pressmanEarnings?.reduce((sum, e) => sum + e.totalAdvances, 0) || 0 %></td>
+                            <td class="text-end text-warning">₹<%= pressmanEarnings?.reduce((sum, e) => sum + e.netPayable, 0) || 0 %></td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                    <% } %>
+                </table>
+            </div>
+        </div>
+    </div>
+    <% } %>
+
+    <!-- ============================================================ -->
+    <!-- ✅ HELPERS SECTION (ONLY WHEN ALL OR HELPER SELECTED) -->
+    <!-- ============================================================ -->
+    <% if (!query.workerType || query.workerType === 'helper') { %>
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white py-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-hands-helping text-warning"></i> Helpers</h5>
+                <span class="badge bg-warning"><%= helpers?.length || 0 %> workers</span>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table-premium">
+                    <thead>
+                        <tr>
+                            <th style="width: 30px;"><input type="checkbox" class="select-checkbox" id="selectAllHelper"></th>
+                            <th>Worker</th>
+                            <th>Type</th>
+                            <th class="text-end">Earnings</th>
+                            <th class="text-end">Paid</th>
+                            <th class="text-end">Advances</th>
+                            <th class="text-end">Net Payable</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% if (helpers && helpers.length > 0) { %>
+                            <% helpers.forEach(h => { %>
+                                <% const earning = helperEarnings?.find(e => e.worker._id.toString() === h._id.toString()) || {}; %>
+                                <tr>
+                                    <td><input type="checkbox" class="select-checkbox worker-check" data-id="<%= h._id %>" data-type="helper"></td>
+                                    <td>
+                                        <strong><%= h.name %></strong>
+                                        <br><small class="text-muted"><%= h.phone || 'No phone' %></small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-warning">Helper</span>
+                                        <span class="badge-status badge bg-<%= h.isActive ? 'success' : 'secondary' %> ms-1">
+                                            <%= h.isActive ? 'Active' : 'Inactive' %>
+                                        </span>
+                                    </td>
+                                    <td class="text-end text-success">₹<%= earning.totalEarnings || 0 %></td>
+                                    <td class="text-end text-info">₹<%= earning.totalPaid || 0 %></td>
+                                    <td class="text-end text-danger">₹<%= earning.totalAdvances || 0 %></td>
+                                    <td class="text-end fw-bold <%= earning.netPayable > 0 ? 'text-success' : earning.netPayable < 0 ? 'text-danger' : 'text-secondary' %>">
+                                        ₹<%= earning.netPayable || 0 %>
+                                    </td>
+                                    <td class="text-center">
+                                        <a href="/payments/worker/<%= h._id %>" class="btn btn-sm btn-outline-primary"><i class="fas fa-eye"></i></a>
+                                    </td>
+                                </tr>
+                            <% }) %>
+                        <% } else { %>
+                            <tr><td colspan="8" class="text-center py-4 text-muted">No helpers found matching filter</td></tr>
+                        <% } %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <% } %>
+
+    <!-- ============================================================ -->
+    <!-- ✅ CUTTINGS SECTION (ONLY WHEN ALL OR CUTTING SELECTED) -->
+    <!-- ============================================================ -->
+    <% if (!query.workerType || query.workerType === 'cutting') { %>
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white py-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-cut text-danger"></i> Cuttings</h5>
+                <span class="badge bg-danger"><%= cuttings?.length || 0 %> workers</span>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table-premium">
+                    <thead>
+                        <tr>
+                            <th style="width: 30px;"><input type="checkbox" class="select-checkbox" id="selectAllCutting"></th>
+                            <th>Worker</th>
+                            <th>Type</th>
+                            <th class="text-end">Earnings</th>
+                            <th class="text-end">Paid</th>
+                            <th class="text-end">Advances</th>
+                            <th class="text-end">Net Payable</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% if (cuttings && cuttings.length > 0) { %>
+                            <% cuttings.forEach(c => { %>
+                                <% const earning = cuttingEarnings?.find(e => e.worker._id.toString() === c._id.toString()) || {}; %>
+                                <tr>
+                                    <td><input type="checkbox" class="select-checkbox worker-check" data-id="<%= c._id %>" data-type="cutting"></td>
+                                    <td>
+                                        <strong><%= c.name %></strong>
+                                        <br><small class="text-muted"><%= c.phone || 'No phone' %></small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-danger">Cutting</span>
+                                        <span class="badge-status badge bg-<%= c.isActive ? 'success' : 'secondary' %> ms-1">
+                                            <%= c.isActive ? 'Active' : 'Inactive' %>
+                                        </span>
+                                    </td>
+                                    <td class="text-end text-success">₹<%= earning.totalEarnings || 0 %></td>
+                                    <td class="text-end text-info">₹<%= earning.totalPaid || 0 %></td>
+                                    <td class="text-end text-danger">₹<%= earning.totalAdvances || 0 %></td>
+                                    <td class="text-end fw-bold <%= earning.netPayable > 0 ? 'text-success' : earning.netPayable < 0 ? 'text-danger' : 'text-secondary' %>">
+                                        ₹<%= earning.netPayable || 0 %>
+                                    </td>
+                                    <td class="text-center">
+                                        <a href="/payments/worker/<%= c._id %>" class="btn btn-sm btn-outline-primary"><i class="fas fa-eye"></i></a>
+                                    </td>
+                                </tr>
+                            <% }) %>
+                        <% } else { %>
+                            <tr><td colspan="8" class="text-center py-4 text-muted">No cuttings found matching filter</td></tr>
+                        <% } %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <% } %>
+
+    <!-- ============================================================ -->
+    <!-- ✅ BOTTOM ACTION BAR -->
+    <!-- ============================================================ -->
+    <div class="filter-section mt-3">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <div class="d-flex align-items-center gap-3">
+                    <label class="select-all-label">
+                        <input type="checkbox" class="select-checkbox" id="selectAllWorkers">
+                        Select All
+                    </label>
+                    <span class="text-muted">|</span>
+                    <span id="selectedCount">0 workers selected</span>
+                </div>
+            </div>
+            <div class="col-md-6 text-end">
+                <button class="btn-print me-2" onclick="printSelected()">
+                    <i class="fas fa-print"></i> Print Selected
+                </button>
+                <button class="btn-payment" onclick="collectPayment()">
+                    <i class="fas fa-money-bill-wave"></i> Collect Payment
+                </button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// ==================== SELECT ALL FUNCTIONALITY ====================
+document.getElementById('selectAllWorkers')?.addEventListener('change', function() {
+    document.querySelectorAll('.worker-check').forEach(cb => {
+        cb.checked = this.checked;
+    });
+    updateSelectedCount();
+});
+
+document.querySelectorAll('.worker-check').forEach(cb => {
+    cb.addEventListener('change', updateSelectedCount);
+});
+
+function updateSelectedCount() {
+    const count = document.querySelectorAll('.worker-check:checked').length;
+    document.getElementById('selectedCount').textContent = count + ' workers selected';
+}
+
+// ==================== PRINT SELECTED ====================
+// ==================== PRINT SELECTED (IMPROVED) ====================
+// ==================== PRINT SELECTED (FINAL) ====================
+// ==================== PRINT SELECTED ====================
+function printSelected() {
+    const selected = [];
+    document.querySelectorAll('.worker-check:checked').forEach(cb => {
+        selected.push({
+            id: cb.dataset.id,
+            type: cb.dataset.type
+        });
+    });
+    
+    if (selected.length === 0) {
+        alert('Please select at least one worker');
+        return;
+    }
+    
+    // ✅ Get filter parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const workerType = urlParams.get('workerType') || '';
+    const fromDate = urlParams.get('fromDate') || '';
+    const toDate = urlParams.get('toDate') || '';
+    const status = urlParams.get('status') || '';
+    
+    // ✅ Build URL
+    const ids = selected.map(s => s.id).join(',');
+    let printUrl = `/payments/print-statement?workers=${ids}`;
+    if (workerType) printUrl += `&workerType=${encodeURIComponent(workerType)}`;
+    if (fromDate) printUrl += `&fromDate=${encodeURIComponent(fromDate)}`;
+    if (toDate) printUrl += `&toDate=${encodeURIComponent(toDate)}`;
+    if (status) printUrl += `&status=${encodeURIComponent(status)}`;
+    printUrl += `&_t=${Date.now()}`;
+    
+    console.log('🖨️ Print URL:', printUrl);
+    
+    // ✅ Open in NEW TAB
+    window.open(printUrl, '_blank');
+}
+
+// ==================== COLLECT PAYMENT ====================
+function collectPayment() {
+    const selected = [];
+    document.querySelectorAll('.worker-check:checked').forEach(cb => {
+        selected.push({
+            id: cb.dataset.id,
+            type: cb.dataset.type
+        });
+    });
+    
+    if (selected.length === 0) {
+        alert('Please select at least one worker');
+        return;
+    }
+    
+    const ids = selected.map(s => s.id).join(',');
+    window.location.href = '/payments/collect-payment?workers=' + ids;
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | Garment ERP</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Animated Background */
+        body::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 20% 50%, rgba(67,97,238,0.1) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        body::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 80% 80%, rgba(129,140,248,0.08) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        /* Login Container */
+        .login-container {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 32px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            width: 520px;
+            max-width: 100%;
+            overflow: hidden;
+            position: relative;
+            z-index: 1;
+            backdrop-filter: blur(10px);
+        }
+
+        /* Header */
+        .login-header {
+            background: linear-gradient(135deg, #4361ee, #818cf8);
+            padding: 35px 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        .login-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .logo-icon {
+            width: 70px;
+            height: 70px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .logo-icon i {
+            font-size: 2rem;
+            color: white;
+        }
+
+        .login-header h2 {
+            color: white;
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .login-header p {
+            color: rgba(255,255,255,0.8);
+            font-size: 0.85rem;
+        }
+
+        /* Body */
+        .login-body {
+            padding: 35px 30px;
+        }
+
+        /* Role Selector */
+        .role-selector {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+
+        .role-option {
+            text-align: center;
+            padding: 12px 8px;
+            border: 2px solid #e2e8f0;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .role-option:hover {
+            border-color: #4361ee;
+            background: #f8fafc;
+            transform: translateY(-2px);
+        }
+
+        .role-option.active {
+            background: linear-gradient(135deg, #4361ee, #818cf8);
+            border-color: #4361ee;
+            color: white;
+        }
+
+        .role-option.active i {
+            color: white;
+        }
+
+        .role-option i {
+            font-size: 1.5rem;
+            color: #64748b;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .role-option span {
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: block;
+        }
+
+        /* Form Group */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #64748b;
+            margin-bottom: 8px;
+        }
+
+        .input-group-custom {
+            position: relative;
+        }
+
+        .input-group-custom i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            font-size: 1rem;
+        }
+
+        .form-control-custom {
+            width: 100%;
+            padding: 14px 15px 14px 45px;
+            border: 2px solid #e2e8f0;
+            border-radius: 16px;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .form-control-custom:focus {
+            outline: none;
+            border-color: #4361ee;
+            box-shadow: 0 0 0 3px rgba(67,97,238,0.1);
+        }
+
+        /* Login Button */
+        .btn-login {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #4361ee, #818cf8);
+            color: white;
+            border: none;
+            border-radius: 16px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(67,97,238,0.4);
+        }
+
+        /* Alert Messages */
+        .alert {
+            padding: 12px 16px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .alert-danger {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+
+        .alert-success {
+            background: #f0fdf4;
+            color: #16a34a;
+            border: 1px solid #dcfce7;
+        }
+
+        .alert-info {
+            background: #eff6ff;
+            color: #2563eb;
+            border: 1px solid #dbeafe;
+        }
+
+        /* Demo Credentials */
+        .demo-credentials {
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .demo-credentials h4 {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .demo-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .demo-card {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 1px solid #e2e8f0;
+        }
+
+        .demo-card:hover {
+            background: #f1f5f9;
+            transform: translateY(-2px);
+        }
+
+        .demo-role {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #4361ee;
+            margin-bottom: 5px;
+        }
+
+        .demo-email {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #0f172a;
+            font-family: monospace;
+        }
+
+        .demo-password {
+            font-size: 0.65rem;
+            color: #64748b;
+            margin-top: 4px;
+        }
+
+        /* Footer */
+        .login-footer {
+            background: #f8fafc;
+            padding: 15px 30px;
+            text-align: center;
+            font-size: 0.7rem;
+            color: #94a3b8;
+        }
+
+        /* Responsive */
+        @media (max-width: 500px) {
+            .role-selector {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .demo-grid {
+                grid-template-columns: 1fr;
+            }
+            .login-body {
+                padding: 25px 20px;
+            }
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            margin-left: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .btn-login:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <div class="logo-icon">
+                <i class="fas fa-tshirt"></i>
+            </div>
+            <h2>Garment ERP</h2>
+            <p>Premium Garment Management Solution</p>
+        </div>
+        
+        <div class="login-body">
+            <div id="alertMessage"></div>
+            
+            <!-- Role Selector -->
+            <div class="role-selector" id="roleSelector">
+                <div class="role-option active" data-role="admin">
+                    <i class="fas fa-crown"></i>
+                    <span>Admin</span>
+                </div>
+                <div class="role-option" data-role="cutting_master">
+                    <i class="fas fa-cut"></i>
+                    <span>Cutting Master</span>
+                </div>
+                <div class="role-option" data-role="karigar">
+                    <i class="fas fa-user-check"></i>
+                    <span>Karigar</span>
+                </div>
+                <div class="role-option" data-role="helper">
+                    <i class="fas fa-hand-sparkles"></i>
+                    <span>Helper</span>
+                </div>
+                <div class="role-option" data-role="pressman">
+                    <i class="fas fa-industry"></i>
+                    <span>Pressman</span>
+                </div>
+            </div>
+            
+            <!-- Login Form -->
+            <form id="loginForm">
+                <div class="form-group">
+                <label>EMAIL ADDRESS</label>
+                <div class="input-group-custom">
+                    <i class="fas fa-envelope"></i>
+                    <input type="email" id="email" class="form-control-custom" 
+                        placeholder="Enter your email" required autocomplete="email">
+                </div>
+            </div>
+                
+                <div class="form-group">
+                    <label>PASSWORD</label>
+                    <div class="input-group-custom">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="password" class="form-control-custom" 
+                               placeholder="Enter your password" required autocomplete="current-password">
+                    </div>
+                </div>
+                
+                <input type="hidden" id="role" value="admin">
+                
+                <button type="submit" class="btn-login" id="loginBtn">
+                    <i class="fas fa-arrow-right-to-bracket"></i> Login
+                </button>
+            </form>
+            
+            <!-- Demo Credentials -->
+            <div class="demo-credentials">
+                <h4><i class="fas fa-key"></i> Demo Credentials (All passwords: <code>admin123</code> for Admin, <code>worker123</code> for others)</h4>
+                <div class="demo-grid">
+                    <div class="demo-card" data-email="admin@garment.com" data-role="admin">
+                        <div class="demo-role">👑 Admin</div>
+                        <div class="demo-email">admin@garment.com</div>
+                        <div class="demo-password">🔑 admin123</div>
+                    </div>
+                    <div class="demo-card" data-email="cutting@garment.com" data-role="cutting_master">
+                        <div class="demo-role">✂️ Cutting Master</div>
+                        <div class="demo-email">cutting@garment.com</div>
+                        <div class="demo-password">🔑 worker123</div>
+                    </div>
+                    <div class="demo-card" data-email="karigar1@garment.com" data-role="karigar">
+                        <div class="demo-role">👔 Karigar</div>
+                        <div class="demo-email">karigar1@garment.com</div>
+                        <div class="demo-password">🔑 worker123</div>
+                    </div>
+                    <div class="demo-card" data-email="helper1@garment.com" data-role="helper">
+                        <div class="demo-role">🤝 Helper</div>
+                        <div class="demo-email">helper1@garment.com</div>
+                        <div class="demo-password">🔑 worker123</div>
+                    </div>
+                    <div class="demo-card" data-email="pressman@garment.com" data-role="pressman">
+                        <div class="demo-role">🔥 Pressman</div>
+                        <div class="demo-email">pressman@garment.com</div>
+                        <div class="demo-password">🔑 worker123</div>
+                    </div>
+                    <div class="demo-card" data-email="worker@garment.com" data-role="worker">
+                        <div class="demo-role">👷 General Worker</div>
+                        <div class="demo-email">worker@garment.com</div>
+                        <div class="demo-password">🔑 worker123</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="login-footer">
+            <p>&copy; 2024 Garment ERP. All rights reserved.</p>
+        </div>
+    </div>
+
+    <script>
+        // ============ ROLE SELECTOR ============
+        const roleOptions = document.querySelectorAll('.role-option');
+        const roleInput = document.getElementById('role');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        
+        // Demo credentials mapping
+        const demoCredentials = {
+            'admin': { email: 'admin@garment.com', password: 'admin123' },
+            'cutting_master': { email: 'cutting@garment.com', password: 'worker123' },
+            'karigar': { email: 'karigar1@garment.com', password: 'worker123' },
+            'helper': { email: 'helper1@garment.com', password: 'worker123' },
+            'pressman': { email: 'pressman@garment.com', password: 'worker123' },
+            'worker': { email: 'worker@garment.com', password: 'worker123' }
+        };
+        
+        roleOptions.forEach(option => {
+            option.addEventListener('click', function() {
+                // Remove active class from all
+                roleOptions.forEach(opt => opt.classList.remove('active'));
+                // Add active class to clicked
+                this.classList.add('active');
+                // Set role value
+                const role = this.dataset.role;
+                roleInput.value = role;
+                
+                // Auto-fill demo credentials
+                if (demoCredentials[role]) {
+                    emailInput.value = demoCredentials[role].email;
+                    passwordInput.value = demoCredentials[role].password;
+                } else {
+                    emailInput.value = '';
+                    passwordInput.value = '';
+                }
+            });
+        });
+        
+        // Demo card click handler
+        document.querySelectorAll('.demo-card').forEach(card => {
+            card.addEventListener('click', function() {
+                const email = this.dataset.email;
+                const role = this.dataset.role;
+                
+                // Find and activate role
+                roleOptions.forEach(opt => {
+                    if (opt.dataset.role === role) {
+                        opt.click();
+                    }
+                });
+            });
+        });
+        
+        // ============ LOGIN FORM HANDLER ============
+        const loginForm = document.getElementById('loginForm');
+        const loginBtn = document.getElementById('loginBtn');
+        const alertDiv = document.getElementById('alertMessage');
+        
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = emailInput.value.trim();
+            const password = passwordInput.value;
+            const role = roleInput.value;
+            
+            if (!email || !password) {
+                showAlert('Please enter email and password', 'danger');
+                return;
+            }
+            
+            // Show loading state
+            loginBtn.disabled = true;
+            loginBtn.innerHTML = 'Logging in <span class="spinner"></span>';
+            
+            try {
+                const response = await fetch('/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password, role })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showAlert('Login successful! Redirecting...', 'success');
+                    
+                    // Store user info in localStorage (for System 2 style)
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    
+                    setTimeout(() => {
+                        window.location.href = '/dashboard';
+                    }, 1000);
+                } else {
+                    showAlert(data.error || 'Invalid credentials', 'danger');
+                    loginBtn.disabled = false;
+                    loginBtn.innerHTML = '<i class="fas fa-arrow-right-to-bracket"></i> Login';
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showAlert('Network error. Please check if server is running.', 'danger');
+                loginBtn.disabled = false;
+                loginBtn.innerHTML = '<i class="fas fa-arrow-right-to-bracket"></i> Login';
+            }
+        });
+        
+        function showAlert(message, type) {
+            alertDiv.innerHTML = `
+                <div class="alert alert-${type}">
+                    <i class="fas fa-${type === 'danger' ? 'exclamation-circle' : 'check-circle'}"></i>
+                    ${message}
+                </div>
+            `;
+            
+            // Auto hide after 5 seconds
+            setTimeout(() => {
+                if (alertDiv.children[0]) {
+                    alertDiv.children[0].style.transition = 'opacity 0.5s';
+                    alertDiv.children[0].style.opacity = '0';
+                    setTimeout(() => {
+                        alertDiv.innerHTML = '';
+                    }, 500);
+                }
+            }, 5000);
+        }
+        
+        // Set default admin credentials
+        emailInput.value = 'admin@garment.com';
+        passwordInput.value = 'admin123';
+    </script>
+</body>
+</html>

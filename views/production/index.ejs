@@ -1,0 +1,164 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-undo-alt"></i> Production Returns</h2>
+    <a href="/production/return" class="btn btn-primary">
+        <i class="fas fa-plus"></i> New Return
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Assignment ID</th>
+                        <th>Karigar</th>
+                        <th>Product</th>
+                        <th>Size Details</th>
+                        <th>Return History</th>
+                        <th>Given</th>
+                        <th>Returned</th>
+                        <th>Damage</th>
+                        <th>Missing</th>
+                        <th>Status</th>
+                        <th>Latest Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% if (returns && returns.length) { %>
+                        <% returns.forEach(returnGroup => { 
+                            // Calculate status based on totals
+                            const totalReturnedAll = (returnGroup.totalReturned || 0) + (returnGroup.totalDamage || 0) + (returnGroup.totalMissing || 0);
+                            let displayStatus = returnGroup.status;
+                            let statusClass = 'bg-secondary';
+                            
+                            if (totalReturnedAll >= returnGroup.totalGiven && returnGroup.totalGiven > 0) {
+                                displayStatus = 'completed';
+                                statusClass = 'bg-success';
+                            } else if (totalReturnedAll > 0) {
+                                displayStatus = 'partial';
+                                statusClass = 'bg-warning';
+                            } else {
+                                displayStatus = 'pending';
+                                statusClass = 'bg-danger';
+                            }
+                        %>
+                        <tr>
+                            <td><strong><%= returnGroup.assignment?.assignmentId %></strong></td>
+                            <td><%= returnGroup.karigar?.name %></td>
+                            <td><%= returnGroup.productName %><br><small><%= returnGroup.productCategory %></small></td>
+                            <td>
+                                <div style="min-width: 200px;">
+                                    <table class="table table-sm table-borderless mb-0">
+                                        <thead>
+                                            <tr><th>Size</th><th>Given</th><th>Returned</th><th>Damage</th><th>Missing</th></tr>
+                                        </thead>
+                                        <tbody>
+                                            <% 
+                                                const sizeMap = new Map();
+                                                if (returnGroup.returns && returnGroup.returns.length) {
+                                                    returnGroup.returns.forEach(ret => {
+                                                        if (ret.sizes && ret.sizes.length) {
+                                                            ret.sizes.forEach(size => {
+                                                                if (!sizeMap.has(size.size)) {
+                                                                    sizeMap.set(size.size, { given: size.given, returned: 0, damage: 0, missing: 0 });
+                                                                }
+                                                                const existing = sizeMap.get(size.size);
+                                                                existing.returned += size.returned || 0;
+                                                                existing.damage += size.damage || 0;
+                                                                existing.missing += size.missing || 0;
+                                                            });
+                                                        }
+                                                    });
+                                                }
+                                                const aggregatedSizes = Array.from(sizeMap.entries()).map(([size, data]) => ({ size, ...data }));
+                                            %>
+                                            <% if (aggregatedSizes.length) { %>
+                                                <% aggregatedSizes.forEach(size => { %>
+                                                    <tr style="font-size: 12px;">
+                                                        <td><strong><%= size.size %></strong></td>
+                                                        <td><%= size.given %></td>
+                                                        <td><span class="text-success"><%= size.returned %></span></td>
+                                                        <td><span class="text-warning"><%= size.damage %></span></td>
+                                                        <td><span class="text-danger"><%= size.missing %></span></td>
+                                                    </tr>
+                                                <% }) %>
+                                            <% } else { %>
+                                                <tr><td colspan="5" class="text-muted">No size data</td></tr>
+                                            <% } %>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </td>
+                            <td>
+                                <div style="max-height: 100px; overflow-y: auto;">
+                                    <% if (returnGroup.returns && returnGroup.returns.length) { %>
+                                        <table class="table table-sm table-borderless mb-0">
+                                            <thead><tr><th>Date</th><th>R/D/M</th><th>Type</th></tr></thead>
+                                            <tbody>
+                                                <% returnGroup.returns.forEach(ret => { %>
+                                                    <tr style="font-size: 11px;">
+                                                        <td><%= new Date(ret.returnDate).toLocaleDateString() %></td>
+                                                        <td><%= ret.totalReturned || 0 %>/<%= ret.totalDamage || 0 %>/<%= ret.totalMissing || 0 %></td>
+                                                        <td>
+                                                            <% if (ret.isPartial) { %>
+                                                                <span class="badge bg-warning">Partial</span>
+                                                            <% } else { %>
+                                                                <span class="badge bg-success">Final</span>
+                                                            <% } %>
+                                                        </td>
+                                                    </tr>
+                                                <% }) %>
+                                            </tbody>
+                                        </table>
+                                    <% } else { %>
+                                        <span class="text-muted">No returns yet</span>
+                                    <% } %>
+                                </div>
+                            </td>
+                            <td><strong><%= returnGroup.totalGiven || 0 %></strong></td>
+                            <td><span class="badge bg-success"><%= returnGroup.totalReturned || 0 %></span></td>
+                            <td><span class="badge bg-warning"><%= returnGroup.totalDamage || 0 %></span></td>
+                            <td><span class="badge bg-danger"><%= returnGroup.totalMissing || 0 %></span></td>
+                            <td>
+                                <span class="badge <%= statusClass %>">
+                                    <%= displayStatus.toUpperCase() %>
+                                </span>
+                                <% if (totalReturnedAll >= returnGroup.totalGiven && returnGroup.totalGiven > 0) { %>
+                                    <i class="fas fa-check-circle text-success ms-1" title="Completed"></i>
+                                <% } %>
+                            </td>
+                            <td>
+                                <%= returnGroup.latestReturn?.returnDate ? new Date(returnGroup.latestReturn.returnDate).toLocaleDateString() : '-' %>
+                            </td>
+                            <td>
+                                <a href="/finishing/create?assignment=<%= returnGroup.assignment?._id %>" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-iron"></i> Finishing
+                                </a>
+                            </td>
+                        </tr>
+                        <% }) %>
+                    <% } else { %>
+                        <tr>
+                            <td colspan="12" class="text-center">No production returns found</td>
+                        </tr>
+                    <% } %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    .btn-group {
+        display: flex;
+        gap: 5px;
+    }
+    .return-history-table td {
+        padding: 2px 5px;
+    }
+    .size-details-table td {
+        padding: 2px 5px;
+    }
+</style>

@@ -1,0 +1,40 @@
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h4 class="mb-0"><i class="fas fa-user-circle"></i> Karigar Payment</h4>
+                <small><%= worker.name %> - Piece Rate Worker</small>
+            </div>
+            <div class="card-body">
+                <form action="/payments/create" method="POST">
+                    <input type="hidden" name="workerId" value="<%= worker._id %>">
+                    <input type="hidden" name="workerType" value="karigar">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Week Start Date</label>
+                        <input type="date" class="form-control" name="weekStart" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Week End Date</label>
+                        <input type="date" class="form-control" name="weekEnd" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Amount (₹)</label>
+                        <input type="number" class="form-control" name="amount" required>
+                        <small class="text-muted">Enter total piece work amount for this week</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Remark</label>
+                        <textarea class="form-control" name="remark" rows="2"></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-warning w-100">Process Payment</button>
+                    <a href="/payments" class="btn btn-secondary w-100 mt-2">Cancel</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

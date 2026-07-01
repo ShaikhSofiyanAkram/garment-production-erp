@@ -1,0 +1,349 @@
+<div class="container-fluid px-0">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h2 class="mb-0"><i class="fas fa-boxes text-success"></i> Packing Management</h2>
+            <p class="text-muted mb-0">Final packing entries before billing — Night entry summary</p>
+        </div>
+        <div>
+            <a href="/packing/create" class="btn btn-success btn-lg shadow-sm">
+                <i class="fas fa-plus-circle"></i> New Packing Entry
+            </a>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="card shadow-sm mb-4 border-0 no-print">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label fw-bold"><i class="fas fa-calendar-day"></i> From Date</label>
+                    <input type="date" id="fromDate" class="form-control">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-bold"><i class="fas fa-calendar-day"></i> To Date</label>
+                    <input type="date" id="toDate" class="form-control">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-bold"><i class="fas fa-filter"></i> Quick Filter</label>
+                    <select id="quickFilter" class="form-select">
+                        <option value="all">All Entries</option>
+                        <option value="today" selected>Today</option>
+                        <option value="yesterday">Yesterday</option>
+                        <option value="week">Last 7 Days</option>
+                        <option value="month">Last 30 Days</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-primary w-50" onclick="applyFilter()">
+                            <i class="fas fa-search"></i> Filter
+                        </button>
+                        <button class="btn btn-info w-50" onclick="printPacking()">
+                            <i class="fas fa-print"></i> Print Summary
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Packing Table (Screen View) -->
+    <div class="card shadow-sm border-0 no-print">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-bordered mb-0" id="packingTable">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Packing #</th>
+                            <th>Date</th>
+                            <th>Total Pieces</th>
+                            <th>Products & Sizes</th>
+                            <th>Remark</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="packingTableBody">
+                        <tr><td colspan="6" class="text-center py-5">Loading......</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- PRINT LAYOUT - SINGLE PAGE ONLY -->
+<div id="printSection" style="display: none;">
+    <div style="padding: 15px; font-family: 'Segoe UI', Arial, sans-serif; max-width: 100%; margin: 0 auto; background: white;">
+        
+        <!-- Header -->
+        <div style="text-align: center; border-bottom: 3px solid #1a5f7a; padding-bottom: 12px; margin-bottom: 15px;">
+            <h1 style="color: #1a5f7a; margin: 0; font-size: 24px;">🏭 GARMENT FACTORY ERP</h1>
+            <h3 style="color: #333; margin: 5px 0;">Daily Packing Summary</h3>
+            <p style="color: #666; margin: 3px 0;" id="printDateRange"></p>
+        </div>
+
+        <!-- MAIN TABLE - SINGLE PAGE -->
+        <div id="printMainTable" style="overflow-x: auto;"></div>
+
+        <!-- Grand Total -->
+        <div id="printGrandTotal" style="margin-top: 15px; text-align: right; padding: 10px; background: #f0f8ff; border-radius: 6px;"></div>
+
+        <!-- Footer -->
+        <div style="margin-top: 20px; text-align: center; border-top: 1px solid #ddd; padding-top: 10px; font-size: 10px; color: #888;">
+            <p>This is a computer generated packing summary. No signature required.</p>
+            <p>Generated on: <span id="printTimestamp"></span></p>
+            <p style="color: #1a5f7a;">Thank you for your business!</p>
+        </div>
+    </div>
+</div>
+
+<style>
+    .table-hover tbody tr:hover { background-color: #f5f5f5; }
+    .badge-product {
+        display: inline-block;
+        background: #e9ecef;
+        padding: 4px 8px;
+        margin: 2px;
+        border-radius: 6px;
+        font-size: 12px;
+    }
+    .action-buttons .btn { margin: 0 2px; }
+    
+    /* PRINT STYLES - SINGLE PAGE */
+    @media print {
+        body * {
+            visibility: hidden;
+        }
+        #printSection, #printSection * {
+            visibility: visible;
+        }
+        #printSection {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: block !important;
+            background: white;
+            overflow-y: auto;
+        }
+        .no-print, .btn, .navbar, .card-header, .action-buttons, .filter-section {
+            display: none !important;
+        }
+        .print-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+        }
+        .print-table th, .print-table td {
+            border: 1px solid #ccc;
+            padding: 6px;
+            text-align: left;
+            vertical-align: top;
+        }
+        .print-table th {
+            background-color: #1a5f7a;
+            color: white;
+        }
+        .page-break {
+            page-break-before: avoid;
+            page-break-inside: avoid;
+        }
+    }
+</style>
+
+<script>
+    let allPackings = [];
+
+    function setDefaultDates() {
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+        document.getElementById('fromDate').value = todayStr;
+        document.getElementById('toDate').value = todayStr;
+    }
+
+    async function loadPackings() {
+        try {
+            const fromDate = document.getElementById('fromDate').value;
+            const toDate = document.getElementById('toDate').value;
+            let url = '/packing/api/list';
+            const params = [];
+            if (fromDate) params.push(`fromDate=${fromDate}`);
+            if (toDate) params.push(`toDate=${toDate}`);
+            if (params.length) url += '?' + params.join('&');
+            
+            const res = await fetch(url);
+            allPackings = await res.json();
+            renderTable(allPackings);
+        } catch(e) {
+            console.error(e);
+            document.getElementById('packingTableBody').innerHTML = '<tr><td colspan="6" class="text-center py-5 text-danger">Error loading data</td></tr>';
+        }
+    }
+
+    function renderTable(packings) {
+        const tbody = document.getElementById('packingTableBody');
+        if (!packings || packings.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-5 text-muted">No packing entries found</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = packings.map(p => {
+            let productsHtml = '';
+            (p.entries || []).forEach(e => {
+                productsHtml += `<span class="badge-product"><strong>${escapeHtml(e.productName)}</strong> - ${escapeHtml(e.size)} : ${e.packedPieces} pcs</span> `;
+            });
+            const dateStr = new Date(p.packingDate).toLocaleDateString('en-IN');
+            return `
+                <tr>
+                    <td class="fw-bold">${escapeHtml(p.packingNumber)}</td>
+                    <td>${dateStr}</td>
+                    <td class="text-end fw-bold">${p.totalPieces} pcs</td>
+                    <td>${productsHtml}</td>
+                    <td>${escapeHtml(p.remark) || '-'}</td>
+                    <td class="action-buttons">
+                        <button class="btn btn-sm btn-danger" onclick="deletePacking('${p._id}')"><i class="fas fa-trash-alt"></i> Delete</button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    function applyFilter() { loadPackings(); }
+
+    function setQuickFilter() {
+        const filter = document.getElementById('quickFilter').value;
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+        
+        if (filter === 'today') {
+            document.getElementById('fromDate').value = todayStr;
+            document.getElementById('toDate').value = todayStr;
+        } else if (filter === 'yesterday') {
+            const yesterday = new Date(today);
+            yesterday.setDate(today.getDate() - 1);
+            document.getElementById('fromDate').value = yesterday.toISOString().split('T')[0];
+            document.getElementById('toDate').value = yesterday.toISOString().split('T')[0];
+        } else if (filter === 'week') {
+            const weekAgo = new Date(today);
+            weekAgo.setDate(today.getDate() - 7);
+            document.getElementById('fromDate').value = weekAgo.toISOString().split('T')[0];
+            document.getElementById('toDate').value = todayStr;
+        } else if (filter === 'month') {
+            const monthAgo = new Date(today);
+            monthAgo.setDate(today.getDate() - 30);
+            document.getElementById('fromDate').value = monthAgo.toISOString().split('T')[0];
+            document.getElementById('toDate').value = todayStr;
+        } else if (filter === 'all') {
+            document.getElementById('fromDate').value = '';
+            document.getElementById('toDate').value = '';
+        }
+        loadPackings();
+    }
+
+    function formatDateDisplay(dateStr) {
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+
+    function printPacking() {
+        const fromDate = document.getElementById('fromDate').value;
+        const toDate = document.getElementById('toDate').value;
+        
+        let dateDisplay = '';
+        if (fromDate && toDate && fromDate === toDate) {
+            dateDisplay = formatDateDisplay(fromDate);
+        } else if (fromDate && toDate) {
+            dateDisplay = `${formatDateDisplay(fromDate)} to ${formatDateDisplay(toDate)}`;
+        } else if (fromDate) {
+            dateDisplay = `From ${formatDateDisplay(fromDate)}`;
+        } else if (toDate) {
+            dateDisplay = `Until ${formatDateDisplay(toDate)}`;
+        } else {
+            dateDisplay = 'All Entries';
+        }
+        
+        let grandTotalPieces = 0;
+        let tableHtml = '<table class="print-table" style="width:100%; border-collapse: collapse;">';
+        tableHtml += '<thead><tr>';
+        tableHtml += '<th style="width:12%">Packing #</th>';
+        tableHtml += '<th style="width:10%">Date</th>';
+        tableHtml += '<th style="width:55%">Products & Size Details</th>';
+        tableHtml += '<th style="width:10%">Total Pcs</th>';
+        tableHtml += '<th style="width:13%">Remark</th>';
+        tableHtml += '</tr></thead><tbody>';
+        
+        allPackings.forEach(p => {
+            grandTotalPieces += p.totalPieces;
+            const dateStr = new Date(p.packingDate).toLocaleDateString('en-IN');
+            
+            // Group by product name
+            const productMap = new Map();
+            (p.entries || []).forEach(e => {
+                if (!productMap.has(e.productName)) {
+                    productMap.set(e.productName, []);
+                }
+                productMap.get(e.productName).push({ size: e.size, pieces: e.packedPieces });
+            });
+            
+            let productsHtml = '';
+            for (let [productName, sizes] of productMap) {
+                productsHtml += `<div style="margin-bottom: 8px;"><strong>📦 ${productName}</strong><br>`;
+                sizes.forEach(s => {
+                    productsHtml += `<span style="display:inline-block; background:#e9ecef; padding:2px 8px; margin:2px; border-radius:12px;">Size ${s.size}: ${s.pieces} pcs</span> `;
+                });
+                productsHtml += `</div>`;
+            }
+            
+            tableHtml += '<tr>';
+            tableHtml += `<td><strong>${p.packingNumber}</strong></td>`;
+            tableHtml += `<td>${dateStr}</td>`;
+            tableHtml += `<td>${productsHtml}</td>`;
+            tableHtml += `<td style="text-align:center; font-weight:bold;">${p.totalPieces} pcs</td>`;
+            tableHtml += `<td>${p.remark || '-'}</td>`;
+            tableHtml += '</tr>';
+        });
+        
+        tableHtml += '</tbody></table>';
+        
+        const grandTotalHtml = `
+            <div style="display: flex; justify-content: flex-end;">
+                <div style="background: #1a5f7a; color: white; padding: 8px 16px; border-radius: 6px;">
+                    <strong>🎯 GRAND TOTAL PIECES PACKED: ${grandTotalPieces} pcs</strong>
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('printDateRange').innerHTML = `<strong>📅 Packing Date:</strong> ${dateDisplay}`;
+        document.getElementById('printMainTable').innerHTML = tableHtml;
+        document.getElementById('printGrandTotal').innerHTML = grandTotalHtml;
+        document.getElementById('printTimestamp').innerHTML = new Date().toLocaleString();
+        
+        setTimeout(() => { window.print(); }, 100);
+    }
+
+    function deletePacking(id) {
+        if (!confirm('⚠️ Delete this packing entry?')) return;
+        fetch(`/packing/delete/${id}`, { method: 'DELETE' })
+            .then(res => { if(res.ok) { alert('✅ Deleted'); loadPackings(); } else alert('❌ Delete failed'); })
+            .catch(e => alert('Error: ' + e.message));
+    }
+
+    document.getElementById('quickFilter').addEventListener('change', setQuickFilter);
+    document.getElementById('fromDate').addEventListener('change', loadPackings);
+    document.getElementById('toDate').addEventListener('change', loadPackings);
+    
+    setDefaultDates();
+    loadPackings();
+</script>

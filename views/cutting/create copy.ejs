@@ -1,0 +1,984 @@
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-cut"></i> New Cutting Entry</h4>
+                <small>Select product, then add sizes and pieces</small>
+            </div>
+            <div class="card-body">
+                <form action="/cutting/create" method="POST" id="cuttingForm">
+                    
+                    <!-- Client Name (Optional) -->
+                    <div class="mb-3">
+                        <label class="form-label">Client Name <span class="text-muted">(Optional)</span></label>
+                        <select class="form-control" id="clientSelect" name="client">
+                            <option value="">-- Select Client (Optional) --</option>
+                            <% if (clients && clients.length) { %>
+                                <% clients.forEach(client => { %>
+                                    <option value="<%= client.name %>"><%= client.name %> - <%= client.phone %></option>
+                                <% }) %>
+                            <% } %>
+                        </select>
+                        <small class="text-muted">Order module is optional. Cutting can be done without order.</small>
+                    </div>
+                    
+                    <!-- Product Selection -->
+                    <div class="mb-3">
+                        <label class="form-label">Select Product *</label>
+                        <select class="form-control" id="productSelect" name="productSelect" required>
+                            <option value="">-- Select Product --</option>
+                            <% if (products && products.length) { %>
+                                <% 
+                                    const kidsProducts = [];
+                                    const mensProducts = [];
+                                    const otherProducts = [];
+                                    const uniqueProducts = new Map();
+                                    products.forEach(product => {
+                                        if (!uniqueProducts.has(product.name)) {
+                                            uniqueProducts.set(product.name, product);
+                                        }
+                                    });
+                                    const uniqueProductsArray = Array.from(uniqueProducts.values());
+                                %>
+                                <% uniqueProductsArray.forEach(product => { %>
+                                    <option value="<%= product.name %>" data-category="<%= product.category || 'Other' %>">
+                                        <%= product.name %> <% if (product.category === 'Kids') { %>👶<% } else if (product.category === 'Mens') { %>👔<% } %>
+                                    </option>
+                                <% }) %>
+                            <% } %>
+                        </select>
+                        <input type="hidden" name="productName" id="productName">
+                        <input type="hidden" name="productCategory" id="productCategory">
+                    </div>
+                    
+                    <!-- Size Selection Area -->
+                    <div id="sizeSection" style="display: none;">
+                        <!-- Manual Size Add -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Add Size Manually</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="manualSizeInput" placeholder="Enter size (e.g., 36, XL, 42)">
+                                <button class="btn btn-success" type="button" onclick="addManualSize()">
+                                    <i class="fas fa-plus"></i> Add Size
+                                </button>
+                            </div>
+                            <small class="text-muted">Enter any size - numbers or text (e.g., 36, XL, XXL, 42)</small>
+                        </div>
+                        
+                        <!-- OR Preset Sizes -->
+                        <div class="mb-3" id="presetSizesDiv" style="display: none;">
+                            <label class="form-label fw-bold">OR Select from Preset Sizes</label>
+                            <div id="sizeChipsContainer" class="d-flex flex-wrap gap-2" style="min-height: 60px; padding: 10px; border: 1px solid #dee2e6; border-radius: 8px; background: #f8fafc;">
+                                <!-- Preset sizes will appear here -->
+                            </div>
+                        </div>
+                        
+                        <!-- Added Sizes List -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Added Sizes & Cutting Pieces</label>
+                            <div id="addedSizesContainer" class="border rounded p-3 bg-light" style="min-height: 150px;">
+                                <div id="sizeRowsList">
+                                    <p class="text-muted text-center">Click "Add Size" button above to add sizes with cutting pieces</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Total Pieces -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Total Cutting Pieces</label>
+                        <input type="text" class="form-control" id="totalPieces" readonly 
+                               style="background:#e9ecef; font-weight:bold; font-size:1.2rem;">
+                    </div>
+                    
+                    <!-- Cutting Worker -->
+                    <div class="mb-3">
+                        <label class="form-label">Cutting Worker <span class="text-muted">(Optional)</span></label>
+                        <select class="form-control" name="cuttingWorker">
+                            <option value="">Select Worker</option>
+                            <% if (workers && workers.length) { %>
+                                <% workers.forEach(worker => { %>
+                                    <option value="<%= worker._id %>"><%= worker.name %></option>
+                                <% }) %>
+                            <% } %>
+                        </select>
+                    </div>
+                    
+                    <!-- Remark -->
+                    <div class="mb-3">
+                        <label class="form-label">Remark</label>
+                        <textarea class="form-control" name="remark" rows="2" placeholder="Any special instructions?"></textarea>
+                    </div>
+                    
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-primary btn-lg px-5">
+                            <i class="fas fa-save"></i> Save Cutting Entry
+                        </button>
+                        <a href="/cutting" class="btn btn-secondary btn-lg px-5">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .size-chip {
+        display: inline-block;
+        background: white;
+        border: 2px solid #dee2e6;
+        border-radius: 10px;
+        padding: 10px 20px;
+        margin: 5px;
+        cursor: pointer;
+        transition: all 0.3s;
+        font-weight: 500;
+        font-size: 16px;
+        color: #334155;
+    }
+    .size-chip:hover {
+        background: #2196f3;
+        color: white;
+        border-color: #2196f3;
+        transform: scale(1.02);
+    }
+    .size-chip.disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        background: #e9ecef;
+        transform: none;
+    }
+    .size-row {
+        background: white;
+        border-radius: 12px;
+        padding: 12px 15px;
+        margin-bottom: 10px;
+        border-left: 4px solid #2196f3;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .size-name {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #1e293b;
+    }
+    .piece-input {
+        width: 130px;
+        padding: 8px 12px;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 14px;
+        text-align: center;
+        font-weight: 500;
+    }
+    .piece-input:focus {
+        border-color: #2196f3;
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(33,150,243,0.1);
+    }
+    .piece-input.invalid {
+        border-color: #dc3545;
+        background: #fff0f0;
+    }
+    .remove-size-btn {
+        background: #dc3545;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 6px 14px;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 13px;
+    }
+    .remove-size-btn:hover {
+        background: #c82333;
+    }
+    optgroup {
+        font-weight: bold;
+        background: #f8f9fa;
+        padding: 5px 0;
+    }
+    optgroup option {
+        font-weight: normal;
+        padding-left: 20px;
+    }
+    @media (max-width: 768px) {
+        .size-row {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .piece-input {
+            width: 100%;
+        }
+        .remove-size-btn {
+            width: 100%;
+        }
+    }
+</style>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+ 
+    
+    
+    
+    
+    
+    
+    
+    
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-cut"></i> New Cutting Entry</h4>
+                <small>Select product - Sizes will load automatically based on category</small>
+            </div>
+            <div class="card-body">
+                <form action="/cutting/create" method="POST" id="cuttingForm">
+                    
+                    <!-- Client Name (Optional) -->
+                    <div class="mb-3">
+                        <label class="form-label">Client Name <span class="text-muted">(Optional)</span></label>
+                        <input type="text" class="form-control" name="client" placeholder="Leave empty if no client order">
+                        <small class="text-muted">Order module is optional. Cutting can be done without order.</small>
+                    </div>
+                    
+                    <!-- Product Selection - Unique Products Only -->
+                    <div class="mb-3">
+                        <label class="form-label">Select Product *</label>
+                        <select class="form-control" id="productSelect" name="productSelect" required>
+                            <option value="">-- Select Product --</option>
+                            <% products.forEach(product => { %>
+                                <option value="<%= product.name %>" data-category="<%= product.category %>">
+                                    <%= product.name %> - <%= product.category %>
+                                </option>
+                            <% }) %>
+                        </select>
+                        <input type="hidden" name="productName" id="productName">
+                        <input type="hidden" name="productCategory" id="productCategory">
+                    </div>
+                    
+                    <!-- Size Category Display -->
+                    <div id="sizeSection" style="display: none;">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            <strong id="categoryLabel">Kids</strong> Sizes (Click to add)
+                        </div>
+                        
+                        <!-- Size Chips -->
+                        <div class="mb-3">
+                            <label class="form-label">Available Sizes (Click to add)</label>
+                            <div id="sizeChipsContainer" class="d-flex flex-wrap gap-2">
+                                <!-- Sizes will appear here -->
+                            </div>
+                        </div>
+                        
+                        <!-- Added Sizes with Pieces Input -->
+                        <div class="mb-3">
+                            <label class="form-label">Added Sizes & Pieces</label>
+                            <div id="addedSizesContainer" class="border rounded p-3 bg-light">
+                                <div id="sizeRowsList">
+                                    <p class="text-muted">Click on sizes above to add</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Colors Selection (Independent) -->
+                    <div class="mb-3" id="colorSection" style="display: none;">
+                        <label class="form-label">Select Colors <span class="text-muted">(Optional)</span></label>
+                        <div class="row">
+                            <div class="col-md-2 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input color-check" type="checkbox" value="White" id="colorWhite">
+                                    <label class="form-check-label" for="colorWhite">
+                                        <span class="badge bg-light text-dark border p-2">⚪ White</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-2 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input color-check" type="checkbox" value="Red" id="colorRed">
+                                    <label class="form-check-label" for="colorRed">
+                                        <span class="badge bg-danger p-2">🔴 Red</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-2 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input color-check" type="checkbox" value="Blue" id="colorBlue">
+                                    <label class="form-check-label" for="colorBlue">
+                                        <span class="badge bg-primary p-2">🔵 Blue</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-2 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input color-check" type="checkbox" value="Black" id="colorBlack">
+                                    <label class="form-check-label" for="colorBlack">
+                                        <span class="badge bg-dark p-2">⬛ Black</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-2 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input color-check" type="checkbox" value="Yellow" id="colorYellow">
+                                    <label class="form-check-label" for="colorYellow">
+                                        <span class="badge bg-warning text-dark p-2">🟡 Yellow</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-2 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input color-check" type="checkbox" value="Green" id="colorGreen">
+                                    <label class="form-check-label" for="colorGreen">
+                                        <span class="badge bg-success p-2">🟢 Green</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-2 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input color-check" type="checkbox" value="Maroon" id="colorMaroon">
+                                    <label class="form-check-label" for="colorMaroon">
+                                        <span class="badge bg-danger p-2" style="background-color: #800000 !important;">🟤 Maroon</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-2 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input color-check" type="checkbox" value="Navy" id="colorNavy">
+                                    <label class="form-check-label" for="colorNavy">
+                                        <span class="badge bg-primary p-2" style="background-color: #000080 !important;">⚓ Navy</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" name="colors" id="selectedColorsInput">
+                    </div>
+                    
+                    <!-- Total Pieces -->
+                    <div class="mb-3">
+                        <label class="form-label">Total Pieces</label>
+                        <input type="text" class="form-control" id="totalPieces" readonly 
+                               style="background:#e9ecef; font-weight:bold; font-size:1.2rem;">
+                    </div>
+                    
+                    <!-- Cutting Worker -->
+                    <div class="mb-3">
+                        <label class="form-label">Cutting Worker <span class="text-muted">(Optional)</span></label>
+                        <select class="form-control" name="cuttingWorker">
+                            <option value="">Select Worker</option>
+                            <% workers.forEach(worker => { %>
+                                <option value="<%= worker._id %>"><%= worker.name %></option>
+                            <% }) %>
+                        </select>
+                    </div>
+                    
+                    <!-- Remark -->
+                    <div class="mb-3">
+                        <label class="form-label">Remark</label>
+                        <textarea class="form-control" name="remark" rows="2" placeholder="Any special instructions?"></textarea>
+                    </div>
+                    
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-primary btn-lg px-5">
+                            <i class="fas fa-save"></i> Save Cutting Entry
+                        </button>
+                        <a href="/cutting" class="btn btn-secondary btn-lg px-5">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .size-chip {
+        display: inline-block;
+        background: #e9ecef;
+        border: 2px solid #dee2e6;
+        border-radius: 10px;
+        padding: 10px 20px;
+        margin: 5px;
+        cursor: pointer;
+        transition: all 0.3s;
+        font-weight: 500;
+        font-size: 16px;
+    }
+    .size-chip:hover {
+        background: #2196f3;
+        color: white;
+        transform: scale(1.05);
+    }
+    .size-chip.selected {
+        background: #28a745;
+        color: white;
+        border-color: #28a745;
+    }
+    .size-row {
+        background: white;
+        border-radius: 8px;
+        padding: 12px 15px;
+        margin-bottom: 10px;
+        border-left: 4px solid #2196f3;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .piece-input {
+        width: 130px;
+        padding: 8px 12px;
+        border: 2px solid #dee2e6;
+        border-radius: 6px;
+        font-size: 14px;
+    }
+    .piece-input:focus {
+        border-color: #2196f3;
+        outline: none;
+    }
+    .color-check {
+        display: none;
+    }
+    .color-check + label {
+        cursor: pointer;
+    }
+    .color-check:checked + label .badge {
+        border: 3px solid #ff9800;
+        transform: scale(1.05);
+    }
+    .color-check + label .badge {
+        transition: all 0.2s;
+        cursor: pointer;
+        padding: 8px 15px;
+        font-size: 14px;
+    }
+    .remove-size-btn {
+        background: #dc3545;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        padding: 5px 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .remove-size-btn:hover {
+        background: #c82333;
+    }
+</style>
+
+<script>
+    // Size definitions based on category
+    const kidsSizes = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
+    const mensSizes = [];
+    for (let i = 26; i <= 60; i += 2) {
+        mensSizes.push(i.toString());
+    }
+    
+    let selectedSizesData = {};
+    let currentCategory = null;
+    
+    // Product selection handler
+    document.getElementById('productSelect').addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        const productName = selectedOption.value;
+        const category = selectedOption.dataset.category;
+        
+        if (!productName) return;
+        
+        // Set hidden inputs
+        document.getElementById('productName').value = productName;
+        document.getElementById('productCategory').value = category;
+        
+        currentCategory = category;
+        
+        // Show size and color sections
+        document.getElementById('sizeSection').style.display = 'block';
+        document.getElementById('colorSection').style.display = 'block';
+        
+        // Update category label
+        const categoryLabel = document.getElementById('categoryLabel');
+        categoryLabel.textContent = category === 'Kids' ? '👶 Kids' : '👔 Mens';
+        
+        // Load sizes based on category
+        loadSizes(category === 'Kids' ? kidsSizes : mensSizes);
+    });
+    
+    // Load sizes as chips
+    function loadSizes(sizes) {
+        const container = document.getElementById('sizeChipsContainer');
+        container.innerHTML = '';
+        
+        sizes.forEach(size => {
+            const chip = document.createElement('span');
+            chip.className = 'size-chip';
+            chip.textContent = size;
+            chip.dataset.size = size;
+            chip.onclick = () => addSizeRow(size);
+            container.appendChild(chip);
+        });
+        
+        // Reset selected sizes
+        selectedSizesData = {};
+        document.getElementById('sizeRowsList').innerHTML = '<p class="text-muted">Click on sizes above to add</p>';
+        calculateTotal();
+    }
+    
+    // Add size row for pieces input
+    function addSizeRow(size) {
+        if (selectedSizesData[size] !== undefined) {
+            alert(`Size ${size} is already added!`);
+            return;
+        }
+        
+        selectedSizesData[size] = 0;
+        
+        const rowsList = document.getElementById('sizeRowsList');
+        
+        // Clear placeholder if exists
+        if (rowsList.innerHTML.includes('Click on sizes above to add')) {
+            rowsList.innerHTML = '';
+        }
+        
+        const rowDiv = document.createElement('div');
+        rowDiv.className = 'size-row';
+        rowDiv.id = `size-row-${size}`;
+        rowDiv.innerHTML = `
+            <div>
+                <strong style="font-size: 1.1rem;">📏 Size ${size}</strong>
+            </div>
+            <div>
+                <input type="number" class="piece-input" data-size="${size}" 
+                       placeholder="Enter pieces" min="0" value="0"
+                       onchange="updatePieces('${size}', this.value)">
+                <button type="button" class="remove-size-btn ms-2" onclick="removeSizeRow('${size}')">
+                    <i class="fas fa-trash"></i> Remove
+                </button>
+            </div>
+        `;
+        rowsList.appendChild(rowDiv);
+        
+        // Highlight selected size chip
+        document.querySelectorAll('.size-chip').forEach(chip => {
+            if (chip.textContent === size) {
+                chip.classList.add('selected');
+            }
+        });
+        
+        calculateTotal();
+    }
+    
+    // Remove size row
+    window.removeSizeRow = function(size) {
+        delete selectedSizesData[size];
+        const row = document.getElementById(`size-row-${size}`);
+        if (row) row.remove();
+        
+        // Remove highlight from chip
+        document.querySelectorAll('.size-chip').forEach(chip => {
+            if (chip.textContent === size) {
+                chip.classList.remove('selected');
+            }
+        });
+        
+        // Show placeholder if no sizes left
+        const rowsList = document.getElementById('sizeRowsList');
+        if (rowsList.children.length === 0) {
+            rowsList.innerHTML = '<p class="text-muted">Click on sizes above to add</p>';
+        }
+        
+        calculateTotal();
+    };
+    
+    // Update pieces for a size
+    window.updatePieces = function(size, value) {
+        const pieces = parseInt(value) || 0;
+        selectedSizesData[size] = pieces;
+        calculateTotal();
+    };
+    
+    // Calculate total pieces
+    function calculateTotal() {
+        let total = 0;
+        for (let size in selectedSizesData) {
+            total += selectedSizesData[size];
+        }
+        const totalInput = document.getElementById('totalPieces');
+        totalInput.value = total;
+        
+        if (total === 0) {
+            totalInput.style.borderColor = '#dc3545';
+        } else {
+            totalInput.style.borderColor = '#28a745';
+        }
+    }
+    
+    // Color selection handler
+    document.querySelectorAll('.color-check').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const selectedColors = [];
+            document.querySelectorAll('.color-check:checked').forEach(cb => {
+                selectedColors.push(cb.value);
+            });
+            document.getElementById('selectedColorsInput').value = selectedColors.join(',');
+        });
+    });
+    
+    // Form validation
+    document.getElementById('cuttingForm').addEventListener('submit', function(e) {
+        let total = 0;
+        for (let size in selectedSizesData) {
+            total += selectedSizesData[size];
+        }
+        
+        if (total === 0) {
+            e.preventDefault();
+            alert('❌ Please add at least one size with pieces');
+            return false;
+        }
+        
+        if (!document.getElementById('productSelect').value) {
+            e.preventDefault();
+            alert('❌ Please select a product');
+            return false;
+        }
+        
+        // Add sizes data to form
+        let sizesInput = document.getElementById('sizesDataInput');
+        if (!sizesInput) {
+            sizesInput = document.createElement('input');
+            sizesInput.type = 'hidden';
+            sizesInput.name = 'sizesData';
+            sizesInput.id = 'sizesDataInput';
+            this.appendChild(sizesInput);
+        }
+        sizesInput.value = JSON.stringify(selectedSizesData);
+        
+        return true;
+    });
+</script>
+
+
+
+
+
+
+
+
+<!-- <div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-cut"></i> New Cutting Entry</h4>
+            </div>
+            <div class="card-body">
+                <form action="/cutting/create" method="POST">
+                    <div class="mb-3">
+                        <label for="client" class="form-label">Client (Optional)</label>
+                        <input type="text" class="form-control" id="client" name="client" placeholder="Client name">
+                        <small class="text-muted">Order module is optional. Cutting can be done without order.</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="product" class="form-label">Product *</label>
+                        <select class="form-control" id="product" name="product" required>
+                            <option value="">Select Product</option>
+                            <% products.forEach(product => { %>
+                                <option value="<%= product._id %>"><%= product.name %></option>
+                            <% }) %>
+                        </select>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="size" class="form-label">Size *</label>
+                            <input type="text" class="form-control" id="size" name="size" required placeholder="e.g., 40, L, XL">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="color" class="form-label">Color</label>
+                            <input type="text" class="form-control" id="color" name="color" placeholder="e.g., Red, Blue">
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="totalPieces" class="form-label">Total Pieces *</label>
+                            <input type="number" class="form-control" id="totalPieces" name="totalPieces" required min="1">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="cuttingWorker" class="form-label">Cutting Worker (Optional)</label>
+                            <select class="form-control" id="cuttingWorker" name="cuttingWorker">
+                                <option value="">Select Worker</option>
+                                <% workers.forEach(worker => { %>
+                                    <option value="<%= worker._id %>"><%= worker.name %></option>
+                                <% }) %>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="remark" class="form-label">Remark</label>
+                        <textarea class="form-control" id="remark" name="remark" rows="2"></textarea>
+                    </div>
+                    
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Save Cutting Entry
+                        </button>
+                        <a href="/cutting" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div> -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

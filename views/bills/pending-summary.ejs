@@ -1,0 +1,167 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2><i class="fas fa-clock text-warning"></i> Pending Bills Summary</h2>
+        <p class="text-muted">Select multiple bills to print summary or collect payment</p>
+    </div>
+    <a href="/bills" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Back to Bills
+    </a>
+</div>
+
+<!-- Filters -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3" id="filterForm">
+            <div class="col-md-3">
+                <label>Client</label>
+                <select name="client" class="form-control">
+                    <option value="">All Clients</option>
+                    <% clients.forEach(c => { %>
+                        <option value="<%= c._id %>" <%= client == c._id ? 'selected' : '' %>><%= c.name %></option>
+                    <% }) %>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label>From Date</label>
+                <input type="date" name="fromDate" class="form-control" value="<%= fromDate %>">
+            </div>
+            <div class="col-md-2">
+                <label>To Date</label>
+                <input type="date" name="toDate" class="form-control" value="<%= toDate %>">
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">Filter</button>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="button" class="btn btn-secondary w-100" onclick="selectAll()">Select All</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Bills Table with Checkboxes -->
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th style="width:30px"><input type="checkbox" id="selectAllCheckbox" onclick="toggleSelectAll()"></th>
+                        <th>Bill #</th>
+                        <th>Date</th>
+                        <th>Client</th>
+                        <th>Items</th>
+                        <th>Total</th>
+                        <th>Paid</th>
+                        <th>Pending</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% if(bills && bills.length) { %>
+                        <% bills.forEach(bill => { %>
+                            <tr>
+                                <td><input type="checkbox" class="bill-checkbox" value="<%= bill._id %>"></td>
+                                <td class="fw-bold"><%= bill.billNumber %></td>
+                                <td><%= new Date(bill.billDate).toLocaleDateString() %></td>
+                                <td><%= bill.client?.name %></td>
+                                <td><%= bill.items.length %> items</td>
+                                <td class="text-end">₹<%= bill.totalAmount.toLocaleString() %></td>
+                                <td class="text-end">₹<%= bill.paidAmount.toLocaleString() %></td>
+                                <td class="text-end fw-bold">₹<%= bill.pendingAmount.toLocaleString() %></td>
+                                <td>
+                                    <% if(bill.status === 'paid') { %>
+                                        <span class="badge bg-success">Paid</span>
+                                    <% } else if(bill.status === 'partial') { %>
+                                        <span class="badge bg-warning">Partial</span>
+                                    <% } else { %>
+                                        <span class="badge bg-danger">Pending</span>
+                                    <% } %>
+                                </td>
+                            </tr>
+                        <% }) %>
+                    <% } else { %>
+                        <tr><td colspan="9" class="text-center py-5">No pending bills found</td></tr>
+                    <% } %>
+                </tbody>
+                <tfoot class="table-light">
+                    <tr>
+                        <td colspan="5" class="text-end fw-bold">Selected Total:</td>
+                        <td colspan="3" class="text-end fw-bold" id="selectedTotal">₹0</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="mt-4 text-center">
+    <button type="button" class="btn btn-success btn-lg px-5" onclick="printSelected()">
+        <i class="fas fa-print"></i> Print Selected Bills Summary
+    </button>
+    <button type="button" class="btn btn-info btn-lg px-5" onclick="collectPayment()">
+        <i class="fas fa-money-bill-wave"></i> Collect Payment for Selected
+    </button>
+</div>
+
+<form id="printForm" action="/bills/print-selected" method="POST" target="_blank">
+    <input type="hidden" name="billIds" id="selectedBillIds">
+</form>
+
+<script>
+    function toggleSelectAll() {
+        const isChecked = document.getElementById('selectAllCheckbox').checked;
+        document.querySelectorAll('.bill-checkbox').forEach(cb => cb.checked = isChecked);
+        updateSelectedTotal();
+    }
+    
+    function selectAll() {
+        document.querySelectorAll('.bill-checkbox').forEach(cb => cb.checked = true);
+        document.getElementById('selectAllCheckbox').checked = true;
+        updateSelectedTotal();
+    }
+    
+    function updateSelectedTotal() {
+        let total = 0;
+        document.querySelectorAll('.bill-checkbox:checked').forEach(cb => {
+            const row = cb.closest('tr');
+            const pendingCell = row.querySelector('td:nth-child(8)');
+            if(pendingCell) {
+                total += parseInt(pendingCell.innerText.replace(/[^0-9]/g, '')) || 0;
+            }
+        });
+        document.getElementById('selectedTotal').innerText = '₹' + total.toLocaleString();
+    }
+    
+    document.querySelectorAll('.bill-checkbox').forEach(cb => {
+        cb.addEventListener('change', updateSelectedTotal);
+    });
+    
+    function printSelected() {
+        const selected = [];
+        document.querySelectorAll('.bill-checkbox:checked').forEach(cb => {
+            selected.push(cb.value);
+        });
+        if(selected.length === 0) {
+            alert('Please select at least one bill');
+            return;
+        }
+        document.getElementById('selectedBillIds').value = JSON.stringify(selected);
+        document.getElementById('printForm').submit();
+    }
+    
+    function collectPayment() {
+        const selected = [];
+        document.querySelectorAll('.bill-checkbox:checked').forEach(cb => {
+            selected.push(cb.value);
+        });
+        if(selected.length === 0) {
+            alert('Please select at least one bill');
+            return;
+        }
+        // Redirect to payment collection page with selected bills
+        window.location.href = '/payment-collection?bills=' + selected.join(',');
+    }
+    
+    updateSelectedTotal();
+</script>

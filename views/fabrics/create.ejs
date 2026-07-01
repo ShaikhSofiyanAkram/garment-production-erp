@@ -1,0 +1,1069 @@
+<div class="row">
+    <div class="col-md-10 mx-auto">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-layer-group"></i> New Fabric Batch Entry</h4>
+                <small>Add multiple fabric entries in one batch</small>
+            </div>
+            <div class="card-body">
+                <form action="/fabrics/create" method="POST" id="batchForm">
+                    <!-- Batch Header -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label for="date" class="form-label">Batch Date *</label>
+                            <input type="date" class="form-control" id="date" name="date" 
+                                   value="<%= new Date().toISOString().split('T')[0] %>" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="supplier" class="form-label">Supplier/Party Name</label>
+                            <input type="text" class="form-control" id="supplier" name="supplier" 
+                                   placeholder="e.g., Mumbai Textile">
+                        </div>
+                    </div>
+                    
+                    <!-- Fabric Items Table -->
+                <h5 class="mt-3">Fabric Items</h5>
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="itemsTable">
+                        <thead class="table-dark">
+                            <tr>
+                                <th width="30%">Fabric Type *</th>
+                                <th width="20%">Total Meters *</th>
+                                <th width="20%">Color *</th>
+                                <th width="25%">Additional Remark</th>
+                                <th width="5%">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="itemsBody">
+                            <tr class="item-row">
+                                <td>
+                                    <select class="form-control fabric-type" name="items[fabricType][]" required>
+                                        <option value="">Select Type</option>
+                                        <option value="Armani">Armani</option>
+                                        <option value="Polyester">Polyester (पॉलिएस्टर)</option>
+                                        <option value="Banglury Silk">Banglury Silk (रेशम)</option>
+                                        <option value="Cotton">Cotton (सूती)</option>
+                                        <option value="Linen">Linen (लिनेन)</option>
+                                        <option value="Denim">Denim (डेनिम)</option>
+                                        <option value="Viscose">Viscose (विस्कोस)</option>
+                                        <option value="Other">Other (अन्य)</option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <input type="number" class="form-control meters" name="items[totalMeters][]" 
+                                        step="0.01" min="0.01" placeholder="Meters" required>
+                                </td>
+                                <td>
+                                    <select class="form-control color-select" name="items[color][]">
+                                        <option value="">Select Color</option>
+                                        <option value="White">⚪ White (सफेद)</option>
+                                        <option value="Black">⚫ Black (काला)</option>
+                                        <option value="Red">🔴 Red (लाल)</option>
+                                        <option value="Blue">🔵 Blue (नीला)</option>
+                                        <option value="Green">🟢 Green (हरा)</option>
+                                        <option value="Yellow">🟡 Yellow (पीला)</option>
+                                        <option value="Pink">🌸 Pink (गुलाबी)</option>
+                                        <option value="Orange">🟠 Orange (नारंगी)</option>
+                                        <option value="Purple">🟣 Purple (बैंगनी)</option>
+                                        <option value="Brown">🟤 Brown (भूरा)</option>
+                                        <option value="Grey">◻️ Grey (ग्रे)</option>
+                                        <option value="Maroon">❤️ Maroon (मैरून)</option>
+                                        <option value="Navy">⚓ Navy (नेवी)</option>
+                                        <option value="Gold">⭐ Gold (सुनहरा)</option>
+                                        <option value="Silver">✨ Silver</option>
+                                        <option value="Other">🌈 Other (अन्य)</option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <input type="text" class="form-control" name="items[remark][]" 
+                                        placeholder="Quality, rate, etc...">
+                                </td>
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-sm btn-info copy-row" title="Duplicate row">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-danger remove-row" title="Delete row">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="5">
+                                    <button type="button" class="btn btn-success btn-sm" id="addRow">
+                                        <i class="fas fa-plus"></i> Add Another Fabric
+                                    </button>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                    
+                    <!-- Batch Summary -->
+                    <div class="row mt-3">
+                        <div class="col-md-4">
+                            <div class="card bg-info text-white">
+                                <div class="card-body">
+                                    <h6>Total Items</h6>
+                                    <h3 id="totalItems">1</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-success text-white">
+                                <div class="card-body">
+                                    <h6>Total Meters</h6>
+                                    <h3 id="totalMeters">0</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-warning text-dark">
+                                <div class="card-body">
+                                    <h6>Batch Number</h6>
+                                    <h6 id="batchPreview">Auto-generated</h6>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3 mt-3">
+                        <label for="overallRemark" class="form-label">Overall Remark (Optional)</label>
+                        <textarea class="form-control" id="overallRemark" name="overallRemark" rows="2" 
+                                  placeholder="Any notes about this batch"></textarea>
+                    </div>
+
+                    
+                    
+                    <div class="alert alert-warning">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Note:</strong> All items in this form will be saved as ONE BATCH.
+                        You can view this batch later by date or batch number.
+                    </div>
+                    
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-save"></i> Save Entire Batch
+                        </button>
+                        <a href="/fabrics" class="btn btn-secondary btn-lg">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+
+
+
+
+<script>
+    // ========== ADD NEW ROW ==========
+    document.getElementById('addRow').addEventListener('click', function() {
+        const tbody = document.getElementById('itemsBody');
+        const firstRow = tbody.querySelector('.item-row');
+        if (!firstRow) return;
+        
+        const newRow = firstRow.cloneNode(true);
+        
+        // Reset values
+        newRow.querySelectorAll('input, select').forEach(input => {
+            if (input.type === 'number') input.value = '';
+            else if (input.type === 'text') input.value = '';
+            else if (input.tagName === 'SELECT') input.value = '';
+        });
+        
+        // Hide "other" input fields
+        const otherTypeDiv = newRow.querySelector('.other-fabric-type');
+        if (otherTypeDiv) otherTypeDiv.style.display = 'none';
+        const otherColorDiv = newRow.querySelector('.other-color-div');
+        if (otherColorDiv) otherColorDiv.style.display = 'none';
+        
+        tbody.appendChild(newRow);
+        updateTotals();
+    });
+    
+    // ========== COPY ROW (Clone with same values) ==========
+    function performCopy(row) {
+        const tbody = document.getElementById('itemsBody');
+        const newRow = row.cloneNode(true);
+        
+        // Copy selected values from selects
+        const originalSelects = row.querySelectorAll('select');
+        const newSelects = newRow.querySelectorAll('select');
+        originalSelects.forEach((origSelect, idx) => {
+            if (newSelects[idx]) {
+                newSelects[idx].value = origSelect.value;
+                // Trigger change event for 'Other' handling
+                const event = new Event('change', { bubbles: true });
+                newSelects[idx].dispatchEvent(event);
+            }
+        });
+        
+        // Copy input values
+        const originalInputs = row.querySelectorAll('input');
+        const newInputs = newRow.querySelectorAll('input');
+        originalInputs.forEach((origInput, idx) => {
+            if (newInputs[idx] && origInput.type !== 'hidden') {
+                newInputs[idx].value = origInput.value;
+            }
+        });
+        
+        // Hide other divs if needed
+        const otherTypeDiv = newRow.querySelector('.other-fabric-type');
+        if (otherTypeDiv) {
+            const fabricSelect = newRow.querySelector('.fabric-type');
+            if (fabricSelect && fabricSelect.value !== 'Other') {
+                otherTypeDiv.style.display = 'none';
+            }
+        }
+        const otherColorDiv = newRow.querySelector('.other-color-div');
+        if (otherColorDiv) {
+            const colorSelect = newRow.querySelector('.color-select');
+            if (colorSelect && colorSelect.value !== 'Other') {
+                otherColorDiv.style.display = 'none';
+            }
+        }
+        
+        tbody.appendChild(newRow);
+        updateTotals();
+    }
+    
+    // ========== REMOVE ROW ==========
+    function performRemove(row) {
+        const rows = document.querySelectorAll('.item-row');
+        if (rows.length > 1) {
+            row.remove();
+            updateTotals();
+        } else {
+            alert('At least one fabric item is required');
+        }
+    }
+    
+    // ========== HANDLE "OTHER" FABRIC TYPE ==========
+    function handleFabricTypeChange(select) {
+        const row = select.closest('.item-row');
+        let otherDiv = row.querySelector('.other-fabric-type');
+        
+        if (!otherDiv) {
+            otherDiv = document.createElement('div');
+            otherDiv.className = 'other-fabric-type mt-2';
+            otherDiv.style.display = 'none';
+            otherDiv.innerHTML = `<input type="text" class="form-control" name="items[otherFabric][]" 
+                                    placeholder="Enter fabric type name">`;
+            select.parentNode.appendChild(otherDiv);
+        }
+        
+        if (select.value === 'Other') {
+            otherDiv.style.display = 'block';
+            select.name = 'items[fabricTypeSelect][]';
+            let hiddenInput = row.querySelector('.fabric-type-hidden');
+            if (!hiddenInput) {
+                hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.className = 'fabric-type-hidden';
+                hiddenInput.name = 'items[fabricType][]';
+                select.parentNode.appendChild(hiddenInput);
+            }
+        } else {
+            otherDiv.style.display = 'none';
+            let hiddenInput = row.querySelector('.fabric-type-hidden');
+            if (!hiddenInput) {
+                hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.className = 'fabric-type-hidden';
+                hiddenInput.name = 'items[fabricType][]';
+                select.parentNode.appendChild(hiddenInput);
+            }
+            hiddenInput.value = select.value;
+        }
+    }
+    
+    // ========== HANDLE "OTHER" COLOR ==========
+    function handleColorChange(select) {
+        const row = select.closest('.item-row');
+        let otherDiv = row.querySelector('.other-color-div');
+        
+        if (!otherDiv) {
+            otherDiv = document.createElement('div');
+            otherDiv.className = 'other-color-div mt-2';
+            otherDiv.style.display = 'none';
+            otherDiv.innerHTML = `<input type="text" class="form-control" name="items[otherColor][]" 
+                                    placeholder="Enter color name">`;
+            select.parentNode.appendChild(otherDiv);
+        }
+        
+        if (select.value === 'Other') {
+            otherDiv.style.display = 'block';
+            select.name = 'items[colorSelect][]';
+            let hiddenInput = row.querySelector('.color-hidden');
+            if (!hiddenInput) {
+                hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.className = 'color-hidden';
+                hiddenInput.name = 'items[color][]';
+                select.parentNode.appendChild(hiddenInput);
+            }
+        } else {
+            otherDiv.style.display = 'none';
+            let hiddenInput = row.querySelector('.color-hidden');
+            if (!hiddenInput) {
+                hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.className = 'color-hidden';
+                hiddenInput.name = 'items[color][]';
+                select.parentNode.appendChild(hiddenInput);
+            }
+            hiddenInput.value = select.value;
+        }
+    }
+    
+    // ========== UPDATE TOTALS ==========
+    function updateTotals() {
+        let totalMeters = 0;
+        let totalItems = 0;
+        
+        document.querySelectorAll('.item-row').forEach(row => {
+            const meters = parseFloat(row.querySelector('.meters').value) || 0;
+            if (meters > 0) {
+                totalMeters += meters;
+                totalItems++;
+            }
+        });
+        
+        document.getElementById('totalItems').innerText = totalItems;
+        document.getElementById('totalMeters').innerText = totalMeters.toFixed(2);
+    }
+    
+    // ========== EVENT DELEGATION (Solves button issue) ==========
+    document.getElementById('itemsBody').addEventListener('click', function(e) {
+        const copyBtn = e.target.closest('.copy-row');
+        const removeBtn = e.target.closest('.remove-row');
+        
+        if (copyBtn) {
+            const row = copyBtn.closest('.item-row');
+            if (row) performCopy(row);
+        }
+        
+        if (removeBtn) {
+            const row = removeBtn.closest('.item-row');
+            if (row) performRemove(row);
+        }
+    });
+    
+    // ========== ATTACH CHANGE EVENTS TO EXISTING ROWS ==========
+    function attachChangeEvents() {
+        document.querySelectorAll('.item-row').forEach(row => {
+            // Fabric type change
+            const fabricSelect = row.querySelector('.fabric-type');
+            if (fabricSelect && !fabricSelect.hasAttribute('data-listener')) {
+                fabricSelect.setAttribute('data-listener', 'true');
+                fabricSelect.addEventListener('change', function() {
+                    handleFabricTypeChange(this);
+                });
+                handleFabricTypeChange(fabricSelect);
+            }
+            
+            // Color change
+            const colorSelect = row.querySelector('.color-select');
+            if (colorSelect && !colorSelect.hasAttribute('data-listener')) {
+                colorSelect.setAttribute('data-listener', 'true');
+                colorSelect.addEventListener('change', function() {
+                    handleColorChange(this);
+                });
+                handleColorChange(colorSelect);
+            }
+            
+            // Meters input
+            const metersInput = row.querySelector('.meters');
+            if (metersInput && !metersInput.hasAttribute('data-listener')) {
+                metersInput.setAttribute('data-listener', 'true');
+                metersInput.addEventListener('input', updateTotals);
+            }
+        });
+    }
+    
+    // ========== INITIAL SETUP ==========
+    attachChangeEvents();
+    updateTotals();
+    
+    // Listen for meter input changes (delegation)
+    document.addEventListener('input', function(e) {
+        if (e.target.classList && e.target.classList.contains('meters')) {
+            updateTotals();
+        }
+    });
+    
+    // When new row is added via add button, attach events
+    const observer = new MutationObserver(function(mutations) {
+        attachChangeEvents();
+    });
+    observer.observe(document.getElementById('itemsBody'), { childList: true, subtree: true });
+</script>
+
+
+
+<!-- <script>
+    // ========== ADD NEW ROW ==========
+    document.getElementById('addRow').addEventListener('click', function() {
+        const tbody = document.getElementById('itemsBody');
+        const newRow = tbody.children[0].cloneNode(true);
+        
+        // Reset values
+        newRow.querySelectorAll('input, select').forEach(input => {
+            if (input.type === 'number') input.value = '';
+            else if (input.type === 'text') input.value = '';
+            else if (input.tagName === 'SELECT') input.value = '';
+        });
+        
+        // Hide "other" input fields in new row
+        const otherTypeDiv = newRow.querySelector('.other-fabric-type');
+        if (otherTypeDiv) otherTypeDiv.style.display = 'none';
+        const otherColorDiv = newRow.querySelector('.other-color-div');
+        if (otherColorDiv) otherColorDiv.style.display = 'none';
+        
+        tbody.appendChild(newRow);
+        updateTotals();
+        attachRowEvents();
+    });
+    
+    // ========== COPY ROW (Duplicate with same fabric & color) ==========
+    function copyRow(button) {
+        const row = button.closest('.item-row');
+        const tbody = document.getElementById('itemsBody');
+        const newRow = row.cloneNode(true);
+        
+        // Copy selected values for select elements
+        const originalSelects = row.querySelectorAll('select');
+        const newSelects = newRow.querySelectorAll('select');
+        
+        originalSelects.forEach((origSelect, idx) => {
+            if (newSelects[idx]) {
+                newSelects[idx].value = origSelect.value;
+                // Trigger change event to handle "Other" option visibility
+                const event = new Event('change', { bubbles: true });
+                newSelects[idx].dispatchEvent(event);
+            }
+        });
+        
+        // Copy input values
+        const originalInputs = row.querySelectorAll('input');
+        const newInputs = newRow.querySelectorAll('input');
+        originalInputs.forEach((origInput, idx) => {
+            if (newInputs[idx] && origInput.type !== 'hidden') {
+                newInputs[idx].value = origInput.value;
+            }
+        });
+        
+        // Hide "other" input fields in new row if 'Other' not selected
+        const otherTypeDiv = newRow.querySelector('.other-fabric-type');
+        if (otherTypeDiv) {
+            const fabricSelect = newRow.querySelector('.fabric-type');
+            if (fabricSelect && fabricSelect.value !== 'Other') {
+                otherTypeDiv.style.display = 'none';
+            }
+        }
+        
+        const otherColorDiv = newRow.querySelector('.other-color-div');
+        if (otherColorDiv) {
+            const colorSelect = newRow.querySelector('.color-select');
+            if (colorSelect && colorSelect.value !== 'Other') {
+                otherColorDiv.style.display = 'none';
+            }
+        }
+        
+        tbody.appendChild(newRow);
+        updateTotals();
+        attachRowEvents();
+    }
+    
+    // ========== HANDLE "OTHER" FABRIC TYPE ==========
+    function handleFabricTypeChange(select) {
+        const row = select.closest('.item-row');
+        let otherDiv = row.querySelector('.other-fabric-type');
+        
+        if (!otherDiv) {
+            otherDiv = document.createElement('div');
+            otherDiv.className = 'other-fabric-type mt-2';
+            otherDiv.style.display = 'none';
+            otherDiv.innerHTML = `<input type="text" class="form-control" name="items[otherFabric][]" 
+                                    placeholder="Enter fabric type name">`;
+            select.parentNode.appendChild(otherDiv);
+        }
+        
+        if (select.value === 'Other') {
+            otherDiv.style.display = 'block';
+            select.name = 'items[fabricTypeSelect][]';
+            let hiddenInput = row.querySelector('.fabric-type-hidden');
+            if (!hiddenInput) {
+                hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.className = 'fabric-type-hidden';
+                hiddenInput.name = 'items[fabricType][]';
+                select.parentNode.appendChild(hiddenInput);
+            }
+        } else {
+            otherDiv.style.display = 'none';
+            let hiddenInput = row.querySelector('.fabric-type-hidden');
+            if (!hiddenInput) {
+                hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.className = 'fabric-type-hidden';
+                hiddenInput.name = 'items[fabricType][]';
+                select.parentNode.appendChild(hiddenInput);
+            }
+            hiddenInput.value = select.value;
+        }
+    }
+    
+    // ========== HANDLE "OTHER" COLOR ==========
+    function handleColorChange(select) {
+        const row = select.closest('.item-row');
+        let otherDiv = row.querySelector('.other-color-div');
+        
+        if (!otherDiv) {
+            otherDiv = document.createElement('div');
+            otherDiv.className = 'other-color-div mt-2';
+            otherDiv.style.display = 'none';
+            otherDiv.innerHTML = `<input type="text" class="form-control" name="items[otherColor][]" 
+                                    placeholder="Enter color name">`;
+            select.parentNode.appendChild(otherDiv);
+        }
+        
+        if (select.value === 'Other') {
+            otherDiv.style.display = 'block';
+            select.name = 'items[colorSelect][]';
+            let hiddenInput = row.querySelector('.color-hidden');
+            if (!hiddenInput) {
+                hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.className = 'color-hidden';
+                hiddenInput.name = 'items[color][]';
+                select.parentNode.appendChild(hiddenInput);
+            }
+        } else {
+            otherDiv.style.display = 'none';
+            let hiddenInput = row.querySelector('.color-hidden');
+            if (!hiddenInput) {
+                hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.className = 'color-hidden';
+                hiddenInput.name = 'items[color][]';
+                select.parentNode.appendChild(hiddenInput);
+            }
+            hiddenInput.value = select.value;
+        }
+    }
+    
+    // ========== UPDATE TOTALS ==========
+    function updateTotals() {
+        let totalMeters = 0;
+        let totalItems = 0;
+        
+        document.querySelectorAll('.item-row').forEach(row => {
+            const meters = parseFloat(row.querySelector('.meters').value) || 0;
+            if (meters > 0) {
+                totalMeters += meters;
+                totalItems++;
+            }
+        });
+        
+        document.getElementById('totalItems').innerText = totalItems;
+        document.getElementById('totalMeters').innerText = totalMeters.toFixed(2);
+    }
+    
+    // ========== REMOVE ROW ==========
+    function removeRow(btn) {
+        const row = btn.closest('.item-row');
+        if (document.querySelectorAll('.item-row').length > 1) {
+            row.remove();
+            updateTotals();
+        } else {
+            alert('At least one fabric item is required');
+        }
+    }
+    
+    // ========== ATTACH EVENTS TO ALL ROWS ==========
+    function attachRowEvents() {
+        document.querySelectorAll('.item-row').forEach(row => {
+            // Fabric type change
+            const fabricSelect = row.querySelector('.fabric-type');
+            if (fabricSelect && !fabricSelect.hasAttribute('data-listener')) {
+                fabricSelect.setAttribute('data-listener', 'true');
+                fabricSelect.addEventListener('change', function() {
+                    handleFabricTypeChange(this);
+                });
+                handleFabricTypeChange(fabricSelect);
+            }
+            
+            // Color change
+            const colorSelect = row.querySelector('.color-select');
+            if (colorSelect && !colorSelect.hasAttribute('data-listener')) {
+                colorSelect.setAttribute('data-listener', 'true');
+                colorSelect.addEventListener('change', function() {
+                    handleColorChange(this);
+                });
+                handleColorChange(colorSelect);
+            }
+            
+            // Copy button (create if not exists)
+            let copyBtn = row.querySelector('.copy-row');
+            const actionCell = row.querySelector('td:last-child');
+            const removeBtn = actionCell.querySelector('.remove-row');
+            
+            if (!copyBtn) {
+                copyBtn = document.createElement('button');
+                copyBtn.type = 'button';
+                copyBtn.className = 'btn btn-sm btn-info copy-row ms-1';
+                copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
+                copyBtn.title = 'Duplicate row';
+                copyBtn.onclick = function() { copyRow(this); };
+                actionCell.insertBefore(copyBtn, removeBtn);
+            } else if (!copyBtn.hasAttribute('data-listener')) {
+                copyBtn.setAttribute('data-listener', 'true');
+                copyBtn.onclick = function() { copyRow(this); };
+            }
+            
+            // Remove button
+            if (removeBtn && !removeBtn.hasAttribute('data-listener')) {
+                removeBtn.setAttribute('data-listener', 'true');
+                removeBtn.onclick = function() { removeRow(this); };
+            }
+            
+            // Meters input
+            const metersInput = row.querySelector('.meters');
+            if (metersInput && !metersInput.hasAttribute('data-listener')) {
+                metersInput.setAttribute('data-listener', 'true');
+                metersInput.addEventListener('input', updateTotals);
+            }
+        });
+    }
+    
+    // ========== INITIAL SETUP ==========
+    attachRowEvents();
+    updateTotals();
+    
+    // Listen for meter input changes (delegation)
+    document.addEventListener('input', function(e) {
+        if (e.target.classList && e.target.classList.contains('meters')) {
+            updateTotals();
+        }
+    });
+</script> -->
+
+
+
+
+
+
+
+<!-- <script>
+    // ========== ADD NEW ROW ==========
+    document.getElementById('addRow').addEventListener('click', function() {
+        const tbody = document.getElementById('itemsBody');
+        const newRow = tbody.children[0].cloneNode(true);
+        
+        // Reset values
+        newRow.querySelectorAll('input, select').forEach(input => {
+            if (input.type === 'number') input.value = '';
+            else if (input.type === 'text') input.value = '';
+            else if (input.tagName === 'SELECT') input.value = '';
+        });
+        
+        // Hide "other" input fields in new row
+        const otherTypeDiv = newRow.querySelector('.other-fabric-type');
+        if (otherTypeDiv) otherTypeDiv.style.display = 'none';
+        const otherColorDiv = newRow.querySelector('.other-color-div');
+        if (otherColorDiv) otherColorDiv.style.display = 'none';
+        
+        tbody.appendChild(newRow);
+        updateTotals();
+        attachRowEvents();
+    });
+    
+    // ========== COPY ROW (Duplicate with same fabric & color) ==========
+    function copyRow(button) {
+        const row = button.closest('.item-row');
+        const tbody = document.getElementById('itemsBody');
+        const newRow = row.cloneNode(true);
+        
+        // Keep the same values (don't reset)
+        // But detach other input display
+        const otherTypeDiv = newRow.querySelector('.other-fabric-type');
+        if (otherTypeDiv) otherTypeDiv.style.display = 'none';
+        const otherColorDiv = newRow.querySelector('.other-color-div');
+        if (otherColorDiv) otherColorDiv.style.display = 'none';
+        
+        tbody.appendChild(newRow);
+        updateTotals();
+        attachRowEvents();
+    }
+    
+    // ========== HANDLE "OTHER" FABRIC TYPE ==========
+    function handleFabricTypeChange(select) {
+        const row = select.closest('.item-row');
+        let otherDiv = row.querySelector('.other-fabric-type');
+        
+        if (!otherDiv) {
+            otherDiv = document.createElement('div');
+            otherDiv.className = 'other-fabric-type mt-2';
+            otherDiv.style.display = 'none';
+            otherDiv.innerHTML = `<input type="text" class="form-control" name="items[otherFabric][]" 
+                                    placeholder="Enter fabric type name">`;
+            select.parentNode.appendChild(otherDiv);
+        }
+        
+        if (select.value === 'Other') {
+            otherDiv.style.display = 'block';
+            select.name = 'items[fabricTypeSelect][]';
+            // Add hidden input for the actual value
+            let hiddenInput = row.querySelector('.fabric-type-hidden');
+            if (!hiddenInput) {
+                hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.className = 'fabric-type-hidden';
+                hiddenInput.name = 'items[fabricType][]';
+                select.parentNode.appendChild(hiddenInput);
+            }
+        } else {
+            otherDiv.style.display = 'none';
+            // Set hidden input value to selected value
+            let hiddenInput = row.querySelector('.fabric-type-hidden');
+            if (!hiddenInput) {
+                hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.className = 'fabric-type-hidden';
+                hiddenInput.name = 'items[fabricType][]';
+                select.parentNode.appendChild(hiddenInput);
+            }
+            hiddenInput.value = select.value;
+        }
+    }
+    
+    // ========== HANDLE "OTHER" COLOR ==========
+    function handleColorChange(select) {
+        const row = select.closest('.item-row');
+        let otherDiv = row.querySelector('.other-color-div');
+        
+        if (!otherDiv) {
+            otherDiv = document.createElement('div');
+            otherDiv.className = 'other-color-div mt-2';
+            otherDiv.style.display = 'none';
+            otherDiv.innerHTML = `<input type="text" class="form-control" name="items[otherColor][]" 
+                                    placeholder="Enter color name">`;
+            select.parentNode.appendChild(otherDiv);
+        }
+        
+        if (select.value === 'Other') {
+            otherDiv.style.display = 'block';
+            select.name = 'items[colorSelect][]';
+            // Add hidden input for actual color value
+            let hiddenInput = row.querySelector('.color-hidden');
+            if (!hiddenInput) {
+                hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.className = 'color-hidden';
+                hiddenInput.name = 'items[color][]';
+                select.parentNode.appendChild(hiddenInput);
+            }
+        } else {
+            otherDiv.style.display = 'none';
+            let hiddenInput = row.querySelector('.color-hidden');
+            if (!hiddenInput) {
+                hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.className = 'color-hidden';
+                hiddenInput.name = 'items[color][]';
+                select.parentNode.appendChild(hiddenInput);
+            }
+            hiddenInput.value = select.value;
+        }
+    }
+    
+    // ========== UPDATE TOTALS ==========
+    function updateTotals() {
+        let totalMeters = 0;
+        let totalItems = 0;
+        
+        document.querySelectorAll('.item-row').forEach(row => {
+            const meters = parseFloat(row.querySelector('.meters').value) || 0;
+            if (meters > 0) {
+                totalMeters += meters;
+                totalItems++;
+            }
+        });
+        
+        document.getElementById('totalItems').innerText = totalItems;
+        document.getElementById('totalMeters').innerText = totalMeters.toFixed(2);
+    }
+    
+    // ========== REMOVE ROW ==========
+    function removeRow(btn) {
+        const row = btn.closest('.item-row');
+        if (document.querySelectorAll('.item-row').length > 1) {
+            row.remove();
+            updateTotals();
+        } else {
+            alert('At least one fabric item is required');
+        }
+    }
+    
+    // ========== ATTACH EVENTS TO ALL ROWS ==========
+    function attachRowEvents() {
+        document.querySelectorAll('.item-row').forEach(row => {
+            // Fabric type change
+            const fabricSelect = row.querySelector('.fabric-type');
+            if (fabricSelect && !fabricSelect.hasAttribute('data-listener')) {
+                fabricSelect.setAttribute('data-listener', 'true');
+                fabricSelect.addEventListener('change', function() {
+                    handleFabricTypeChange(this);
+                });
+                // Trigger initial setup
+                handleFabricTypeChange(fabricSelect);
+            }
+            
+            // Color change
+            const colorSelect = row.querySelector('.color-select');
+            if (colorSelect && !colorSelect.hasAttribute('data-listener')) {
+                colorSelect.setAttribute('data-listener', 'true');
+                colorSelect.addEventListener('change', function() {
+                    handleColorChange(this);
+                });
+                handleColorChange(colorSelect);
+            }
+            
+            // Copy button
+            let copyBtn = row.querySelector('.copy-row');
+            if (!copyBtn) {
+                const actionCell = row.querySelector('td:last-child');
+                const removeBtn = actionCell.querySelector('.remove-row');
+                copyBtn = document.createElement('button');
+                copyBtn.type = 'button';
+                copyBtn.className = 'btn btn-sm btn-info copy-row ms-1';
+                copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
+                copyBtn.title = 'Duplicate row';
+                copyBtn.onclick = () => copyRow(copyBtn);
+                actionCell.insertBefore(copyBtn, removeBtn);
+            }
+            
+            // Remove button
+            const removeBtn = row.querySelector('.remove-row');
+            if (removeBtn && !removeBtn.hasAttribute('data-listener')) {
+                removeBtn.setAttribute('data-listener', 'true');
+                removeBtn.onclick = () => removeRow(removeBtn);
+            }
+            
+            // Meters input
+            const metersInput = row.querySelector('.meters');
+            if (metersInput && !metersInput.hasAttribute('data-listener')) {
+                metersInput.setAttribute('data-listener', 'true');
+                metersInput.addEventListener('input', updateTotals);
+            }
+        });
+    }
+    
+    // ========== INITIAL SETUP ==========
+    attachRowEvents();
+    updateTotals();
+    
+    // Listen for meter input changes (delegation)
+    document.addEventListener('input', function(e) {
+        if (e.target.classList && e.target.classList.contains('meters')) {
+            updateTotals();
+        }
+    });
+</script> -->
+
+
+
+
+
+
+<!-- <script>
+    // Add new row
+    document.getElementById('addRow').addEventListener('click', function() {
+        const tbody = document.getElementById('itemsBody');
+        const newRow = tbody.children[0].cloneNode(true);
+        newRow.querySelectorAll('input, select').forEach(input => {
+            if (input.type === 'number') input.value = '';
+            else if (input.type === 'text') input.value = '';
+            else if (input.tagName === 'SELECT') input.value = '';
+        });
+        tbody.appendChild(newRow);
+        updateTotals();
+        attachRemoveEvents();
+    });
+    
+    // Remove row
+    function attachRemoveEvents() {
+        document.querySelectorAll('.remove-row').forEach(btn => {
+            btn.removeEventListener('click', removeRow);
+            btn.addEventListener('click', removeRow);
+        });
+    }
+    
+    function removeRow(e) {
+        const row = e.target.closest('.item-row');
+        if (document.querySelectorAll('.item-row').length > 1) {
+            row.remove();
+            updateTotals();
+        } else {
+            alert('At least one fabric item is required');
+        }
+    }
+    
+    // Update totals
+    function updateTotals() {
+        let totalMeters = 0;
+        let totalItems = 0;
+        
+        document.querySelectorAll('.item-row').forEach(row => {
+            const meters = parseFloat(row.querySelector('.meters').value) || 0;
+            if (meters > 0) {
+                totalMeters += meters;
+                totalItems++;
+            }
+        });
+        
+        document.getElementById('totalItems').innerText = totalItems;
+        document.getElementById('totalMeters').innerText = totalMeters.toFixed(2);
+    }
+    
+    // Listen for meter input changes
+    document.addEventListener('input', function(e) {
+        if (e.target.classList && e.target.classList.contains('meters')) {
+            updateTotals();
+        }
+    });
+    
+    attachRemoveEvents();
+    updateTotals();
+</script> -->
+
+
+
+<!-- <div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-plus-circle"></i> Add Fabric Entry</h4>
+            </div>
+            <div class="card-body">
+                <form action="/fabrics/create" method="POST" id="fabricForm">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="fabricType" class="form-label">Fabric Type *</label>
+                            <select class="form-control" id="fabricType" name="fabricType" required>
+                                <option value="">Select Type</option>
+                                <option value="Cotton">Armani</option>
+                                <option value="Cotton">Shartin</option>
+                                <option value="Polyester">Polyester</option>
+                                <option value="Silk">Banglury Silk</option>
+                                <option value="Linen">Magic</option>
+                                <option value="Wool">color</option>
+                                <option value="Denim">New</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="fabricName" class="form-label">Fabric Name *</label>
+                            <select class="form-control" id="fabricName" name="fabricName" required>
+                                <option value="">Select Type</option>
+                                <option value="Cotton">Armani</option>
+                                <option value="Cotton">Shartin</option>
+                                <option value="Polyester">Polyester</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <h5 class="mt-3">Items Details</h5>
+                    <div id="itemsContainer">
+                        <div class="item-row row mb-2">
+                            <div class="col-md-4">
+                                <input type="text" class="form-control" name="items[itemName][]" placeholder="Item Name" required>
+                            </div>
+                            <div class="col-md-2">
+                                <input type="number" class="form-control meters-per-item" name="items[metersPerItem][]" placeholder="Meters/Item" step="0.01" required>
+                            </div>
+                            <div class="col-md-2">
+                                <input type="number" class="form-control quantity" name="items[quantity][]" placeholder="Quantity" required>
+                            </div>
+                            <div class="col-md-2">
+                                <input type="text" class="form-control item-total" readonly placeholder="Total Meters">
+                            </div>
+                            <div class="col-md-2">
+                                <button type="button" class="btn btn-danger remove-item">Remove</button>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" id="addItem" class="btn btn-sm btn-success mb-3">
+                        <i class="fas fa-plus"></i> Add Another Item
+                    </button>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="totalMeters" class="form-label">Total Meters *</label>
+                            <input type="number" class="form-control" id="totalMeters" name="totalMeters" readonly required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="remark" class="form-label">Remark</label>
+                            <textarea class="form-control" id="remark" name="remark" rows="2"></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Save Fabric Entry
+                        </button>
+                        <a href="/fabrics" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function calculateTotals() {
+        let grandTotal = 0;
+        document.querySelectorAll('.item-row').forEach(row => {
+            const meters = parseFloat(row.querySelector('.meters-per-item').value) || 0;
+            const quantity = parseFloat(row.querySelector('.quantity').value) || 0;
+            const total = meters * quantity;
+            row.querySelector('.item-total').value = total.toFixed(2);
+            grandTotal += total;
+        });
+        document.getElementById('totalMeters').value = grandTotal.toFixed(2);
+    }
+    
+    document.getElementById('addItem').addEventListener('click', function() {
+        const container = document.getElementById('itemsContainer');
+        const newRow = container.children[0].cloneNode(true);
+        newRow.querySelectorAll('input').forEach(input => input.value = '');
+        container.appendChild(newRow);
+        attachEventListeners(newRow);
+    });
+    
+    function attachEventListeners(row) {
+        row.querySelectorAll('.meters-per-item, .quantity').forEach(input => {
+            input.addEventListener('input', calculateTotals);
+        });
+        row.querySelector('.remove-item').addEventListener('click', function() {
+            if (document.querySelectorAll('.item-row').length > 1) {
+                row.remove();
+                calculateTotals();
+            } else {
+                alert('At least one item is required');
+            }
+        });
+    }
+    
+    document.querySelectorAll('.item-row').forEach(row => attachEventListeners(row));
+    document.querySelectorAll('.meters-per-item, .quantity').forEach(input => {
+        input.addEventListener('input', calculateTotals);
+    });
+</script> -->

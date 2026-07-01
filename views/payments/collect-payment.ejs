@@ -1,0 +1,325 @@
+<%
+const currentPage = 'payments';
+%>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Collect Payment | Garment ERP</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+    
+    <style>
+        .stat-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+            text-align: center;
+            height: 100%;
+        }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.08); }
+        .stat-value { font-size: 1.75rem; font-weight: 700; }
+        .stat-label { font-size: 0.7rem; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
+        .card-premium {
+            background: white;
+            border: none;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        }
+        .table-premium { width: 100%; border-collapse: collapse; }
+        .table-premium th { padding: 12px; background: #f8fafc; font-weight: 600; border-bottom: 2px solid #e2e8f0; font-size: 0.8rem; text-transform: uppercase; color: #64748b; }
+        .table-premium td { padding: 12px; border-bottom: 1px solid #e2e8f0; vertical-align: middle; }
+        .table-premium tfoot { background: #f8fafc; font-weight: 700; }
+        .amount-positive { color: #22c55e; }
+        .amount-negative { color: #ef4444; }
+        .badge-type {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+        .badge-karigar { background: #dbeafe; color: #1d4ed8; }
+        .badge-pressman { background: #cffafe; color: #0891b2; }
+        .badge-helper { background: #fef3c7; color: #d97706; }
+        .badge-cutting { background: #fce4ec; color: #dc2626; }
+    </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/dashboard">
+            <i class="fas fa-tshirt"></i> Garment ERP
+        </a>
+        <div class="ms-auto">
+            <span class="text-white me-3">
+                <i class="fas fa-user"></i> <%= user ? user.username : 'Admin' %>
+            </span>
+            <a href="/auth/logout" class="btn btn-sm btn-outline-light">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid mt-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3><i class="fas fa-money-bill-wave text-success"></i> Collect Payment</h3>
+            <p class="text-muted">Collect payments with advance adjustment for selected workers</p>
+        </div>
+        <div>
+            <a href="/payments" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back
+            </a>
+        </div>
+    </div>
+
+    <!-- Flash Messages -->
+    <% if (success_msg && success_msg.length) { %>
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="fas fa-check-circle"></i> <%= success_msg %>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    <% } %>
+    <% if (error_msg && error_msg.length) { %>
+        <div class="alert alert-danger alert-dismissible fade show">
+            <i class="fas fa-exclamation-circle"></i> <%= error_msg %>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    <% } %>
+
+    <!-- Stats -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-label">Total Workers</div>
+                <div class="stat-value text-primary"><%= workers?.length || 0 %></div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-label">Total Earnings</div>
+                <div class="stat-value text-success">₹<%= totalEarnings || 0 %></div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-label">Total Paid</div>
+                <div class="stat-value text-info">₹<%= totalPaid || 0 %></div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-label">Net Payable</div>
+                <div class="stat-value text-warning">₹<%= netPayable || 0 %></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ✅ Selected Workers Table -->
+    <div class="card-premium shadow-sm mb-4">
+        <div class="card-header bg-white py-3">
+            <h5 class="mb-0"><i class="fas fa-users"></i> Selected Workers</h5>
+            <small class="text-muted"><%= workers?.length || 0 %> workers selected for payment</small>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table-premium">
+                    <thead>
+                        <tr>
+                            <th>Worker</th>
+                            <th>Type</th>
+                            <th class="text-end">Pieces</th>
+                            <th class="text-end">Earnings (₹)</th>
+                            <th class="text-end">Paid (₹)</th>
+                            <th class="text-end">Advances (₹)</th>
+                            <th class="text-end">Net Payable (₹)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% if (workers && workers.length > 0) { %>
+                            <% workers.forEach(w => { %>
+                                <tr>
+                                    <td>
+                                        <strong><%= w.name %></strong>
+                                        <br><small class="text-muted"><%= w.phone || '' %></small>
+                                    </td>
+                                    <td>
+                                        <span class="badge-type badge-<%= w.workerType %>">
+                                            <%= w.workerType.toUpperCase() %>
+                                        </span>
+                                        <span class="badge bg-<%= w.isActive ? 'success' : 'secondary' %> ms-1">
+                                            <%= w.isActive ? 'Active' : 'Inactive' %>
+                                        </span>
+                                    </td>
+                                    <td class="text-end"><%= w.totalPieces || 0 %></td>
+                                    <td class="text-end text-success">₹<%= w.totalEarnings || 0 %></td>
+                                    <td class="text-end text-info">₹<%= w.totalPaid || 0 %></td>
+                                    <td class="text-end text-danger">₹<%= w.totalAdvances || 0 %></td>
+                                    <td class="text-end fw-bold <%= w.netPayable > 0 ? 'text-success' : w.netPayable < 0 ? 'text-danger' : 'text-secondary' %>">
+                                        ₹<%= w.netPayable || 0 %>
+                                    </td>
+                                </tr>
+                            <% }) %>
+                        <% } else { %>
+                            <tr><td colspan="7" class="text-center py-4 text-muted">No workers selected</td></tr>
+                        <% } %>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="3" class="text-end">TOTAL</td>
+                            <td class="text-end"><%= workers?.reduce((s, w) => s + (w.totalPieces || 0), 0) || 0 %></td>
+                            <td class="text-end text-success">₹<%= totalEarnings || 0 %></td>
+                            <td class="text-end text-info">₹<%= totalPaid || 0 %></td>
+                            <td class="text-end text-warning">₹<%= netPayable || 0 %></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ✅ Payment Form -->
+    <div class="card-premium shadow-sm">
+        <div class="card-header bg-white py-3">
+            <h5 class="mb-0"><i class="fas fa-hand-holding-usd"></i> Collect Payment</h5>
+        </div>
+        <div class="card-body">
+            <form id="paymentForm">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Payment Amount (₹) *</label>
+                        <input type="number" name="amount" id="paymentAmount" class="form-control form-control-lg" 
+                               placeholder="Enter amount" min="1" max="<%= netPayable || 0 %>" required>
+                        <small class="text-muted">Max: ₹<%= netPayable || 0 %></small>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Payment Method *</label>
+                        <select name="paymentMethod" class="form-control form-control-lg" required>
+                            <option value="Cash">💵 Cash</option>
+                            <option value="Bank Transfer">🏦 Bank Transfer</option>
+                            <option value="UPI">📱 UPI</option>
+                            <option value="Cheque">📄 Cheque</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Reference / Transaction ID</label>
+                        <input type="text" name="reference" class="form-control" 
+                               placeholder="Cheque No / UTR / Transaction ID">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Payment Date</label>
+                        <input type="date" name="paymentDate" class="form-control" 
+                               value="<%= new Date().toISOString().split('T')[0] %>">
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label fw-bold">Remark (Optional)</label>
+                        <textarea name="remark" class="form-control" rows="2" 
+                                  placeholder="Any notes about this payment"></textarea>
+                    </div>
+                    <div class="col-md-12">
+                        <div class="alert alert-info d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>Net Payable:</strong> ₹<%= netPayable || 0 %>
+                            </div>
+                            <div>
+                                <strong>Pending Advances:</strong> ₹<%= totalAdvances || 0 %>
+                            </div>
+                            <div>
+                                <span class="badge bg-warning">Advance will be auto-adjusted</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-12">
+                        <button type="submit" class="btn btn-primary btn-lg px-5" id="paymentSubmitBtn">
+                            <i class="fas fa-save"></i> Process Payment
+                        </button>
+                        <a href="/payments" class="btn btn-secondary btn-lg px-4">Cancel</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const paymentForm = document.getElementById('paymentForm');
+    const paymentAmount = document.getElementById('paymentAmount');
+    const maxPayable = <%= netPayable || 0 %>;
+    
+    // ✅ Set max amount
+    if (maxPayable > 0) {
+        paymentAmount.max = maxPayable;
+        paymentAmount.placeholder = `Enter amount (max: ₹${maxPayable})`;
+    }
+    
+    paymentForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const data = Object.fromEntries(formData.entries());
+        
+        // Get selected worker IDs from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const workerIds = urlParams.get('workers')?.split(',') || [];
+        
+        if (workerIds.length === 0) {
+            alert('❌ No workers selected');
+            return;
+        }
+        
+        data.workerIds = workerIds;
+        
+        // Validate amount
+        const amount = parseFloat(data.amount);
+        if (!amount || amount <= 0) {
+            alert('❌ Please enter a valid payment amount');
+            return;
+        }
+        if (amount > maxPayable) {
+            alert(`❌ Payment amount (₹${amount}) exceeds net payable (₹${maxPayable})`);
+            return;
+        }
+        
+        const submitBtn = document.getElementById('paymentSubmitBtn');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        
+        try {
+            const response = await fetch('/payments/api/bulk-payment', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                alert('✅ Payment processed successfully!');
+                window.location.href = '/payments';
+            } else {
+                alert('❌ Error: ' + (result.error || 'Unknown error'));
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-save"></i> Process Payment';
+            }
+        } catch (error) {
+            alert('❌ Error: ' + error.message);
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-save"></i> Process Payment';
+        }
+    });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,1020 @@
+<%
+currentPage = 'dashboard';
+%>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %> | Garment ERP</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <style>
+        :root {
+            --primary: #4361ee;
+            --primary-dark: #3730a3;
+            --primary-light: #818cf8;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --info: #06b6d4;
+            --dark: #0f172a;
+            --gray: #64748b;
+            --gray-light: #e2e8f0;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f1f5f9;
+            overflow-x: hidden;
+        }
+        
+        /* Premium Sidebar */
+        .premium-sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 280px;
+            height: 100vh;
+            background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+            z-index: 1000;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow-y: auto;
+            box-shadow: 10px 0 30px rgba(0,0,0,0.1);
+        }
+        
+        .premium-sidebar::-webkit-scrollbar { width: 5px; }
+        .premium-sidebar::-webkit-scrollbar-track { background: rgba(255,255,255,0.1); }
+        .premium-sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 5px; }
+        
+        .premium-sidebar.collapsed { width: 85px; }
+        .premium-sidebar.collapsed .sidebar-brand span,
+        .premium-sidebar.collapsed .menu-item span,
+        .premium-sidebar.collapsed .menu-category { display: none; }
+        .premium-sidebar.collapsed .menu-item { justify-content: center; padding: 12px; }
+        .premium-sidebar.collapsed .menu-item i { margin-right: 0; font-size: 1.3rem; }
+        
+        .sidebar-brand { padding: 25px 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; }
+        .sidebar-brand h3 { font-size: 1.3rem; font-weight: 700; background: linear-gradient(135deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; }
+        .sidebar-brand p { font-size: 0.7rem; color: #64748b; margin-top: 5px; }
+        
+        .menu-category { padding: 10px 20px; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: #64748b; font-weight: 600; }
+        .menu-item { display: flex; align-items: center; gap: 12px; padding: 10px 20px; margin: 4px 12px; border-radius: 12px; color: #cbd5e1; text-decoration: none; transition: all 0.3s; cursor: pointer; }
+        .menu-item:hover { background: rgba(255,255,255,0.1); color: white; transform: translateX(5px); }
+        .menu-item.active { background: linear-gradient(90deg, #4361ee, #818cf8); color: white; box-shadow: 0 4px 15px rgba(67,97,238,0.3); }
+        .menu-item i { width: 24px; font-size: 1.1rem; }
+        .menu-badge { background: #ef4444; color: white; border-radius: 20px; padding: 2px 8px; font-size: 10px; margin-left: auto; }
+        
+        /* Premium Main Content */
+        .premium-main { margin-left: 280px; padding: 20px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); min-height: 100vh; }
+        .premium-main.expanded { margin-left: 85px; }
+        
+        /* Premium Navbar */
+        .premium-navbar {
+            background: white;
+            border-radius: 20px;
+            padding: 12px 25px;
+            margin-bottom: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+            position: sticky;
+            top: 20px;
+            z-index: 99;
+        }
+        
+        .nav-toggle { background: none; border: none; font-size: 1.3rem; cursor: pointer; padding: 8px; border-radius: 12px; color: #64748b; transition: all 0.3s; }
+        .nav-toggle:hover { background: #f1f5f9; color: #4361ee; }
+        .page-title { font-size: 1.3rem; font-weight: 600; margin: 0; color: #0f172a; }
+        
+        .nav-actions { display: flex; align-items: center; gap: 15px; }
+        .nav-icon-btn {
+            background: none; border: none; font-size: 1.1rem; color: #64748b; cursor: pointer;
+            padding: 8px; border-radius: 50%; width: 40px; height: 40px;
+            display: flex; align-items: center; justify-content: center; transition: all 0.3s;
+            position: relative;
+        }
+        .nav-icon-btn:hover { background: #f1f5f9; color: #4361ee; }
+        .notification-badge {
+            position: absolute; top: 0; right: 0; background: #ef4444; color: white;
+            font-size: 10px; border-radius: 50%; width: 18px; height: 18px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        
+        .profile-dropdown {
+            display: flex; align-items: center; gap: 12px; cursor: pointer;
+            padding: 8px 15px; border-radius: 30px; background: #f8fafc;
+            transition: all 0.3s;
+        }
+        .profile-dropdown:hover { background: #f1f5f9; }
+        .profile-avatar {
+            width: 40px; height: 40px; background: linear-gradient(135deg, #4361ee, #818cf8);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            color: white; font-weight: 600;
+        }
+        .profile-name { font-weight: 600; font-size: 0.9rem; color: #0f172a; }
+        .profile-role { font-size: 0.7rem; color: #64748b; }
+        
+        /* Stats Cards */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 25px; }
+        .stat-card {
+            background: white; border-radius: 24px; padding: 20px; transition: all 0.3s;
+            position: relative; overflow: hidden; border: 1px solid rgba(0,0,0,0.03);
+        }
+        .stat-card:hover { transform: translateY(-5px); box-shadow: 0 20px 35px -10px rgba(0,0,0,0.1); }
+        .stat-card::before {
+            content: ''; position: absolute; top: 0; right: 0;
+            width: 120px; height: 120px;
+            background: radial-gradient(circle, rgba(67,97,238,0.05) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+        .stat-title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: #64748b; font-weight: 600; margin-bottom: 10px; }
+        .stat-value { font-size: 2rem; font-weight: 800; color: #0f172a; }
+        .stat-icon { position: absolute; right: 20px; top: 20px; font-size: 2.5rem; opacity: 0.15; }
+        .stat-trend { font-size: 0.7rem; margin-top: 8px; display: flex; align-items: center; gap: 5px; }
+        .trend-up { color: #10b981; }
+        .trend-down { color: #ef4444; }
+        
+        /* Premium Cards */
+        .card-premium { background: white; border: none; border-radius: 24px; margin-bottom: 25px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.03); }
+        .card-header-premium { padding: 20px 25px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; background: white; }
+        .card-header-premium h6 { font-weight: 600; margin: 0; color: #0f172a; }
+        .card-body-premium { padding: 20px 25px; }
+        
+        /* Activity Timeline */
+        .activity-timeline { position: relative; }
+        .timeline-item { display: flex; gap: 15px; padding-bottom: 20px; position: relative; }
+        .timeline-item:not(:last-child)::before {
+            content: ''; position: absolute; left: 17px; top: 40px; bottom: 0;
+            width: 2px; background: #e2e8f0;
+        }
+        .timeline-icon {
+            width: 35px; height: 35px; background: #f1f5f9; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center; z-index: 1;
+        }
+        .timeline-title { font-weight: 600; font-size: 0.85rem; margin-bottom: 3px; color: #0f172a; }
+        .timeline-time { font-size: 0.7rem; color: #94a3b8; }
+        
+        /* Transactions */
+        .transaction-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f1f5f9; }
+        .transaction-item:last-child { border-bottom: none; }
+        .transaction-info { display: flex; align-items: center; gap: 12px; }
+        .transaction-avatar { width: 40px; height: 40px; background: #f1f5f9; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 600; }
+        .transaction-name { font-weight: 600; font-size: 0.85rem; }
+        .transaction-date { font-size: 0.7rem; color: #94a3b8; }
+        .transaction-amount { font-weight: 700; font-size: 0.9rem; }
+        .amount-positive { color: #10b981; }
+        .amount-negative { color: #ef4444; }
+        
+        /* Mini Calendar */
+        .mini-calendar { background: #f8fafc; border-radius: 20px; padding: 15px; }
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .calendar-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: 0.7rem; color: #64748b; margin-bottom: 10px; }
+        .calendar-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+        .calendar-day { text-align: center; padding: 8px 5px; font-size: 0.75rem; border-radius: 10px; cursor: pointer; transition: all 0.3s; }
+        .calendar-day:hover { background: #e2e8f0; }
+        .calendar-day.today { background: #4361ee; color: white; }
+        
+        /* Quick Actions */
+        .quick-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 25px; }
+        .quick-action-card {
+            background: white; border-radius: 20px; padding: 15px; text-align: center;
+            transition: all 0.3s; cursor: pointer; text-decoration: none; display: block;
+        }
+        .quick-action-card:hover { transform: translateY(-3px); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); }
+        .quick-action-icon { width: 50px; height: 50px; background: linear-gradient(135deg, #4361ee15, #818cf815); border-radius: 16px; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; }
+        .quick-action-icon i { font-size: 1.5rem; color: #4361ee; }
+        .quick-action-title { font-weight: 600; font-size: 0.8rem; color: #0f172a; }
+        
+        /* Top Products */
+        .product-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; }
+        .product-rank { width: 30px; height: 30px; background: #f1f5f9; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem; }
+        .product-name { font-weight: 500; }
+        .product-pieces { font-weight: 600; color: #4361ee; }
+        
+        /* Progress Bars */
+        .progress-custom { height: 8px; border-radius: 10px; background: #e2e8f0; overflow: hidden; }
+        .progress-bar-custom { height: 100%; border-radius: 10px; transition: width 0.5s ease; }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .premium-sidebar { left: -280px; }
+            .premium-sidebar.mobile-open { left: 0; }
+            .premium-main { margin-left: 0; }
+            .stats-grid { grid-template-columns: 1fr; }
+            .quick-actions { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Premium Sidebar -->
+<<!-- Premium Sidebar -->
+<div class="premium-sidebar" id="premiumSidebar">
+    <div class="sidebar-brand">
+        <h3><i class="fas fa-tshirt"></i> <span>Garment ERP</span></h3>
+        <p>Premium Garment Solution</p>
+    </div>
+    
+    <div class="menu-category">MAIN MENU</div>
+    <a href="/dashboard" class="menu-item active">
+        <i class="fas fa-chart-line"></i> <span>Dashboard</span>
+    </a>
+    
+    <div class="menu-category">PRODUCTION</div>
+    <a href="/cutting" class="menu-item">
+        <i class="fas fa-cut"></i> <span>Cutting</span>
+        <span class="menu-badge" id="cuttingCount">0</span>
+    </a>
+    <a href="/assignments" class="menu-item">
+        <i class="fas fa-tasks"></i> <span>Assignments</span>
+        <span class="menu-badge" id="assignmentCount">0</span>
+    </a>
+    <a href="/production" class="menu-item">
+        <i class="fas fa-undo-alt"></i> <span>Production Return</span>
+        <span class="menu-badge" id="productionReturnCount">0</span>
+    </a>
+    <a href="/finishing" class="menu-item">
+        <i class="fas fa-iron"></i> <span>Finishing</span>
+        <span class="menu-badge" id="finishingCount">0</span>
+    </a>
+    <a href="/packing" class="menu-item">
+        <i class="fas fa-boxes"></i> <span>Packing</span>
+        <span class="menu-badge" id="packingCount">0</span>
+    </a>
+    
+    <div class="menu-category">FINANCE</div>
+    <a href="/bills" class="menu-item">
+        <i class="fas fa-file-invoice-dollar"></i> <span>Bills</span>
+        <span class="menu-badge" id="billCount">0</span>
+    </a>
+    <a href="/payments" class="menu-item">
+        <i class="fas fa-money-bill-wave"></i> <span>Payments</span>
+    </a>
+    
+    <div class="menu-category">MASTERS</div>
+    <a href="/workers" class="menu-item">
+        <i class="fas fa-users"></i> <span>Workers</span>
+        <span class="menu-badge" id="workerCount">0</span>
+    </a>
+    <a href="/products" class="menu-item">
+        <i class="fas fa-box"></i> <span>Products</span>
+        <span class="menu-badge" id="productCount">0</span>
+    </a>
+    <a href="/fabrics" class="menu-item">
+        <i class="fas fa-layer-group"></i> <span>Fabrics</span>
+        <span class="menu-badge" id="fabricCount">0</span>
+    </a>
+    <a href="/pressman" class="menu-item">
+        <i class="fas fa-industry"></i> <span>Pressman</span>
+    </a>
+    
+    <div class="menu-category">REPORTS</div>
+    <a href="/reports/loss" class="menu-item">
+        <i class="fas fa-chart-line"></i> <span>Loss Report</span>
+    </a>
+    <a href="/reports/worker-payments" class="menu-item">
+        <i class="fas fa-chart-bar"></i> <span>Worker Payments</span>
+    </a>
+    <!-- In Workers dropdown, add this link -->
+
+    
+    <div class="menu-category">SYSTEM</div>
+    <a href="/settings" class="menu-item">
+        <i class="fas fa-cog"></i> <span>Settings</span>
+    </a>
+    <a href="/auth/logout" class="menu-item" onclick="return confirm('Logout?')">
+        <i class="fas fa-sign-out-alt"></i> <span>Logout</span>
+    </a>
+</div>
+
+<!-- Premium Main Content -->
+<div class="premium-main" id="premiumMain">
+    <!-- Premium Navbar -->
+    <div class="premium-navbar">
+        <div class="d-flex align-items-center gap-3">
+            <button class="nav-toggle" id="toggleSidebar">
+                <i class="fas fa-bars"></i>
+            </button>
+            <h4 class="page-title"><%= title %></h4>
+        </div>
+        
+        <div class="nav-actions">
+            <!-- Refresh Button -->
+            <button class="nav-icon-btn" id="refreshBtn" title="Refresh Data">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+            
+            <!-- Theme Toggle -->
+            <button class="nav-icon-btn" id="themeToggleBtn" title="Toggle Theme">
+                <i class="fas fa-moon"></i>
+            </button>
+            
+            <!-- Notification Bell with Dynamic Count -->
+            <button class="nav-icon-btn" id="notificationBtn" title="Notifications">
+                <i class="fas fa-bell"></i>
+                <span class="notification-badge" id="notificationCount">0</span>
+            </button>
+            
+            <!-- Profile Dropdown -->
+            <div class="profile-dropdown" data-bs-toggle="dropdown">
+                <div class="profile-avatar">
+                    <%= user ? user.username.charAt(0).toUpperCase() : 'A' %>
+                </div>
+                <div class="d-none d-md-block">
+                    <div class="profile-name"><%= user ? user.username : 'Admin' %></div>
+                    <div class="profile-role" id="userRole">System Administrator</div>
+                </div>
+                <i class="fas fa-chevron-down" style="font-size: 0.7rem; color: #94a3b8;"></i>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Flash Messages -->
+    <% if (success_msg && success_msg.length) { %>
+        <div class="alert alert-success alert-dismissible fade show mb-3">
+            <i class="fas fa-check-circle"></i> <%= success_msg %>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    <% } %>
+    
+    <% if (error_msg && error_msg.length) { %>
+        <div class="alert alert-danger alert-dismissible fade show mb-3">
+            <i class="fas fa-exclamation-circle"></i> <%= error_msg %>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    <% } %>
+    
+    <!-- Welcome Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card-premium" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: white;">
+                <div class="card-body-premium">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h2 class="mb-2">Welcome back, <strong><%= user ? user.username : 'Admin' %></strong>!</h2>
+                            <p class="mb-0 opacity-75">
+                                <i class="fas fa-calendar-alt me-2"></i> 
+                                <%= new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) %>
+                            </p>
+                            <div class="mt-3">
+                                <span class="badge bg-white/20 me-2" id="weatherTemp">
+                                    <i class="fas fa-temperature-high me-1"></i> --°C
+                                </span>
+                                <span class="badge bg-white/20" id="weatherDesc">
+                                    <i class="fas fa-cloud-sun me-1"></i> Loading...
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <div class="d-inline-block text-center">
+                                <i class="fas fa-chart-line fa-3x text-white-50 mb-2 d-block"></i>
+                                <span class="badge bg-white/20 fs-6" id="liveTime"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+        <a href="/cutting/create" class="quick-action-card">
+            <div class="quick-action-icon"><i class="fas fa-cut"></i></div>
+            <div class="quick-action-title">New Cutting</div>
+        </a>
+        <a href="/assignments/create" class="quick-action-card">
+            <div class="quick-action-icon"><i class="fas fa-tasks"></i></div>
+            <div class="quick-action-title">New Assignment</div>
+        </a>
+        <a href="/production/return" class="quick-action-card">
+            <div class="quick-action-icon"><i class="fas fa-undo-alt"></i></div>
+            <div class="quick-action-title">Production Return</div>
+        </a>
+        <a href="/bills/create" class="quick-action-card">
+            <div class="quick-action-icon"><i class="fas fa-file-invoice"></i></div>
+            <div class="quick-action-title">Create Bill</div>
+        </a>
+        <a href="/packing/create" class="quick-action-card">
+            <div class="quick-action-icon"><i class="fas fa-boxes"></i></div>
+            <div class="quick-action-title">Packing Entry</div>
+        </a>
+        <a href="/workers/create" class="quick-action-card">
+            <div class="quick-action-icon"><i class="fas fa-user-plus"></i></div>
+            <div class="quick-action-title">Add Worker</div>
+        </a>
+        <a href="/fabrics/create" class="quick-action-card">
+            <div class="quick-action-icon"><i class="fas fa-layer-group"></i></div>
+            <div class="quick-action-title">Fabric Entry</div>
+        </a>
+        <a href="/pressman/create" class="quick-action-card">
+            <div class="quick-action-icon"><i class="fas fa-industry"></i></div>
+            <div class="quick-action-title">Pressman Entry</div>
+        </a>
+    </div>
+    
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-title">Today's Production</div>
+            <div class="stat-value"><span id="todayProduction">0</span> <span style="font-size: 1rem;">pcs</span></div>
+            <div class="stat-trend"><span id="trendIcon"><i class="fas fa-arrow-up"></i></span> <span id="trendPercent">0</span>% vs yesterday</div>
+            <i class="fas fa-boxes stat-icon"></i>
+        </div>
+        <div class="stat-card">
+            <div class="stat-title">Monthly Production</div>
+            <div class="stat-value"><span id="monthlyProduction">0</span> <span style="font-size: 1rem;">pcs</span></div>
+            <div class="stat-trend">Target: <span id="targetPercent">0</span>%</div>
+            <i class="fas fa-chart-line stat-icon"></i>
+        </div>
+        <div class="stat-card">
+            <div class="stat-title">Pending Bills</div>
+            <div class="stat-value"><span id="pendingBills">0</span></div>
+            <div class="stat-trend">Amount: ₹<span id="pendingAmount">0</span></div>
+            <i class="fas fa-file-invoice-dollar stat-icon"></i>
+        </div>
+        <div class="stat-card">
+            <div class="stat-title">Active Workers</div>
+            <div class="stat-value"><span id="activeWorkers">0</span></div>
+            <div class="stat-trend"><span id="activeAssignments">0</span> active assignments</div>
+            <i class="fas fa-users stat-icon"></i>
+        </div>
+    </div>
+    
+    <!-- Charts Row -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card-premium">
+                <div class="card-header-premium">
+                    <h6><i class="fas fa-chart-line text-primary me-2"></i> Production Overview (Last 7 Days)</h6>
+                    <select id="chartRange" class="form-select form-select-sm" style="width: auto;">
+                        <option value="7">Last 7 Days</option>
+                        <option value="30">Last 30 Days</option>
+                        <option value="90">Last 90 Days</option>
+                    </select>
+                </div>
+                <div class="card-body-premium">
+                    <div id="productionChart"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card-premium">
+                <div class="card-header-premium">
+                    <h6><i class="fas fa-chart-pie text-success me-2"></i> Assignment Status</h6>
+                </div>
+                <div class="card-body-premium">
+                    <div id="statusChart"></div>
+                    <div class="row mt-3 text-center">
+                        <div class="col-4">
+                            <div class="small text-muted">Completed</div>
+                            <strong class="text-success" id="completedPercent">0%</strong>
+                        </div>
+                        <div class="col-4">
+                            <div class="small text-muted">Partial</div>
+                            <strong class="text-warning" id="partialPercent">0%</strong>
+                        </div>
+                        <div class="col-4">
+                            <div class="small text-muted">Pending</div>
+                            <strong class="text-danger" id="pendingPercent">0%</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Activity, Transactions, Products Row -->
+    <div class="row">
+        <div class="col-lg-5">
+            <div class="card-premium">
+                <div class="card-header-premium">
+                    <h6><i class="fas fa-history text-info me-2"></i> Recent Activity</h6>
+                    <a href="/assignments" class="btn btn-sm btn-link">View All</a>
+                </div>
+                <div class="card-body-premium">
+                    <div class="activity-timeline" id="recentActivities">
+                        <div class="text-center text-muted">Loading...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card-premium">
+                <div class="card-header-premium">
+                    <h6><i class="fas fa-receipt text-warning me-2"></i> Recent Transactions</h6>
+                    <a href="/bills" class="btn btn-sm btn-link">View All</a>
+                </div>
+                <div class="card-body-premium" id="recentTransactions">
+                    <div class="text-center text-muted">Loading...</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3">
+            <div class="card-premium">
+                <div class="card-header-premium">
+                    <h6><i class="fas fa-star text-warning me-2"></i> Top Products</h6>
+                </div>
+                <div class="card-body-premium" id="topProducts">
+                    <div class="text-center text-muted">Loading...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Progress & Calendar Row -->
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card-premium">
+                <div class="card-header-premium">
+                    <h6><i class="fas fa-tasks text-primary me-2"></i> Monthly Progress</h6>
+                </div>
+                <div class="card-body-premium">
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="small fw-bold">Production Target</span>
+                            <span class="small"><span id="prodTargetPercent">0</span>%</span>
+                        </div>
+                        <div class="progress-custom">
+                            <div class="progress-bar-custom bg-primary" id="prodTargetBar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="small fw-bold">Collection Rate</span>
+                            <span class="small"><span id="collectionPercent">0</span>%</span>
+                        </div>
+                        <div class="progress-custom">
+                            <div class="progress-bar-custom bg-success" id="collectionBar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="small fw-bold">Worker Attendance</span>
+                            <span class="small"><span id="attendancePercent">0</span>%</span>
+                        </div>
+                        <div class="progress-custom">
+                            <div class="progress-bar-custom bg-info" id="attendanceBar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card-premium">
+                <div class="card-header-premium">
+                    <h6><i class="fas fa-calendar-alt text-primary me-2"></i> Calendar</h6>
+                </div>
+                <div class="card-body-premium">
+                    <div class="mini-calendar" id="miniCalendar"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    // ============ SIDEBAR TOGGLE ============
+    const sidebar = document.getElementById('premiumSidebar');
+    const main = document.getElementById('premiumMain');
+    const toggleBtn = document.getElementById('toggleSidebar');
+    
+    if (localStorage.getItem('sidebarCollapsed') === 'true') {
+        sidebar.classList.add('collapsed');
+        main.classList.add('expanded');
+    }
+    
+    toggleBtn.addEventListener('click', () => {
+        sidebar.classList.toggle('collapsed');
+        main.classList.toggle('expanded');
+        localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+    });
+    
+    // ============ LIVE TIME ============
+    function updateLiveTime() {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+        const liveTimeElement = document.getElementById('liveTime');
+        if (liveTimeElement) {
+            liveTimeElement.innerHTML = `<i class="fas fa-clock me-1"></i> ${timeString}`;
+        }
+    }
+    updateLiveTime();
+    setInterval(updateLiveTime, 1000);
+    
+    // ============ WEATHER UPDATE ============
+    async function updateWeather() {
+        try {
+            const weatherData = { temp: 38, desc: 'Sunny', icon: 'fa-sun' };
+            document.getElementById('weatherTemp').innerHTML = `<i class="fas ${weatherData.icon} me-1"></i> ${weatherData.temp}°C`;
+            document.getElementById('weatherDesc').innerHTML = weatherData.desc;
+        } catch (error) {
+            console.error('Weather error:', error);
+        }
+    }
+    updateWeather();
+    
+    // ============ UPDATE SIDEBAR BADGES DYNAMICALLY ============
+    async function updateSidebarBadges() {
+        try {
+            const response = await fetch('/dashboard/api/counts');
+            const data = await response.json();
+            
+            if (data.success) {
+                const counts = data.counts;
+                
+                // Update each badge
+                const badges = [
+                    'cuttingCount', 'assignmentCount', 'productionReturnCount',
+                    'finishingCount', 'packingCount', 'billCount',
+                    'workerCount', 'productCount', 'fabricCount'
+                ];
+                
+                badges.forEach(badgeId => {
+                    const badge = document.getElementById(badgeId);
+                    const countKey = badgeId.replace('Count', '');
+                    const count = counts[countKey] || 0;
+                    
+                    if (badge) {
+                        if (count > 0) {
+                            badge.innerText = count;
+                            badge.style.display = 'inline-block';
+                        } else {
+                            badge.style.display = 'none';
+                        }
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('Error updating badges:', error);
+        }
+    }
+    
+    // ============ DASHBOARD DATA ============
+    let productionChart, statusChart;
+    let refreshInterval = null;
+    
+    async function loadDashboardData() {
+        try {
+            const response = await fetch('/dashboard/api/stats');
+            const data = await response.json();
+            
+            // Update stats
+            animateNumber('todayProduction', data.todayProduction || 0);
+            animateNumber('monthlyProduction', data.monthlyProduction || 0);
+            document.getElementById('pendingBills').innerText = data.pendingBills || 0;
+            document.getElementById('pendingAmount').innerText = (data.pendingAmount || 0).toLocaleString();
+            document.getElementById('activeWorkers').innerText = data.activeWorkers || 0;
+            document.getElementById('activeAssignments').innerText = data.activeAssignments || 0;
+            
+            // Update trend
+            const trend = data.productionTrend || 0;
+            const trendIcon = document.getElementById('trendIcon');
+            const trendPercent = document.getElementById('trendPercent');
+            if (trend >= 0) {
+                trendIcon.innerHTML = '<i class="fas fa-arrow-up"></i>';
+                trendIcon.className = 'trend-up';
+                trendPercent.className = 'trend-up';
+            } else {
+                trendIcon.innerHTML = '<i class="fas fa-arrow-down"></i>';
+                trendIcon.className = 'trend-down';
+                trendPercent.className = 'trend-down';
+            }
+            trendPercent.innerText = Math.abs(trend).toFixed(1);
+            
+            // Update sidebar badges
+            updateSidebarBadges();
+            
+            // Update charts
+            updateProductionChart(data.productionData || []);
+            updateStatusChart(data.statusData || { labels: ['Completed', 'Partial', 'Pending'], values: [0, 0, 0] });
+            
+            // Update activities
+            updateRecentActivities(data.recentActivities || []);
+            
+            // Update transactions
+            updateRecentTransactions(data.recentBills || []);
+            
+            // Update top products
+            updateTopProducts(data.topProducts || []);
+            
+            // Update progress
+            const monthlyTarget = 10000;
+            const targetPercent = Math.min((data.monthlyProduction / monthlyTarget) * 100, 100);
+            document.getElementById('prodTargetPercent').innerText = targetPercent.toFixed(1);
+            document.getElementById('prodTargetBar').style.width = targetPercent + '%';
+            
+            const totalBills = data.totalBillsAmount || 0;
+            const collected = data.collectedAmount || 0;
+            const collectionPercent = totalBills > 0 ? (collected / totalBills) * 100 : 0;
+            document.getElementById('collectionPercent').innerText = collectionPercent.toFixed(1);
+            document.getElementById('collectionBar').style.width = collectionPercent + '%';
+            
+            document.getElementById('attendancePercent').innerText = data.attendancePercent || 85;
+            document.getElementById('attendanceBar').style.width = (data.attendancePercent || 85) + '%';
+            
+            // Update status percentages
+            const total = (data.statusData?.values || [0,0,0]).reduce((a,b) => a+b, 0);
+            if (total > 0) {
+                document.getElementById('completedPercent').innerText = ((data.statusData.values[0] / total) * 100).toFixed(1) + '%';
+                document.getElementById('partialPercent').innerText = ((data.statusData.values[1] / total) * 100).toFixed(1) + '%';
+                document.getElementById('pendingPercent').innerText = ((data.statusData.values[2] / total) * 100).toFixed(1) + '%';
+            }
+            
+        } catch (error) {
+            console.error('Error loading dashboard:', error);
+        }
+    }
+    
+    function animateNumber(elementId, endValue) {
+        const element = document.getElementById(elementId);
+        if (!element) return;
+        const startValue = parseInt(element.innerText) || 0;
+        const duration = 500;
+        const stepTime = 20;
+        const steps = duration / stepTime;
+        const increment = (endValue - startValue) / steps;
+        let current = startValue;
+        let step = 0;
+        
+        const timer = setInterval(() => {
+            step++;
+            current += increment;
+            if (step >= steps) {
+                element.innerText = endValue.toLocaleString();
+                clearInterval(timer);
+            } else {
+                element.innerText = Math.round(current).toLocaleString();
+            }
+        }, stepTime);
+    }
+    
+    function updateProductionChart(data) {
+        const options = {
+            series: [{ name: 'Production', data: data.map(d => d.value) }],
+            chart: { type: 'area', height: 320, toolbar: { show: false }, zoom: { enabled: false } },
+            dataLabels: { enabled: false },
+            stroke: { curve: 'smooth', width: 2, colors: ['#4361ee'] },
+            fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.05, stops: [0, 100] } },
+            xaxis: { categories: data.map(d => d.label), labels: { rotate: -45, style: { fontSize: '11px' } } },
+            yaxis: { title: { text: 'Pieces' } },
+            colors: ['#4361ee'],
+            grid: { borderColor: '#e2e8f0' },
+            tooltip: { theme: 'dark' }
+        };
+        
+        if (productionChart) productionChart.destroy();
+        productionChart = new ApexCharts(document.querySelector("#productionChart"), options);
+        productionChart.render();
+    }
+    
+    function updateStatusChart(data) {
+        const options = {
+            series: data.values,
+            chart: { type: 'donut', height: 220 },
+            labels: data.labels,
+            colors: ['#10b981', '#f59e0b', '#ef4444'],
+            legend: { position: 'bottom', fontSize: '12px' },
+            dataLabels: { enabled: false },
+            plotOptions: { pie: { donut: { size: '65%' } } }
+        };
+        
+        if (statusChart) statusChart.destroy();
+        statusChart = new ApexCharts(document.querySelector("#statusChart"), options);
+        statusChart.render();
+    }
+    
+    function updateRecentActivities(activities) {
+        const container = document.getElementById('recentActivities');
+        if (!activities.length) {
+            container.innerHTML = '<div class="text-center text-muted">No recent activity</div>';
+            return;
+        }
+        
+        container.innerHTML = activities.map(a => `
+            <div class="timeline-item">
+                <div class="timeline-icon" style="background: ${a.color || '#f1f5f9'}15; color: ${a.color || '#4361ee'}">
+                    <i class="fas ${a.type === 'cutting' ? 'fa-cut' : a.type === 'assignment' ? 'fa-tasks' : 'fa-bell'}"></i>
+                </div>
+                <div>
+                    <div class="timeline-title">${a.title}</div>
+                    <div class="timeline-time">${a.time}</div>
+                    <div class="small text-muted mt-1">${a.description || ''}</div>
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    function updateRecentTransactions(transactions) {
+        const container = document.getElementById('recentTransactions');
+        if (!transactions.length) {
+            container.innerHTML = '<div class="text-center text-muted">No recent transactions</div>';
+            return;
+        }
+        
+        container.innerHTML = transactions.map(t => `
+            <div class="transaction-item">
+                <div class="transaction-info">
+                    <div class="transaction-avatar" style="background: ${t.status === 'paid' ? '#10b98115' : '#f59e0b15'}">
+                        <i class="fas fa-user" style="color: ${t.status === 'paid' ? '#10b981' : '#f59e0b'}"></i>
+                    </div>
+                    <div>
+                        <div class="transaction-name">${t.clientName || 'Unknown'}</div>
+                        <div class="transaction-date">${t.date}</div>
+                    </div>
+                </div>
+                <div class="transaction-amount ${t.status === 'paid' ? 'amount-positive' : 'amount-negative'}">
+                    ${t.status === 'paid' ? '+' : '-'} ₹${(t.amount || 0).toLocaleString()}
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    function updateTopProducts(products) {
+        const container = document.getElementById('topProducts');
+        if (!products.length) {
+            container.innerHTML = '<div class="text-center text-muted">No data available</div>';
+            return;
+        }
+        
+        container.innerHTML = products.map((p, i) => `
+            <div class="product-item">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="product-rank">${i + 1}</div>
+                    <div class="product-name">${p.name}</div>
+                </div>
+                <div class="product-pieces">${p.pieces} pcs</div>
+            </div>
+        `).join('');
+    }
+    
+    // ============ CALENDAR ============
+    function generateCalendar() {
+        const today = new Date();
+        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        const weekdays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1).getDay();
+        const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+        
+        let html = `<div class="calendar-weekdays">${weekdays.map(d => `<div>${d}</div>`).join('')}</div><div class="calendar-days">`;
+        for (let i = 0; i < firstDay; i++) html += '<div></div>';
+        for (let i = 1; i <= daysInMonth; i++) {
+            html += `<div class="calendar-day ${i === today.getDate() ? 'today' : ''}">${i}</div>`;
+        }
+        html += '</div>';
+        document.getElementById('miniCalendar').innerHTML = html;
+    }
+    
+    // ============ REFRESH BUTTON ============
+    const refreshBtn = document.getElementById('refreshBtn');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', () => {
+            loadDashboardData();
+            updateSidebarBadges();
+            refreshBtn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i>';
+            setTimeout(() => {
+                refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
+            }, 1000);
+        });
+    }
+    
+    // ============ THEME TOGGLE ============
+    const themeToggleBtn = document.getElementById('themeToggleBtn');
+    if (themeToggleBtn) {
+        themeToggleBtn.addEventListener('click', () => {
+            document.body.classList.toggle('dark-theme');
+            const isDark = document.body.classList.contains('dark-theme');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            themeToggleBtn.innerHTML = isDark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+        });
+        
+        if (localStorage.getItem('theme') === 'dark') {
+            document.body.classList.add('dark-theme');
+            themeToggleBtn.innerHTML = '<i class="fas fa-sun"></i>';
+        }
+    }
+    
+    // ============ CHART RANGE ============
+    const chartRange = document.getElementById('chartRange');
+    if (chartRange) {
+        chartRange.addEventListener('change', () => {
+            loadDashboardData();
+        });
+    }
+    
+    // ============ INITIAL LOAD ============
+    loadDashboardData();
+    generateCalendar();
+    updateSidebarBadges();
+    
+    // Auto refresh every 30 seconds
+    if (refreshInterval) clearInterval(refreshInterval);
+    refreshInterval = setInterval(() => {
+        loadDashboardData();
+        updateSidebarBadges();
+    }, 30000);
+</script>
+
+<style>
+    /* Dark Theme Styles */
+    body.dark-theme {
+        background: #0f172a;
+    }
+    
+    body.dark-theme .premium-navbar,
+    body.dark-theme .stat-card,
+    body.dark-theme .card-premium,
+    body.dark-theme .quick-action-card {
+        background: #1e293b;
+    }
+    
+    body.dark-theme .stat-value,
+    body.dark-theme .page-title,
+    body.dark-theme .profile-name,
+    body.dark-theme .quick-action-title,
+    body.dark-theme .timeline-title,
+    body.dark-theme .transaction-name {
+        color: #f1f5f9;
+    }
+    
+    body.dark-theme .stat-title,
+    body.dark-theme .stat-trend,
+    body.dark-theme .timeline-time,
+    body.dark-theme .transaction-date,
+    body.dark-theme .profile-role {
+        color: #94a3b8;
+    }
+    
+    body.dark-theme .premium-navbar {
+        background: #1e293b;
+    }
+    
+    body.dark-theme .profile-dropdown {
+        background: #334155;
+    }
+    
+    body.dark-theme .nav-icon-btn,
+    body.dark-theme .nav-toggle {
+        color: #94a3b8;
+    }
+    
+    body.dark-theme .nav-icon-btn:hover,
+    body.dark-theme .nav-toggle:hover {
+        background: #334155;
+        color: #60a5fa;
+    }
+    
+    body.dark-theme .mini-calendar {
+        background: #334155;
+    }
+    
+    body.dark-theme .calendar-day:hover {
+        background: #475569;
+    }
+    
+    body.dark-theme .progress-custom {
+        background: #334155;
+    }
+    
+    body.dark-theme .transaction-item {
+        border-bottom-color: #334155;
+    }
+    
+    body.dark-theme .timeline-item:not(:last-child)::before {
+        background: #334155;
+    }
+    
+    body.dark-theme .timeline-icon {
+        background: #334155;
+    }
+    
+    body.dark-theme .transaction-avatar {
+        background: #334155;
+    }
+    
+    body.dark-theme .alert-success {
+        background: #065f46;
+        color: #d1fae5;
+        border-color: #047857;
+    }
+    
+    body.dark-theme .alert-danger {
+        background: #991b1b;
+        color: #fecaca;
+        border-color: #dc2626;
+    }
+</style>
+</body>
+</html>

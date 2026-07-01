@@ -1,0 +1,228 @@
+<%
+currentPage = 'payments';
+%>
+
+<%- include('../layouts/admin-layout') %>
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fas fa-user-check text-warning"></i> Karigar Work Details</h2>
+            <p class="text-muted"><%= karigar.name %> - Complete work history with piece-wise breakdown</p>
+        </div>
+        <div>
+            <button class="btn btn-success" onclick="window.print()">
+                <i class="fas fa-print"></i> Print
+            </button>
+            <a href="/payments" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-label">Total Assignments</div>
+                <div class="stat-value text-primary"><%= totalAssignments || 0 %></div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-label">Total Pieces</div>
+                <div class="stat-value text-success"><%= totalPieces || 0 %></div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-label">Total Earnings</div>
+                <div class="stat-value text-info">₹<%= totalEarnings || 0 %></div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-label">Pending Payment</div>
+                <div class="stat-value text-danger">₹<%= pendingPayment || 0 %></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card-premium mb-4">
+        <div class="card-body-premium">
+            <form id="filterForm" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label fw-bold">From Date</label>
+                    <input type="date" class="form-control-premium" id="filterFrom" value="<%= new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0] %>">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-bold">To Date</label>
+                    <input type="date" class="form-control-premium" id="filterTo" value="<%= new Date().toISOString().split('T')[0] %>">
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search"></i> Filter
+                    </button>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="button" class="btn btn-secondary w-100" onclick="resetFilters()">
+                        <i class="fas fa-undo"></i> Reset
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Work Table -->
+    <div class="card-premium">
+        <div class="card-header-premium d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-list"></i> Work Details</h5>
+            <span class="badge bg-primary" id="recordCount">0 records</span>
+        </div>
+        <div class="card-body-premium p-0">
+            <div class="table-responsive">
+                <table class="table-premium">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Assignment ID</th>
+                            <th>Product</th>
+                            <th>Size</th>
+                            <th class="text-end">Pieces</th>
+                            <th class="text-end">Rate (₹)</th>
+                            <th class="text-end">Amount (₹)</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="workBody">
+                        <tr><td colspan="8" class="text-center py-4">Loading...</td></tr>
+                    </tbody>
+                    <tfoot class="table-light fw-bold">
+                        <tr>
+                            <td colspan="4" class="text-end">Total:</td>
+                            <td class="text-end" id="totalPiecesFoot">0</td>
+                            <td></td>
+                            <td class="text-end text-success" id="totalAmountFoot">₹0</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .stat-card {
+        background: white;
+        border-radius: 20px;
+        padding: 20px;
+        text-align: center;
+        border: 1px solid #e2e8f0;
+        transition: all 0.3s;
+    }
+    .stat-card:hover { transform: translateY(-3px); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); }
+    .stat-value { font-size: 2rem; font-weight: 700; }
+    .stat-label { font-size: 0.75rem; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
+    
+    .card-premium {
+        background: white;
+        border: none;
+        border-radius: 24px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        overflow: hidden;
+    }
+    .card-body-premium { padding: 25px; }
+    .card-header-premium { padding: 20px 25px; border-bottom: 1px solid #e2e8f0; }
+    
+    .form-control-premium {
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 10px 15px;
+        width: 100%;
+    }
+    
+    .table-premium { width: 100%; border-collapse: collapse; }
+    .table-premium th { padding: 12px; background: #f8fafc; font-weight: 600; border-bottom: 2px solid #e2e8f0; }
+    .table-premium td { padding: 12px; border-bottom: 1px solid #e2e8f0; vertical-align: middle; }
+    
+    @media print {
+        .no-print { display: none; }
+        .btn, .no-print { display: none !important; }
+    }
+</style>
+
+<script>
+    const workerId = '<%= karigar._id %>';
+    
+    // ============ LOAD WORK DATA ============
+    document.getElementById('filterForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const fromDate = document.getElementById('filterFrom').value;
+        const toDate = document.getElementById('filterTo').value;
+        
+        let url = `/payments/api/karigar-work/${workerId}?`;
+        if (fromDate) url += `fromDate=${fromDate}&`;
+        if (toDate) url += `toDate=${toDate}&`;
+        
+        try {
+            const res = await fetch(url);
+            const data = await res.json();
+            
+            const tbody = document.getElementById('workBody');
+            const countElem = document.getElementById('recordCount');
+            const totalPiecesFoot = document.getElementById('totalPiecesFoot');
+            const totalAmountFoot = document.getElementById('totalAmountFoot');
+            
+            if (data.success && data.work && data.work.length > 0) {
+                let totalPieces = 0;
+                let totalAmount = 0;
+                
+                tbody.innerHTML = data.work.map(w => {
+                    totalPieces += w.pieces || 0;
+                    totalAmount += w.amount || 0;
+                    return `
+                        <tr>
+                            <td>${new Date(w.date).toLocaleDateString()}</td>
+                            <td><strong>${w.assignmentId}</strong></td>
+                            <td>${w.productName}</td>
+                            <td>${w.size}</td>
+                            <td class="text-end">${w.pieces}</td>
+                            <td class="text-end">₹${w.rate}</td>
+                            <td class="text-end fw-bold text-success">₹${w.amount}</td>
+                            <td><span class="badge bg-success">Completed</span></td>
+                        </tr>
+                    `;
+                }).join('');
+                
+                countElem.innerText = data.work.length + ' records';
+                totalPiecesFoot.innerText = totalPieces;
+                totalAmountFoot.innerText = '₹' + totalAmount;
+            } else {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4">No work records found</td></tr>';
+                countElem.innerText = '0 records';
+                totalPiecesFoot.innerText = '0';
+                totalAmountFoot.innerText = '₹0';
+            }
+        } catch(e) {
+            console.error('Error:', e);
+            alert('Error loading work data');
+        }
+    });
+
+    function resetFilters() {
+        const today = new Date();
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+        document.getElementById('filterFrom').value = firstDay.toISOString().split('T')[0];
+        document.getElementById('filterTo').value = today.toISOString().split('T')[0];
+        document.getElementById('filterForm').dispatchEvent(new Event('submit'));
+    }
+
+    // ============ INITIALIZE ============
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('filterForm').dispatchEvent(new Event('submit'));
+    });
+</script>

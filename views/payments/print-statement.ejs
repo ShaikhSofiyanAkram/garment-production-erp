@@ -1,0 +1,656 @@
+<% layout = false; %>
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Payment Statement | SANIYA Garment</title>
+        <style>
+            /* ✅ RESET */
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+            background: white;
+            padding: 20px 25px;
+            color: #1a1a2e;
+            font-size: 13px;
+        }
+        
+        /* ✅ PAGE SETUP */
+        @page {
+            margin: 0.4in 0.4in;
+            size: A4;
+        }
+        
+        /* ✅ HIDE NAVIGATION */
+        .no-print, nav, .navbar, .sidebar, .header, .top-nav, 
+        .btn, button, .action-bar, .container-fluid, .row, .col,
+        .card, .card-body, .d-flex, .justify-content-between,
+        .align-items-center, .ms-auto, .me-2, .gap-2,
+        form, .form-control, .form-select, .form-label,
+        .alert, .stat-card, .worker-card, .filter-section,
+        .bg-primary, .bg-success, .bg-warning, .bg-danger,
+        .text-white, .text-muted, .fw-bold, .badge,
+        .table-responsive, .table-hover, .shadow-sm,
+        .collapse, .navbar-collapse, .navbar-toggler {
+            display: none !important;
+        }
+        
+        /* ✅ COMPANY HEADER - Premium */
+        .print-header {
+            display: block !important;
+            border-bottom: 3px solid #1a1a2e;
+            padding-bottom: 12px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .print-header .company-name {
+            font-size: 28px;
+            font-weight: 800;
+            color: #1a1a2e;
+            letter-spacing: 2px;
+        }
+        .print-header .tagline {
+            font-size: 12px;
+            color: #64748b;
+            font-weight: 500;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+        .print-header .address-line {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-top: 4px;
+        }
+        .print-header .gst-line {
+            font-size: 11px;
+            color: #64748b;
+            margin-top: 3px;
+            font-weight: 500;
+        }
+        
+        /* ✅ DOCUMENT TITLE */
+        .doc-title {
+            text-align: center;
+            margin: 8px 0 12px 0;
+        }
+        .doc-title h2 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1a1a2e;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+        .doc-title .sub {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-top: 3px;
+        }
+        .doc-title .worker-name {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1a1a2e;
+            margin-top: 5px;
+            background: #f1f5f9;
+            display: inline-block;
+            padding: 4px 30px;
+            border-radius: 6px;
+        }
+        
+        /* ✅ INFO ROW */
+        .info-row {
+            display: flex !important;
+            justify-content: space-between;
+            background: #f8fafc;
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 14px;
+            font-size: 12px;
+        }
+        .info-row .label { color: #94a3b8; font-weight: 500; }
+        .info-row .value { font-weight: 600; color: #1a1a2e; }
+        
+        /* ✅ STATS CARDS */
+        .stats-grid {
+            display: grid !important;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin: 12px 0 16px 0;
+        }
+        .stat-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 10px 12px;
+            text-align: center;
+        }
+        .stat-card .label {
+            font-size: 9px;
+            text-transform: uppercase;
+            color: #94a3b8;
+            letter-spacing: 0.8px;
+            font-weight: 600;
+        }
+        .stat-card .value {
+            font-size: 22px;
+            font-weight: 800;
+            color: #1a1a2e;
+            margin-top: 2px;
+        }
+        .stat-card .value.positive { color: #16a34a; }
+        .stat-card .value.negative { color: #dc2626; }
+        .stat-card .value.primary { color: #2563eb; }
+        
+        /* ✅ TABLE STYLES */
+        .table-wrap {
+            margin: 12px 0;
+        }
+        .table-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #1a1a2e;
+            margin-bottom: 5px;
+            padding-bottom: 5px;
+            border-bottom: 2px solid #e2e8f0;
+            display: flex !important;
+            justify-content: space-between;
+        }
+        .table-title .badge-count {
+            font-size: 11px;
+            font-weight: 400;
+            color: #94a3b8;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+        .data-table thead th {
+            background: #f1f5f9;
+            padding: 7px 10px;
+            text-align: left;
+            font-weight: 700;
+            font-size: 10px;
+            text-transform: uppercase;
+            color: #475569;
+            border-bottom: 2px solid #cbd5e1;
+            letter-spacing: 0.5px;
+        }
+        .data-table tbody td {
+            padding: 6px 10px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .data-table tbody tr:nth-child(even) {
+            background: #fafbfc;
+        }
+        .data-table tfoot td {
+            font-weight: 700;
+            background: #f1f5f9;
+            border-top: 2px solid #1a1a2e;
+            padding: 6px 10px;
+        }
+        .data-table .text-right { text-align: right; }
+        .data-table .text-center { text-align: center; }
+        .data-table .amount { font-weight: 600; }
+        .data-table .amount.positive { color: #16a34a; }
+        .data-table .amount.negative { color: #dc2626; }
+        
+        /* ✅ TWO COLUMN */
+        .two-col {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin: 12px 0;
+        }
+        
+        /* ✅ FOOTER */
+        .print-footer {
+            margin-top: 20px;
+            padding-top: 12px;
+            border-top: 2px solid #e2e8f0;
+            text-align: center;
+            font-size: 10px;
+            color: #94a3b8;
+        }
+        .print-footer .thank {
+            font-size: 14px;
+            color: #1a1a2e;
+            font-weight: 600;
+        }
+        .print-footer .company-details {
+            margin-top: 4px;
+            font-size: 10px;
+            color: #94a3b8;
+        }
+        .print-footer .gst-line {
+            font-size: 10px;
+            color: #94a3b8;
+            margin-top: 3px;
+        }
+        
+        /* ✅ PAGE BREAK */
+        .page-break {
+            page-break-before: always;
+            margin-top: 18px;
+            padding-top: 15px;
+            border-top: 2px dashed #e2e8f0;
+        }
+        .page-break:first-of-type {
+            page-break-before: auto;
+            border-top: none;
+            margin-top: 0;
+            padding-top: 0;
+        }
+        
+        /* ✅ WATERMARK */
+        .watermark {
+            position: fixed;
+            bottom: 40px;
+            right: 25px;
+            opacity: 0.04;
+            font-size: 55px;
+            font-weight: 900;
+            color: #1a1a2e;
+            pointer-events: none;
+            z-index: -1;
+            letter-spacing: 4px;
+        }
+        
+        /* ✅ PRINT */
+        @media print {
+            @page {
+                margin: 0.3in 0.3in;
+                size: A4;
+            }
+            body { padding: 10px 15px; }
+            .stats-grid { page-break-inside: avoid; }
+            .table-wrap { page-break-inside: avoid; }
+            .two-col { page-break-inside: avoid; }
+            .data-table tr { page-break-inside: avoid; }
+            
+            .no-print, nav, .navbar, .sidebar, .header, .top-nav, 
+            .btn, button, .action-bar, .filter-section,
+            .container-fluid, .row, .col, .card, .card-body,
+            .d-flex, .justify-content-between, .align-items-center,
+            .ms-auto, .me-2, .gap-2, form, .form-control,
+            .alert, .stat-card, .worker-card {
+                display: none !important;
+            }
+            .watermark {
+                display: block !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    
+
+<!-- ✅ WATERMARK -->
+<div class="watermark">SANIYA</div>
+
+<!-- ============================================================ -->
+<!-- ✅ PRINT HEADER -->
+<!-- ============================================================ -->
+<div class="print-header">
+    <div class="company-name">SANIYA GARMENT</div>
+    <div class="tagline">Premium Garment Manufacturers &amp; Exporters</div>
+    <div class="address-line">121 Motiwala Complex, Motiwala Nagar Main Road, Fashion Street, Aurangabad, Maharashtra 431001</div>
+    <div class="gst-line">GST: 07AAACA1234A1Z | 📞 +91 8855004441 | ✉ info@garmentfactory.com</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- ✅ DOCUMENT TITLE -->
+<!-- ============================================================ -->
+<div class="doc-title">
+    <h2>📄 Worker Payment Statement</h2>
+    <div class="sub">
+        Generated: <%= new Date().toLocaleString('en-IN', { 
+            day: '2-digit', month: 'short', year: 'numeric', 
+            hour: '2-digit', minute: '2-digit' 
+        }) %>
+    </div>
+    <% if (workers && workers.length === 1) { %>
+        <div class="worker-name"><%= workers[0].name %></div>
+    <% } else if (workers && workers.length > 1) { %>
+        <div class="worker-name"><%= workers.length %> Workers Selected</div>
+    <% } %>
+</div>
+
+<!-- ============================================================ -->
+<!-- ✅ WORKER INFO ROW -->
+<!-- ============================================================ -->
+<% if (workers && workers.length === 1) { 
+    const w = workers[0];
+%>
+<div class="info-row">
+    <div><span class="label">Worker Type</span> <span class="value"><%= w.workerType.toUpperCase() %></span></div>
+    <div><span class="label">Phone</span> <span class="value"><%= w.phone || 'N/A' %></span></div>
+    <div><span class="label">Total Pieces</span> <span class="value"><%= w.totalPieces || 0 %></span></div>
+    <div><span class="label">Net Payable</span> <span class="value">₹<%= w.netPayable || 0 %></span></div>
+</div>
+<% } %>
+
+<!-- ============================================================ -->
+<!-- ✅ STATS SUMMARY -->
+<!-- ============================================================ -->
+<% 
+let totalPieces = 0;
+let totalEarnings = 0;
+let totalPaid = 0;
+let totalAdvances = 0;
+let totalNet = 0;
+
+if (workers && workers.length > 0) {
+    totalPieces = workers.reduce((s, w) => s + (w.totalPieces || 0), 0);
+    totalEarnings = workers.reduce((s, w) => s + (w.totalEarnings || 0), 0);
+    totalPaid = workers.reduce((s, w) => s + (w.totalPaid || 0), 0);
+    totalAdvances = workers.reduce((s, w) => s + (w.totalAdvances || 0), 0);
+    totalNet = totalEarnings - totalPaid - totalAdvances;
+}
+%>
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="label">Total Pieces</div>
+        <div class="value primary"><%= totalPieces %></div>
+    </div>
+    <div class="stat-card">
+        <div class="label">Total Earnings</div>
+        <div class="value positive">₹<%= totalEarnings %></div>
+    </div>
+    <div class="stat-card">
+        <div class="label">Total Paid</div>
+        <div class="value">₹<%= totalPaid %></div>
+    </div>
+    <div class="stat-card">
+        <div class="label">Net Payable</div>
+        <div class="value <%= totalNet > 0 ? 'positive' : totalNet < 0 ? 'negative' : '' %>">
+            ₹<%= totalNet %>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- ✅ WORKERS SUMMARY TABLE -->
+<!-- ============================================================ -->
+<div class="table-wrap">
+    <div class="table-title">
+        📋 Workers Summary
+        <span class="badge-count"><%= workers ? workers.length : 0 %> workers</span>
+    </div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th style="width:25px;">#</th>
+                <th>Worker</th>
+                <th style="width:70px;">Type</th>
+                <th class="text-right" style="width:55px;">Pcs</th>
+                <th class="text-right" style="width:80px;">Earnings (₹)</th>
+                <th class="text-right" style="width:70px;">Paid (₹)</th>
+                <th class="text-right" style="width:70px;">Adv (₹)</th>
+                <th class="text-right" style="width:80px;">Net (₹)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% if (workers && workers.length > 0) { %>
+                <% workers.forEach((w, index) => { %>
+                    <tr>
+                        <td><%= index + 1 %></td>
+                        <td><strong><%= w.name %></strong></td>
+                        <td><%= w.workerType.toUpperCase() %></td>
+                        <td class="text-right"><%= w.totalPieces || 0 %></td>
+                        <td class="text-right amount positive">₹<%= w.totalEarnings || 0 %></td>
+                        <td class="text-right">₹<%= w.totalPaid || 0 %></td>
+                        <td class="text-right amount negative">₹<%= w.totalAdvances || 0 %></td>
+                        <td class="text-right amount <%= w.netPayable > 0 ? 'positive' : w.netPayable < 0 ? 'negative' : '' %>">
+                            ₹<%= w.netPayable || 0 %>
+                        </td>
+                    </tr>
+                <% }); %>
+            <% } else { %>
+                <tr><td colspan="8" class="text-center" style="padding:15px;color:#94a3b8;">No workers selected</td></tr>
+            <% } %>
+        </tbody>
+        <% if (workers && workers.length > 0) { %>
+        <tfoot>
+            <tr>
+                <td colspan="3" class="text-right">GRAND TOTAL</td>
+                <td class="text-right"><%= totalPieces %></td>
+                <td class="text-right amount positive">₹<%= totalEarnings %></td>
+                <td class="text-right">₹<%= totalPaid %></td>
+                <td class="text-right amount negative">₹<%= totalAdvances %></td>
+                <td class="text-right amount <%= totalNet > 0 ? 'positive' : totalNet < 0 ? 'negative' : '' %>">
+                    ₹<%= totalNet %>
+                </td>
+            </tr>
+        </tfoot>
+        <% } %>
+    </table>
+</div>
+
+<!-- ============================================================ -->
+<!-- ✅ WORK DETAILS - Each Worker -->
+<!-- ============================================================ -->
+<% if (workers && workers.length > 0) { %>
+    <% workers.forEach((w, wIndex) => { %>
+        <% if (w.workDetails && w.workDetails.length > 0) { %>
+            <div class="page-break">
+                <div class="table-title">
+                    📦 <%= w.name %> - Work Details
+                    <span class="badge-count">
+                        <%= w.totalPieces || 0 %> pcs | ₹<%= w.totalEarnings || 0 %>
+                    </span>
+                </div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th style="width:70px;">Date</th>
+                            <th style="width:65px;">ID</th>
+                            <th>Product</th>
+                            <th style="width:45px;">Size</th>
+                            <th class="text-right" style="width:50px;">Pcs</th>
+                            <th class="text-right" style="width:55px;">Rate</th>
+                            <th class="text-right" style="width:65px;">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% w.workDetails.forEach(d => { %>
+                            <tr>
+                                <td><%= new Date(d.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) %></td>
+                                <td><%= d.assignmentId || d.entryNumber || '-' %></td>
+                                <td><%= d.productName || '-' %></td>
+                                <td><%= d.size || '-' %></td>
+                                <td class="text-right"><%= d.pieces || d.totalReturned || d.quantity || 0 %></td>
+                                <td class="text-right">₹<%= d.rate || 0 %></td>
+                                <td class="text-right amount positive">₹<%= d.amount || 0 %></td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="4" class="text-right">TOTAL</td>
+                            <td class="text-right"><%= w.totalPieces || 0 %></td>
+                            <td></td>
+                            <td class="text-right amount positive">₹<%= w.totalEarnings || 0 %></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        <% } %>
+    <% }); %>
+<% } %>
+
+<!-- ============================================================ -->
+<!-- ✅ PAYMENT & ADVANCE SUMMARY - Two Column -->
+<!-- ============================================================ -->
+<div class="page-break">
+    <div class="two-col">
+        <!-- Payments -->
+        <div class="table-wrap">
+            <div class="table-title">💰 Payments</div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th class="text-right">Amount (₹)</th>
+                        <th>Method</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% 
+                    let hasPayment = false;
+                    if (workers && workers.length > 0) {
+                        workers.forEach(w => {
+                            if (w.payments && w.payments.length > 0) {
+                                hasPayment = true;
+                                w.payments.forEach(p => { 
+                    %>
+                                    <tr>
+                                        <td><%= new Date(p.paymentDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) %></td>
+                                        <td class="text-right amount positive">₹<%= p.amount || 0 %></td>
+                                        <td><%= p.paymentMethod || 'Cash' %></td>
+                                    </tr>
+                    <% 
+                                });
+                            }
+                        });
+                    }
+                    if (!hasPayment) { 
+                    %>
+                        <tr><td colspan="3" class="text-center" style="padding:10px;color:#94a3b8;">No payments recorded</td></tr>
+                    <% } %>
+                </tbody>
+                <% if (totalPaid > 0) { %>
+                    <tfoot>
+                        <tr>
+                            <td class="text-right">TOTAL</td>
+                            <td class="text-right amount positive">₹<%= totalPaid %></td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                <% } %>
+            </table>
+        </div>
+        
+        <!-- Advances -->
+        <div class="table-wrap">
+            <div class="table-title">📌 Advances</div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th class="text-right">Amount (₹)</th>
+                        <th>Purpose</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% 
+                    let hasAdvance = false;
+                    if (workers && workers.length > 0) {
+                        workers.forEach(w => {
+                            if (w.advances && w.advances.length > 0) {
+                                hasAdvance = true;
+                                w.advances.forEach(a => { 
+                    %>
+                                    <tr>
+                                        <td><%= new Date(a.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) %></td>
+                                        <td class="text-right amount negative">₹<%= a.amount || 0 %></td>
+                                        <td><%= a.purpose || 'General' %></td>
+                                    </tr>
+                    <% 
+                                });
+                            }
+                        });
+                    }
+                    if (!hasAdvance) { 
+                    %>
+                        <tr><td colspan="3" class="text-center" style="padding:10px;color:#94a3b8;">No advances recorded</td></tr>
+                    <% } %>
+                </tbody>
+                <% if (totalAdvances > 0) { %>
+                    <tfoot>
+                        <tr>
+                            <td class="text-right">TOTAL</td>
+                            <td class="text-right amount negative">₹<%= totalAdvances %></td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                <% } %>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- ✅ FINAL SUMMARY -->
+<!-- ============================================================ -->
+<div class="table-wrap">
+    <div class="table-title">📊 Final Summary</div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Worker</th>
+                <th class="text-right">Earnings (₹)</th>
+                <th class="text-right">Paid (₹)</th>
+                <th class="text-right">Advances (₹)</th>
+                <th class="text-right">Net Payable (₹)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% if (workers && workers.length > 0) { %>
+                <% workers.forEach(w => { %>
+                    <tr>
+                        <td><strong><%= w.name %></strong></td>
+                        <td class="text-right amount positive">₹<%= w.totalEarnings || 0 %></td>
+                        <td class="text-right">₹<%= w.totalPaid || 0 %></td>
+                        <td class="text-right amount negative">₹<%= w.totalAdvances || 0 %></td>
+                        <td class="text-right amount <%= w.netPayable > 0 ? 'positive' : w.netPayable < 0 ? 'negative' : '' %>">
+                            ₹<%= w.netPayable || 0 %>
+                        </td>
+                    </tr>
+                <% }); %>
+            <% } %>
+        </tbody>
+        <tfoot>
+            <tr>
+                <td class="text-right">GRAND TOTAL</td>
+                <td class="text-right amount positive">₹<%= totalEarnings %></td>
+                <td class="text-right">₹<%= totalPaid %></td>
+                <td class="text-right amount negative">₹<%= totalAdvances %></td>
+                <td class="text-right amount <%= totalNet > 0 ? 'positive' : totalNet < 0 ? 'negative' : '' %>">
+                    ₹<%= totalNet %>
+                </td>
+            </tr>
+        </tfoot>
+    </table>
+</div>
+
+<!-- ============================================================ -->
+<!-- ✅ PREMIUM FOOTER -->
+<!-- ============================================================ -->
+<div class="print-footer">
+    <div class="thank">Thank you for your business! ❤️</div>
+    <div class="company-details">
+        121 Motiwala Complex, Motiwala Nagar Main Road, Fashion Street, Aurangabad, Maharashtra 431001
+    </div>
+    <div class="gst-line">
+        GST: 07AAACA1234A1Z | Phone: +91 8855004441 | Email: info@garmentfactory.com
+    </div>
+    <div style="margin-top: 4px; font-size: 9px; color: #94a3b8;">
+        This is a computer generated statement. | © 2026 SANIYA Garment | v3.0
+    </div>
+</div>
+
+<script>
+// ✅ Auto print after load
+window.onload = function() {
+    setTimeout(function() {
+        window.print();
+    }, 500);
+};
+</script>
+</body>
+</html>

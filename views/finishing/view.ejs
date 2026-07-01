@@ -1,0 +1,46 @@
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-info text-white">
+                <h4><i class="fas fa-info-circle"></i> Finishing Details</h4>
+                <small><%= finishing.finishingNumber %></small>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong>Assignment:</strong> <%= finishing.assignment?.assignmentId %><br>
+                        <strong>Helper:</strong> <%= finishing.helper?.name %><br>
+                        <strong>Date:</strong> <%= new Date(finishing.finishingDate).toLocaleString() %>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Status:</strong>
+                        <span class="badge <%= finishing.status === 'completed' ? 'bg-success' : 'bg-warning' %>">
+                            <%= finishing.status %>
+                        </span><br>
+                        <strong>Remark:</strong> <%= finishing.remark || '-' %>
+                    </div>
+                </div>
+
+                <div class="row text-center mb-4">
+                    <div class="col-md-4">
+                        <div class="card bg-primary text-white">
+                            <div class="card-body"><h5>Received</h5><h3><%= finishing.receivedPieces %></h3></div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-danger text-white">
+                            <div class="card-body"><h5>Rejected</h5><h3><%= finishing.rejectedPieces %></h3></div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-success text-white">
+                            <div class="card-body"><h5>Passed</h5><h3><%= finishing.passedPieces %></h3></div>
+                        </div>
+                    </div>
+                </div>
+
+                <a href="/finishing" class="btn btn-secondary">⬅ Back to List</a>
+            </div>
+        </div>
+    </div>
+</div>

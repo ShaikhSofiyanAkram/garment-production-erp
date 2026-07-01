@@ -1,0 +1,605 @@
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-plus-circle"></i> Add New Product</h4>
+                <small>Add product with size-wise rates (different rates for different sizes)</small>
+            </div>
+            <div class="card-body">
+                <form action="/products/create" method="POST" id="productForm">
+                    
+                    <!-- Product Name -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Product Name *</label>
+                        <select class="form-control" id="productSelect" name="productSelect" required>
+                            <option value="">-- Select Product --</option>
+                            <option value="Kurta Pajama">Kurta Pajama</option>
+                            <option value="Pathani">Pathani</option>
+                            <option value="Shirt">Shirt</option>
+                            <option value="Pant">Pant</option>
+                            <option value="School Uniform">School Uniform</option>
+                            <option value="Single Kurta">Single Kurta</option>
+                            <option value="Sherwani">Sherwani</option>
+                            <option value="Full Jaket">Full Jaket</option>
+                            <option value="Bell bottom pant">Bell bottom pant</option>
+                            <option value="burkha">burkha</option>
+                            <option value="other">-- Add New Product --</option>
+                        </select>
+                        <div id="newProductDiv" style="display: none; margin-top: 10px;">
+                            <input type="text" class="form-control" id="newProductName" name="newProductName"
+                                placeholder="Enter new product name">
+                            <small class="text-muted">New product will be added to database automatically</small>
+                        </div>
+                        <input type="hidden" name="name" id="finalProductName">
+                    </div>
+                    
+                    <!-- Category Selection -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Category *</label>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="card category-card" data-category="Kids" style="cursor: pointer;">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-child fa-3x mb-2"></i>
+                                        <h5>Kids</h5>
+                                        <p class="text-muted small">Size: 1 to 12 Years</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card category-card" data-category="Mens" style="cursor: pointer;">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-male fa-3x mb-2"></i>
+                                        <h5>Mens</h5>
+                                        <p class="text-muted small">Size: 26,28,30... to 60</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card category-card" data-category="Other" style="cursor: pointer;">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-tag fa-3x mb-2"></i>
+                                        <h5>Other</h5>
+                                        <p class="text-muted small">Custom Category</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" name="category" id="category" required>
+                        <div id="customCategoryDiv" style="display: none; margin-top: 15px;">
+                            <label class="form-label fw-bold">Custom Category Name *</label>
+                            <input type="text" class="form-control" id="customCategory" name="customCategory" 
+                                placeholder="Enter custom category name">
+                        </div>
+                    </div>
+                    
+                    <!-- ⭐ SIZE-WISE RATES -->
+                    <div class="card mb-3" id="sizeRateCard" style="display: none;">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0"><i class="fas fa-tags"></i> Size-wise Rates</h5>
+                            <small>Set different rates for each size. Default rates will apply if left blank.</small>
+                        </div>
+                        <div class="card-body">
+                            <div id="sizeRateContainer">
+                                <p class="text-muted text-center">Select a category above to load sizes</p>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="applyAllClientRates">
+                                        <label class="form-check-label" for="applyAllClientRates">
+                                            <i class="fas fa-copy"></i> Apply same Client Rate to all sizes
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="applyAllKarigarRates">
+                                        <label class="form-check-label" for="applyAllKarigarRates">
+                                            <i class="fas fa-copy"></i> Apply same Karigar Rate to all sizes
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Colors -->
+                    <div class="mb-3 mt-3">
+                        <label class="form-label fw-bold">Colors <span class="text-muted">(Optional)</span></label>
+                        <div class="row">
+                            <div class="col-md-2 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input color-check" type="checkbox" name="colors" value="White" id="colorWhite">
+                                    <label class="form-check-label" for="colorWhite">
+                                        <span class="badge bg-light text-dark border p-2">⚪ White</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-2 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input color-check" type="checkbox" name="colors" value="Red" id="colorRed">
+                                    <label class="form-check-label" for="colorRed">
+                                        <span class="badge bg-danger p-2">🔴 Red</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-2 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input color-check" type="checkbox" name="colors" value="Blue" id="colorBlue">
+                                    <label class="form-check-label" for="colorBlue">
+                                        <span class="badge bg-primary p-2">🔵 Blue</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-2 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input color-check" type="checkbox" name="colors" value="Black" id="colorBlack">
+                                    <label class="form-check-label" for="colorBlack">
+                                        <span class="badge bg-dark p-2">⬛ Black</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-2 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input color-check" type="checkbox" name="colors" value="Yellow" id="colorYellow">
+                                    <label class="form-check-label" for="colorYellow">
+                                        <span class="badge bg-warning text-dark p-2">🟡 Yellow</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-2 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input color-check" type="checkbox" name="colors" value="Green" id="colorGreen">
+                                    <label class="form-check-label" for="colorGreen">
+                                        <span class="badge bg-success p-2">🟢 Green</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-2 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input color-check" type="checkbox" name="colors" value="Maroon" id="colorMaroon">
+                                    <label class="form-check-label" for="colorMaroon">
+                                        <span class="badge bg-danger p-2" style="background-color:#800000 !important;">🟤 Maroon</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-2 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input color-check" type="checkbox" name="colors" value="other" id="colorOther">
+                                    <label class="form-check-label" for="colorOther">
+                                        <span class="badge bg-secondary p-2">🎨 Other</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="otherColorDiv" style="display: none; margin-top: 10px;">
+                            <input type="text" class="form-control" id="otherColorName" name="otherColorName"
+                                placeholder="Enter custom color name">
+                        </div>
+                    </div>
+                    
+                    <!-- Submit -->
+                    <div class="text-center mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg px-5">
+                            <i class="fas fa-save"></i> Save Product
+                        </button>
+                        <a href="/products" class="btn btn-secondary btn-lg px-5">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .category-card {
+        transition: all 0.3s;
+        cursor: pointer;
+        border: 2px solid #dee2e6;
+    }
+    .category-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    .category-card.selected {
+        border-color: #3b82f6;
+        background: #eff6ff;
+    }
+    .rate-input {
+        width: 140px;
+        padding: 6px 10px;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 13px;
+        transition: border-color 0.2s;
+    }
+    .rate-input:focus {
+        border-color: #3b82f6;
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(59,130,246,0.1);
+    }
+    .rate-input.has-value {
+        border-color: #10b981;
+        background: #f0fdf4;
+    }
+    .color-check {
+        display: none;
+    }
+    .color-check + label {
+        cursor: pointer;
+    }
+    .color-check:checked + label .badge {
+        border: 3px solid #ffc107;
+        transform: scale(1.05);
+    }
+    .color-check + label .badge {
+        transition: all 0.2s;
+        cursor: pointer;
+        padding: 8px 15px;
+        font-size: 14px;
+    }
+</style>
+
+<script>
+    // Size definitions
+    const kidsSizes = ['1','2','3','4','5','6','7','8','9','10','11','12'];
+    const mensSizes = [];
+    for (let i = 26; i <= 60; i += 2) {
+        mensSizes.push(i.toString());
+    }
+    
+    let selectedSizes = [];
+    let currentCategory = null;
+    let sizeRateData = {};
+    
+    // Category selection
+    document.querySelectorAll('.category-card').forEach(card => {
+        card.addEventListener('click', function() {
+            const category = this.dataset.category;
+            currentCategory = category;
+            
+            document.querySelectorAll('.category-card').forEach(c => c.classList.remove('selected'));
+            this.classList.add('selected');
+            
+            const customDiv = document.getElementById('customCategoryDiv');
+            if (category === 'Other') {
+                customDiv.style.display = 'block';
+                document.getElementById('customCategory').required = true;
+                document.getElementById('sizeRateCard').style.display = 'none';
+                return;
+            }
+            
+            customDiv.style.display = 'none';
+            document.getElementById('customCategory').required = false;
+            loadSizesForCategory(category);
+        });
+    });
+    
+    // Load sizes for category
+    function loadSizesForCategory(category) {
+        const sizes = category === 'Kids' ? kidsSizes : mensSizes;
+        selectedSizes = sizes;
+        sizeRateData = {};
+        
+        sizes.forEach(size => {
+            sizeRateData[size] = { 
+                clientRate: '', 
+                karigarRate: '' 
+            };
+        });
+        
+        document.getElementById('sizeRateCard').style.display = 'block';
+        updateSizeRatesUI();
+    }
+    
+    // Update size-wise rates UI
+    function updateSizeRatesUI() {
+        const container = document.getElementById('sizeRateContainer');
+        
+        if (!selectedSizes || selectedSizes.length === 0) {
+            container.innerHTML = '<p class="text-muted text-center">Select a category above to load sizes</p>';
+            return;
+        }
+        
+        let html = `
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width:10%">Size</th>
+                            <th style="width:30%">Client Rate (₹)</th>
+                            <th style="width:30%">Karigar Rate (₹)</th>
+                            <th style="width:15%">Status</th>
+                            <th style="width:15%" class="text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        selectedSizes.forEach(size => {
+            const data = sizeRateData[size] || { clientRate: '', karigarRate: '' };
+            const hasClient = data.clientRate && parseFloat(data.clientRate) > 0;
+            const hasKarigar = data.karigarRate && parseFloat(data.karigarRate) > 0;
+            
+            let statusHtml = '';
+            if (hasClient || hasKarigar) {
+                statusHtml = '<span class="badge bg-success">✅ Set</span>';
+            } else {
+                statusHtml = '<span class="badge bg-warning text-dark">⏳ Pending</span>';
+            }
+            
+            html += `
+                <tr>
+                    <td><strong class="text-primary">${size}</strong></td>
+                    <td>
+                        <input type="number" class="rate-input ${hasClient ? 'has-value' : ''}" 
+                               data-size="${size}" data-type="client" 
+                               value="${data.clientRate || ''}" 
+                               placeholder="Enter client rate" 
+                               step="0.01"
+                               onchange="updateSizeRate('${size}', 'clientRate', this.value)"
+                               onkeyup="updateSizeRate('${size}', 'clientRate', this.value)">
+                    </td>
+                    <td>
+                        <input type="number" class="rate-input ${hasKarigar ? 'has-value' : ''}" 
+                               data-size="${size}" data-type="karigar" 
+                               value="${data.karigarRate || ''}" 
+                               placeholder="Enter karigar rate" 
+                               step="0.01"
+                               onchange="updateSizeRate('${size}', 'karigarRate', this.value)"
+                               onkeyup="updateSizeRate('${size}', 'karigarRate', this.value)">
+                    </td>
+                    <td>${statusHtml}</td>
+                    <td class="text-center">
+                        <button type="button" class="btn btn-sm btn-outline-danger" 
+                                onclick="clearSizeRate('${size}')" title="Clear rates">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+        
+        html += `
+                    </tbody>
+                    <tfoot>
+                        <tr class="table-secondary">
+                            <td colspan="5">
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle"></i> 
+                                    Enter rates for each size. Leave blank to keep rate as 0.
+                                </small>
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        `;
+        
+        container.innerHTML = html;
+    }
+    
+    // Update size rate data
+    function updateSizeRate(size, field, value) {
+        if (!sizeRateData[size]) {
+            sizeRateData[size] = { clientRate: '', karigarRate: '' };
+        }
+        sizeRateData[size][field] = value;
+        
+        // Update UI status
+        const row = document.querySelector(`input[data-size="${size}"][data-type="${field}"]`);
+        if (row) {
+            if (value && parseFloat(value) > 0) {
+                row.classList.add('has-value');
+            } else {
+                row.classList.remove('has-value');
+            }
+        }
+        updateSizeStatus(size);
+    }
+    
+    // Update status badge
+    function updateSizeStatus(size) {
+        const data = sizeRateData[size] || { clientRate: '', karigarRate: '' };
+        const hasClient = data.clientRate && parseFloat(data.clientRate) > 0;
+        const hasKarigar = data.karigarRate && parseFloat(data.karigarRate) > 0;
+        
+        const rows = document.querySelectorAll('#sizeRateContainer tbody tr');
+        rows.forEach(row => {
+            const label = row.querySelector('td:first-child strong');
+            if (label && label.textContent === size) {
+                const statusCell = row.querySelector('td:nth-child(4)');
+                if (statusCell) {
+                    if (hasClient || hasKarigar) {
+                        statusCell.innerHTML = '<span class="badge bg-success">✅ Set</span>';
+                    } else {
+                        statusCell.innerHTML = '<span class="badge bg-warning text-dark">⏳ Pending</span>';
+                    }
+                }
+            }
+        });
+    }
+    
+    // Clear size rate
+    function clearSizeRate(size) {
+        if (sizeRateData[size]) {
+            sizeRateData[size].clientRate = '';
+            sizeRateData[size].karigarRate = '';
+            updateSizeRatesUI();
+        }
+    }
+    
+    // Apply same client rate to all sizes
+    document.getElementById('applyAllClientRates').addEventListener('change', function() {
+        if (this.checked) {
+            const rate = prompt('Enter Client Rate to apply to all sizes:');
+            if (rate && parseFloat(rate) > 0) {
+                selectedSizes.forEach(size => {
+                    if (sizeRateData[size]) {
+                        sizeRateData[size].clientRate = rate;
+                    }
+                });
+                updateSizeRatesUI();
+            }
+            this.checked = false;
+        }
+    });
+    
+    // Apply same karigar rate to all sizes
+    document.getElementById('applyAllKarigarRates').addEventListener('change', function() {
+        if (this.checked) {
+            const rate = prompt('Enter Karigar Rate to apply to all sizes:');
+            if (rate && parseFloat(rate) > 0) {
+                selectedSizes.forEach(size => {
+                    if (sizeRateData[size]) {
+                        sizeRateData[size].karigarRate = rate;
+                    }
+                });
+                updateSizeRatesUI();
+            }
+            this.checked = false;
+        }
+    });
+    
+    // Product name handling
+    const productSelect = document.getElementById('productSelect');
+    const newProductDiv = document.getElementById('newProductDiv');
+    const newProductInput = document.getElementById('newProductName');
+    
+    productSelect.addEventListener('change', function() {
+        if (this.value === 'other') {
+            newProductDiv.style.display = 'block';
+            newProductInput.required = true;
+        } else {
+            newProductDiv.style.display = 'none';
+            newProductInput.required = false;
+            newProductInput.value = '';
+        }
+    });
+    
+    // Color handling
+    document.getElementById('colorOther').addEventListener('change', function() {
+        document.getElementById('otherColorDiv').style.display = this.checked ? 'block' : 'none';
+    });
+    
+    // ============ FORM SUBMIT ============
+    document.getElementById('productForm').addEventListener('submit', function(e) {
+        // Get product name
+        let finalName = '';
+        const productSelect = document.getElementById('productSelect');
+        const newProductInput = document.getElementById('newProductName');
+        
+        if (productSelect.value === 'other') {
+            if (!newProductInput.value.trim()) {
+                e.preventDefault();
+                alert('❌ Please enter new product name');
+                return false;
+            }
+            finalName = newProductInput.value.trim();
+            // Add hidden input for name
+            const hidden = document.createElement('input');
+            hidden.type = 'hidden';
+            hidden.name = 'name';
+            hidden.value = finalName;
+            this.appendChild(hidden);
+        } else if (productSelect.value) {
+            finalName = productSelect.value;
+            // Add hidden input for name
+            const hidden = document.createElement('input');
+            hidden.type = 'hidden';
+            hidden.name = 'name';
+            hidden.value = finalName;
+            this.appendChild(hidden);
+        } else {
+            e.preventDefault();
+            alert('❌ Please select a product');
+            return false;
+        }
+        
+        // Category - ✅ FIX: Only set if currentCategory exists
+        if (!currentCategory) {
+            e.preventDefault();
+            alert('❌ Please select a category');
+            return false;
+        }
+        
+        // ✅ FIX: Remove any existing category hidden inputs first
+        const existingCatInputs = this.querySelectorAll('input[name="category"]');
+        existingCatInputs.forEach(input => input.remove());
+        
+        // ✅ Set category as single string
+        const catHidden = document.createElement('input');
+        catHidden.type = 'hidden';
+        catHidden.name = 'category';
+        catHidden.value = currentCategory;
+        this.appendChild(catHidden);
+        
+        // Custom category
+        if (currentCategory === 'Other') {
+            const customCat = document.getElementById('customCategory').value.trim();
+            if (!customCat) {
+                e.preventDefault();
+                alert('❌ Please enter custom category name');
+                return false;
+            }
+            const hidden = document.createElement('input');
+            hidden.type = 'hidden';
+            hidden.name = 'customCategory';
+            hidden.value = customCat;
+            this.appendChild(hidden);
+        }
+        
+        // ⭐ SIZE-WISE RATES - Collect all rates
+        const sizeRates = [];
+        for (const [size, rates] of Object.entries(sizeRateData)) {
+            const client = parseFloat(rates.clientRate) || 0;
+            const karigar = parseFloat(rates.karigarRate) || 0;
+            if (client > 0 || karigar > 0) {
+                sizeRates.push({ 
+                    size: size, 
+                    clientRate: client, 
+                    karigarRate: karigar 
+                });
+            }
+        }
+        
+        // ✅ Remove any existing sizeRates hidden inputs
+        const existingSizeRatesInputs = this.querySelectorAll('input[name="sizeRates"]');
+        existingSizeRatesInputs.forEach(input => input.remove());
+        
+        // Add sizeRates to form
+        if (sizeRates.length > 0) {
+            const hidden = document.createElement('input');
+            hidden.type = 'hidden';
+            hidden.name = 'sizeRates';
+            hidden.value = JSON.stringify(sizeRates);
+            this.appendChild(hidden);
+        }
+        
+        // Set sizes
+        // ✅ Remove any existing sizes hidden inputs
+        const existingSizesInputs = this.querySelectorAll('input[name="sizes"]');
+        existingSizesInputs.forEach(input => input.remove());
+        
+        if (currentCategory !== 'Other') {
+            const sizesHidden = document.createElement('input');
+            sizesHidden.type = 'hidden';
+            sizesHidden.name = 'sizes';
+            sizesHidden.value = selectedSizes.join(',');
+            this.appendChild(sizesHidden);
+        } else {
+            const manualSizes = document.getElementById('manualSizes');
+            if (manualSizes && manualSizes.value.trim()) {
+                const sizesHidden = document.createElement('input');
+                sizesHidden.type = 'hidden';
+                sizesHidden.name = 'sizes';
+                sizesHidden.value = manualSizes.value.trim();
+                this.appendChild(sizesHidden);
+            }
+        }
+        
+        console.log('Submitting form with:', { finalName, currentCategory, sizeRates: sizeRates.length });
+        return true;
+    });
+</script>
