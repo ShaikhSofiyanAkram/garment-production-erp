@@ -4,7 +4,8 @@ const ProductionReturn = require('../models/ProductionReturn');
 const PressmanEntry = require('../models/PressmanEntry');
 const PressmanProduct = require('../models/PressmanProduct');
 const Payment = require('../models/Payment');
-const Advance = require('../models/Advance');
+const Advance = require('../models/Advance'); // Billing advance
+const PaymentAdvance = require('../models/PaymentAdvance'); // Payment advance
 const Attendance = require('../models/Attendance');
 const Product = require('../models/Product');
 const mongoose = require('mongoose');
@@ -190,7 +191,7 @@ async function findProductAndRate(productName, size) {
     return { product, rate, matchedName, matchedSize };
 }
 
-// ==================== GET KARIGAR RATE (SIMPLE VERSION) ====================
+// ==================== GET KARIGAR RATE ====================
 function getKarigarRate(product, size) {
     if (!product) return 0;
     
@@ -314,18 +315,40 @@ async function getWorkerEarnings(worker, dateFilter = {}) {
         }
     }
     
-    // ==================== HELPER / CUTTING ====================
-    else if (worker.workerType === 'helper' || worker.workerType === 'cutting') {
+    // ==================== HELPER ====================
+    else if (worker.workerType === 'helper') {
+        console.log(`📊 Calculating Helper earnings for: ${worker.name}`);
+        
+        // ✅ Get attendance with date filter
+        const attendanceFilter = {};
+        if (Object.keys(dateFilter).length > 0) {
+            attendanceFilter.date = dateFilter;
+        }
         const attendance = await Attendance.find({
             worker: worker._id,
-            ...(Object.keys(dateFilter).length && { date: dateFilter })
+            ...attendanceFilter
         });
+        
+        console.log(`📦 Attendance records: ${attendance.length}`);
+        
+        // ✅ Calculate present days
         const presentDays = attendance.filter(a => a.status === 'present').length;
-        const dailyRate = (worker.monthlyRate || 0) / 26;
-        const workingDays = Math.min(presentDays, 26);
+        const halfDays = attendance.filter(a => a.status === 'half-day').length;
+        const holidayDays = attendance.filter(a => a.status === 'holiday').length;
+        
+        // ✅ Calculate salary
+        const monthlyRate = worker.monthlyRate || 0;
+        const dailyRate = monthlyRate / 26; // 26 working days
+        const workingDays = Math.min(presentDays + (halfDays * 0.5), 26);
         totalEarnings = workingDays * dailyRate;
         
+        console.log(`📊 Helper: ${worker.name}, Present: ${presentDays}, Half: ${halfDays}, Earnings: ₹${totalEarnings}`);
+        
+        // ✅ Add attendance as work details
         for (const att of attendance) {
+            const amount = att.status === 'present' ? dailyRate : 
+                          att.status === 'half-day' ? dailyRate * 0.5 : 0;
+            
             workDetails.push({
                 date: att.date,
                 assignmentId: 'Attendance',
@@ -333,60 +356,93 @@ async function getWorkerEarnings(worker, dateFilter = {}) {
                 size: '-',
                 pieces: 1,
                 rate: dailyRate,
-                amount: att.status === 'present' ? dailyRate : 0
+                amount: amount,
+                status: att.status
             });
         }
     }
     
+    // ==================== CUTTING ====================
+    else if (worker.workerType === 'cutting') {
+        console.log(`📊 Calculating Cutting earnings for: ${worker.name}`);
+        
+        // ✅ Get attendance with date filter
+        const attendanceFilter = {};
+        if (Object.keys(dateFilter).length > 0) {
+            attendanceFilter.date = dateFilter;
+        }
+        const attendance = await Attendance.find({
+            worker: worker._id,
+            ...attendanceFilter
+        });
+        
+        console.log(`📦 Attendance records: ${attendance.length}`);
+        
+        // ✅ Calculate present days
+        const presentDays = attendance.filter(a => a.status === 'present').length;
+        const halfDays = attendance.filter(a => a.status === 'half-day').length;
+        const holidayDays = attendance.filter(a => a.status === 'holiday').length;
+        
+        // ✅ Calculate salary
+        const monthlyRate = worker.monthlyRate || 0;
+        const dailyRate = monthlyRate / 26;
+        const workingDays = Math.min(presentDays + (halfDays * 0.5), 26);
+        totalEarnings = workingDays * dailyRate;
+        
+        console.log(`📊 Cutting: ${worker.name}, Present: ${presentDays}, Half: ${halfDays}, Earnings: ₹${totalEarnings}`);
+        
+        // ✅ Add attendance as work details
+        for (const att of attendance) {
+            const amount = att.status === 'present' ? dailyRate : 
+                          att.status === 'half-day' ? dailyRate * 0.5 : 0;
+            
+            workDetails.push({
+                date: att.date,
+                assignmentId: 'Attendance',
+                productName: 'Monthly Salary',
+                size: '-',
+                pieces: 1,
+                rate: dailyRate,
+                amount: amount,
+                status: att.status
+            });
+        }
+    }
+    
+    // ✅ GET PAYMENTS
     const payments = await Payment.find({ worker: worker._id });
     const totalPaid = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
     
-    const advances = await Advance.find({ worker: worker._id, status: 'pending' });
-    const totalAdvances = advances.reduce((sum, a) => sum + (a.amount || 0), 0);
-    // ✅ NET PAYABLE = Earnings - Paid - Advances
-    const netPayable = totalEarnings - totalPaid - totalAdvances;
+    // ✅ GET PENDING ADVANCES
+    const pendingAdvances = await PaymentAdvance.find({ 
+        worker: worker._id, 
+        status: 'pending' 
+    });
+    const totalAdvances = pendingAdvances.reduce((sum, a) => sum + (a.amount || 0), 0);
     
-    console.log(`📊 ${worker.name}: Earnings: ₹${totalEarnings}, Paid: ₹${totalPaid}, Advances: ₹${totalAdvances}, Net: ₹${netPayable}`);
-
-   return {
+    return {
         totalPieces,
         totalEarnings,
         totalPaid,
         totalAdvances,
-        netPayable: netPayable,
+        netPayable: totalEarnings - totalPaid - totalAdvances,
         workDetails
     };
 }
-
-
-
-
 
 // =====================================================================
 // 2. MAIN CONTROLLER FUNCTIONS
 // =====================================================================
 
 // ==================== PAYMENT DASHBOARD ====================
-// ==================== PAYMENT DASHBOARD (WITH FILTERS) ====================
-// ==================== PAYMENT DASHBOARD ====================
 exports.getPaymentDashboard = async (req, res) => {
     try {
         const { workerType, fromDate, toDate, status } = req.query;
         
-        console.log('📊 Filter Applied:', { workerType, fromDate, toDate, status });
-        
-        // ✅ Build filter
         let filter = { isActive: true };
-        if (workerType && workerType !== '') {
-            filter.workerType = workerType;
-        }
-        if (status === 'inactive') {
-            filter.isActive = false;
-        }
+        if (workerType && workerType !== '') filter.workerType = workerType;
+        if (status === 'inactive') filter.isActive = false;
         
-        console.log('🔍 Filter:', filter);
-        
-        // ✅ Date filter
         let dateFilter = {};
         if (fromDate && toDate) {
             dateFilter.$gte = new Date(fromDate);
@@ -394,15 +450,11 @@ exports.getPaymentDashboard = async (req, res) => {
             dateFilter.$lte.setHours(23, 59, 59, 999);
         }
         
-        // ✅ Get workers with filter
         const karigars = await Worker.find({ workerType: 'karigar', ...filter });
         const pressmans = await Worker.find({ workerType: 'pressman', ...filter });
         const helpers = await Worker.find({ workerType: 'helper', ...filter });
         const cuttings = await Worker.find({ workerType: 'cutting', ...filter });
         
-        console.log(`📦 Karigars: ${karigars.length}, Pressmans: ${pressmans.length}, Helpers: ${helpers.length}, Cuttings: ${cuttings.length}`);
-        
-        // ✅ Calculate earnings
         const karigarEarnings = [];
         for (const k of karigars) {
             const data = await getWorkerEarnings(k, dateFilter);
@@ -427,21 +479,20 @@ exports.getPaymentDashboard = async (req, res) => {
             cuttingEarnings.push({ worker: c, ...data });
         }
         
-        // ✅ Stats
         const totalWorkers = await Worker.countDocuments({ isActive: true });
         const activeKarigars = await Worker.countDocuments({ workerType: 'karigar', isActive: true });
         const activePressmans = await Worker.countDocuments({ workerType: 'pressman', isActive: true });
         const activeHelpers = await Worker.countDocuments({ workerType: 'helper', isActive: true });
         const activeCuttings = await Worker.countDocuments({ workerType: 'cutting', isActive: true });
         
-        // ✅ Pending advances
-        const pendingAdvances = await Advance.aggregate([
+        // ✅ Pending advances from PaymentAdvance
+        const pendingAdvances = await PaymentAdvance.aggregate([
             { $match: { status: 'pending' } },
             { $group: { _id: null, total: { $sum: '$amount' } } }
         ]);
         const totalPendingAdvances = pendingAdvances[0]?.total || 0;
         
-        // ✅ Weekly payments
+        // Weekly payments
         const weekStart = getWeekStart(new Date());
         const weekEnd = new Date(weekStart);
         weekEnd.setDate(weekEnd.getDate() + 6);
@@ -475,7 +526,6 @@ exports.getPaymentDashboard = async (req, res) => {
             currentPage: 'payments',
             success_msg: req.flash('success_msg'),
             error_msg: req.flash('error_msg'),
-            // ✅ Pass query params to view
             query: req.query
         });
     } catch (error) {
@@ -499,7 +549,7 @@ exports.getWorkerDetail = async (req, res) => {
         const earnings = await getWorkerEarnings(worker);
         
         const payments = await Payment.find({ worker: workerId }).sort({ paymentDate: -1 });
-        const advances = await Advance.find({ worker: workerId }).sort({ date: -1 });
+        const advances = await PaymentAdvance.find({ worker: workerId }).sort({ date: -1 });
         
         res.render('payments/worker-detail', {
             title: `${worker.name} - Payment Details`,
@@ -523,14 +573,10 @@ exports.getWorkerDetail = async (req, res) => {
 };
 
 // ==================== WORKER STATEMENT ====================
-// ==================== WORKER STATEMENT (FIXED) ====================
-// ==================== WORKER STATEMENT (FIXED) ====================
 exports.getWorkerStatement = async (req, res) => {
     try {
         const workerId = req.params.id;
         const { period, fromDate, toDate } = req.query;
-        
-        console.log('📊 Statement Request:', { workerId, period, fromDate, toDate });
         
         const worker = await Worker.findById(workerId);
         if (!worker) {
@@ -541,9 +587,8 @@ exports.getWorkerStatement = async (req, res) => {
         // ✅ BUILD DATE FILTER
         let dateFilter = {};
         const now = new Date();
-        let activePeriod = period || 'week'; // ✅ Default to 'week'
+        let activePeriod = period || 'week';
         
-        // ✅ If no period and no custom dates, use default (This Week)
         if (!period && !fromDate && !toDate) {
             const weekStart = getWeekStart(now);
             const weekEnd = new Date(weekStart);
@@ -551,10 +596,8 @@ exports.getWorkerStatement = async (req, res) => {
             weekEnd.setHours(23, 59, 59, 999);
             dateFilter = { $gte: weekStart, $lte: weekEnd };
             activePeriod = 'week';
-            console.log('📅 Default: This week', { weekStart, weekEnd });
         }
         
-        // ✅ Period based filter
         if (period === 'week') {
             const weekStart = getWeekStart(now);
             const weekEnd = new Date(weekStart);
@@ -562,74 +605,49 @@ exports.getWorkerStatement = async (req, res) => {
             weekEnd.setHours(23, 59, 59, 999);
             dateFilter = { $gte: weekStart, $lte: weekEnd };
             activePeriod = 'week';
-            console.log('📅 Week filter:', { weekStart, weekEnd });
         } else if (period === 'month') {
             const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
             const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
             monthEnd.setHours(23, 59, 59, 999);
             dateFilter = { $gte: monthStart, $lte: monthEnd };
             activePeriod = 'month';
-            console.log('📅 Month filter:', { monthStart, monthEnd });
         } else if (period === 'all') {
             dateFilter = {};
             activePeriod = 'all';
-            console.log('📅 All time filter');
         }
         
-        // ✅ Custom date range (fromDate - toDate) - OVERRIDES period
         if (fromDate && toDate) {
             const start = new Date(fromDate);
             const end = new Date(toDate);
             end.setHours(23, 59, 59, 999);
             dateFilter = { $gte: start, $lte: end };
             activePeriod = 'custom';
-            console.log('📅 Custom date range:', { start, end });
         } else if (fromDate && !toDate) {
             const start = new Date(fromDate);
             dateFilter = { $gte: start };
             activePeriod = 'custom';
-            console.log('📅 From date only:', { start });
         } else if (!fromDate && toDate) {
             const end = new Date(toDate);
             end.setHours(23, 59, 59, 999);
             dateFilter = { $lte: end };
             activePeriod = 'custom';
-            console.log('📅 To date only:', { end });
         }
         
-        // ✅ Get earnings with date filter
         const earnings = await getWorkerEarnings(worker, dateFilter);
-        console.log('💰 Earnings:', {
-            totalPieces: earnings.totalPieces,
-            totalEarnings: earnings.totalEarnings,
-            workDetailsCount: earnings.workDetails?.length || 0
-        });
         
-        // ✅ Get payments with date filter
         const payments = await Payment.find({
             worker: workerId,
             ...(Object.keys(dateFilter).length && { paymentDate: dateFilter })
         }).sort({ paymentDate: -1 });
-        console.log('💰 Payments found:', payments.length);
         
-        // ✅ Get advances with date filter
-        const advances = await Advance.find({
+        const advances = await PaymentAdvance.find({
             worker: workerId,
             ...(Object.keys(dateFilter).length && { date: dateFilter })
         }).sort({ date: -1 });
-        console.log('💰 Advances found:', advances.length);
         
-        // ✅ Calculate totals
         const totalPaid = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
         const totalAdvances = advances.reduce((sum, a) => sum + (a.amount || 0), 0);
         const netPayable = earnings.totalEarnings - totalPaid - totalAdvances;
-        
-        console.log('📊 Final:', {
-            earnings: earnings.totalEarnings,
-            paid: totalPaid,
-            advances: totalAdvances,
-            net: netPayable
-        });
         
         res.render('payments/statement', {
             title: `Statement - ${worker.name}`,
@@ -655,19 +673,9 @@ exports.getWorkerStatement = async (req, res) => {
     }
 };
 
-
 // ==================== PRINT STATEMENT ====================
-// ==================== PRINT STATEMENT ====================
-// ==================== PRINT STATEMENT ====================
-// ==================== PRINT STATEMENT ====================
-// ==================== PRINT STATEMENT ====================
-// ==================== PRINT STATEMENT (FIXED) ====================
-// ==================== PRINT STATEMENT (COMPLETE FIX) ====================
-// ==================== PRINT STATEMENT (FINAL) ====================
-// ==================== PRINT STATEMENT (WITH FILTER) ====================
 exports.printStatement = async (req, res) => {
     try {
-        // ✅ Get ALL query parameters
         const { workers, period, fromDate, toDate, _t } = req.query;
         const workerIds = workers ? workers.split(',') : [];
         
@@ -682,43 +690,33 @@ exports.printStatement = async (req, res) => {
             return res.redirect('/payments');
         }
         
-        // ✅ BUILD DATE FILTER
         let dateFilter = {};
         const now = new Date();
         
         if (fromDate && toDate) {
-            // Custom date range
             dateFilter.$gte = new Date(fromDate);
             dateFilter.$lte = new Date(toDate);
             dateFilter.$lte.setHours(23, 59, 59, 999);
-            console.log('📅 Using custom date filter:', dateFilter);
         } else if (period === 'week') {
-            // This week (Saturday to Friday)
             const weekStart = getWeekStart(now);
             const weekEnd = new Date(weekStart);
             weekEnd.setDate(weekEnd.getDate() + 6);
             weekEnd.setHours(23, 59, 59, 999);
             dateFilter = { $gte: weekStart, $lte: weekEnd };
-            console.log('📅 Using week filter:', dateFilter);
         } else if (period === 'month') {
-            // This month
             const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
             const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
             monthEnd.setHours(23, 59, 59, 999);
             dateFilter = { $gte: monthStart, $lte: monthEnd };
-            console.log('📅 Using month filter:', dateFilter);
         }
-        // period === 'all' → no date filter
         
         const workerData = [];
         for (const id of workerIds) {
             const worker = await Worker.findById(id);
             if (!worker) continue;
             
-            // ✅ Get earnings WITH date filter
             const earnings = await getWorkerEarnings(worker, dateFilter);
             
-            // ✅ Get payments WITH date filter
             const paymentFilter = {};
             if (Object.keys(dateFilter).length > 0) {
                 paymentFilter.paymentDate = dateFilter;
@@ -729,20 +727,17 @@ exports.printStatement = async (req, res) => {
             }).sort({ paymentDate: -1 });
             const totalPaid = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
             
-            // ✅ Get advances WITH date filter
             const advanceFilter = {};
             if (Object.keys(dateFilter).length > 0) {
                 advanceFilter.date = dateFilter;
             }
-            const advances = await Advance.find({ 
+            const advances = await PaymentAdvance.find({ 
                 worker: worker._id,
                 ...advanceFilter
             }).sort({ date: -1 });
             const totalAdvances = advances.reduce((sum, a) => sum + (a.amount || 0), 0);
             
             const netPayable = earnings.totalEarnings - totalPaid - totalAdvances;
-            
-            console.log(`  ✅ ${worker.name}: Pieces: ${earnings.totalPieces}, Earnings: ₹${earnings.totalEarnings}, Paid: ₹${totalPaid}`);
             
             workerData.push({
                 name: worker.name,
@@ -759,22 +754,16 @@ exports.printStatement = async (req, res) => {
             });
         }
         
-        console.log(`📦 Total workers processed: ${workerData.length}`);
-        console.log('📄 =========================\n');
-        
-        // ✅ NO CACHE
         res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
         res.setHeader('Pragma', 'no-cache');
         res.setHeader('Expires', '0');
         
-        // ✅ RENDER NO LAYOUT
         res.render('payments/print-statement', {
             title: 'Payment Statement Print',
             workers: workerData,
             user: req.session.user,
             layout: false
         });
-        
     } catch (error) {
         console.error('❌ Error printing statement:', error);
         req.flash('error_msg', 'Error printing statement: ' + error.message);
@@ -852,7 +841,6 @@ exports.bulkPayment = async (req, res) => {
             return res.status(400).json({ success: false, error: 'Invalid data' });
         }
         
-        // Calculate total payable
         let totalPayable = 0;
         for (const id of ids) {
             const worker = await Worker.findById(id);
@@ -868,7 +856,6 @@ exports.bulkPayment = async (req, res) => {
             });
         }
         
-        // Record payments
         const payments = [];
         let remainingAmount = paymentAmount;
         
@@ -903,7 +890,6 @@ exports.bulkPayment = async (req, res) => {
             payments: payments,
             message: `₹${paymentAmount} payment recorded for ${ids.length} workers`
         });
-        
     } catch (error) {
         console.error('❌ Error processing bulk payment:', error);
         res.status(500).json({ success: false, error: error.message });
@@ -911,20 +897,79 @@ exports.bulkPayment = async (req, res) => {
 };
 
 // =====================================================================
-// 3. API FUNCTIONS
+// 3. ADVANCE FUNCTIONS
 // =====================================================================
 
-// ==================== API: WORKERS BY TYPE ====================
-exports.getWorkersByType = async (req, res) => {
+// ==================== GET ADVANCES PAGE ====================
+// ==================== GET ADVANCES PAGE ====================
+exports.getAdvancesPage = async (req, res) => {
     try {
-        const { type } = req.query;
-        const workers = await Worker.find({
-            workerType: type,
-            isActive: true
-        }).select('name _id workerType phone');
-        res.json({ success: true, workers });
+        const { workerType, status, fromDate, toDate } = req.query;
+        
+        let filter = {};
+        if (workerType) filter.workerType = workerType;
+        if (status) filter.status = status;
+        if (fromDate && toDate) {
+            filter.date = {
+                $gte: new Date(fromDate),
+                $lte: new Date(toDate)
+            };
+            filter.date.$lte.setHours(23, 59, 59, 999);
+        }
+        
+        const advances = await PaymentAdvance.find(filter)
+            .populate('worker', 'name workerType phone')
+            .sort({ date: -1 });
+        
+        const workers = await Worker.find({ isActive: true })
+            .select('name workerType');
+        
+        const totalAdvances = await PaymentAdvance.countDocuments();
+        const pendingAdvances = await PaymentAdvance.find({ status: 'pending' });
+        const pendingAmount = pendingAdvances.reduce((sum, a) => sum + a.amount, 0);
+        const adjustedAdvances = await PaymentAdvance.find({ status: 'adjusted' });
+        const adjustedAmount = adjustedAdvances.reduce((sum, a) => sum + a.adjustedAmount, 0);
+        const activeWorkers = await Worker.countDocuments({ isActive: true });
+        
+        res.render('payments/advances', {
+            title: 'Payment Advance Management',
+            advances: advances || [],
+            workers: workers || [],
+            totalAdvances: totalAdvances || 0,
+            pendingAmount: pendingAmount || 0,
+            adjustedAmount: adjustedAmount || 0,
+            activeWorkers: activeWorkers || 0,
+            user: req.session.user,
+            currentPage: 'payments',
+            // ✅ PASS QUERY TO VIEW
+            query: req.query
+        });
     } catch (error) {
-        res.json({ success: false, error: error.message });
+        console.error('❌ Error loading advances page:', error);
+        req.flash('error_msg', 'Error loading advances page: ' + error.message);
+        res.redirect('/payments');
+    }
+};
+
+// ==================== API: GET WORKER ADVANCES ====================
+exports.getWorkerAdvances = async (req, res) => {
+    try {
+        const { workerId } = req.params;
+        
+        const advances = await PaymentAdvance.find({ 
+            worker: workerId 
+        }).sort({ date: -1 });
+        
+        const pendingTotal = await PaymentAdvance.getPendingTotal(workerId);
+        
+        res.json({ 
+            success: true, 
+            advances: advances || [],
+            pendingTotal: pendingTotal || 0
+        });
+    } catch (error) {
+        console.error('❌ Error fetching advances:', error);
+        res.status(500).json({ success: false, error: error.message });
     }
 };
 
@@ -933,13 +978,20 @@ exports.recordAdvance = async (req, res) => {
     try {
         const { workerId, workerType, amount, purpose, remark } = req.body;
         
+        console.log('📝 Recording payment advance:', { workerId, amount, purpose });
+        
         if (!workerId || !amount || amount <= 0) {
             return res.status(400).json({ success: false, error: 'Invalid data' });
         }
         
-        const advance = await Advance.create({
+        const worker = await Worker.findById(workerId);
+        if (!worker) {
+            return res.status(404).json({ success: false, error: 'Worker not found' });
+        }
+        
+        const advance = await PaymentAdvance.create({
             worker: workerId,
-            workerType: workerType || 'karigar',
+            workerType: workerType || worker.workerType,
             amount: parseFloat(amount),
             purpose: purpose || 'General',
             remark: remark || '',
@@ -948,17 +1000,62 @@ exports.recordAdvance = async (req, res) => {
             createdBy: req.session.user.id
         });
         
-        res.json({ success: true, advance });
+        console.log('✅ Payment advance recorded:', advance._id);
+        
+        res.json({ 
+            success: true, 
+            advance: advance,
+            message: 'Advance recorded successfully!'
+        });
     } catch (error) {
         console.error('❌ Error recording advance:', error);
         res.status(500).json({ success: false, error: error.message });
     }
 };
 
-// ==================== API: RECENT ADVANCES ====================
+// ==================== API: ADJUST ADVANCE ====================
+exports.adjustAdvance = async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        const advance = await PaymentAdvance.findById(id);
+        if (!advance) {
+            return res.status(404).json({ success: false, error: 'Advance not found' });
+        }
+        
+        advance.status = 'adjusted';
+        advance.adjustedAt = new Date();
+        advance.adjustedAmount = advance.amount;
+        await advance.save();
+        
+        res.json({ success: true, advance });
+    } catch (error) {
+        console.error('❌ Error adjusting advance:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
+
+// ==================== API: DELETE ADVANCE ====================
+exports.deleteAdvance = async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        const advance = await PaymentAdvance.findByIdAndDelete(id);
+        if (!advance) {
+            return res.status(404).json({ success: false, error: 'Advance not found' });
+        }
+        
+        res.json({ success: true });
+    } catch (error) {
+        console.error('❌ Error deleting advance:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
+
+// ==================== API: GET RECENT ADVANCES ====================
 exports.getRecentAdvances = async (req, res) => {
     try {
-        const advances = await Advance.find()
+        const advances = await PaymentAdvance.find()
             .populate('worker', 'name')
             .sort({ date: -1 })
             .limit(20);
@@ -974,12 +1071,43 @@ exports.recordPayment = async (req, res) => {
         const { workerId, workerType, amount, paymentMethod, reference, paymentDate, remark } = req.body;
         
         if (!workerId || !amount || amount <= 0) {
-            return res.status(400).json({ success: false, error: 'Invalid data' });
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid data'
+            });
         }
         
         const worker = await Worker.findById(workerId);
         if (!worker) {
-            return res.status(404).json({ success: false, error: 'Worker not found' });
+            return res.status(404).json({
+                success: false,
+                error: 'Worker not found'
+            });
+        }
+        
+        // ✅ Get pending advances for adjustment
+        const pendingAdvances = await PaymentAdvance.find({
+            worker: workerId,
+            status: 'pending'
+        }).sort({ date: 1 });
+        
+        let adjustedAdvanceAmount = 0;
+        let adjustedAdvanceIds = [];
+        let remainingAmount = parseFloat(amount);
+        
+        for (const advance of pendingAdvances) {
+            if (remainingAmount <= 0) break;
+            
+            const adjustAmount = Math.min(advance.amount, remainingAmount);
+            
+            advance.status = 'adjusted';
+            advance.adjustedAmount = adjustAmount;
+            advance.adjustedAt = new Date();
+            await advance.save();
+            
+            adjustedAdvanceIds.push(advance._id);
+            adjustedAdvanceAmount += adjustAmount;
+            remainingAmount -= adjustAmount;
         }
         
         const payment = new Payment({
@@ -991,16 +1119,46 @@ exports.recordPayment = async (req, res) => {
             remark: remark || '',
             paymentDate: paymentDate || new Date(),
             createdBy: req.session.user.id,
-            status: 'completed'
+            status: 'completed',
+            adjustedAdvanceAmount: adjustedAdvanceAmount,
+            adjustedAdvanceIds: adjustedAdvanceIds
         });
         
         await payment.save();
         
-        res.json({ success: true, payment, message: 'Payment recorded successfully!' });
+        if (adjustedAdvanceIds.length > 0) {
+            await PaymentAdvance.updateMany(
+                { _id: { $in: adjustedAdvanceIds } },
+                { adjustedInPayment: payment._id }
+            );
+        }
         
+        res.json({
+            success: true,
+            payment: payment,
+            adjustedAdvanceAmount: adjustedAdvanceAmount,
+            message: `Payment recorded! Adjusted ₹${adjustedAdvanceAmount} from advance.`
+        });
     } catch (error) {
         console.error('❌ Error recording payment:', error);
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+};
+
+// ==================== API: WORKERS BY TYPE ====================
+exports.getWorkersByType = async (req, res) => {
+    try {
+        const { type } = req.query;
+        const workers = await Worker.find({
+            workerType: type,
+            isActive: true
+        }).select('name _id workerType phone');
+        res.json({ success: true, workers });
+    } catch (error) {
+        res.json({ success: false, error: error.message });
     }
 };
 

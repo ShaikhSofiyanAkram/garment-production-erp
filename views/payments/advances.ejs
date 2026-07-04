@@ -1,0 +1,676 @@
+<%
+const currentPage = 'payments';
+%>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Advance Management | Garment ERP</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+    
+    <style>
+        .stat-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        .stat-card:hover { transform: translateY(-3px); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); }
+        .stat-value { font-size: 1.75rem; font-weight: 700; }
+        .stat-label { font-size: 0.75rem; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
+        .badge-status { padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 600; }
+        
+        /* ✅ Professional Table */
+        .table-advance {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        .table-advance thead th {
+            background: #f1f5f9;
+            padding: 12px 15px;
+            font-weight: 700;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: #475569;
+            border-bottom: 2px solid #e2e8f0;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+        .table-advance thead th:first-child { border-radius: 10px 0 0 0; }
+        .table-advance thead th:last-child { border-radius: 0 10px 0 0; }
+        .table-advance tbody td {
+            padding: 10px 15px;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: middle;
+        }
+        .table-advance tbody tr {
+            transition: all 0.2s;
+        }
+        .table-advance tbody tr:hover {
+            background: #f8fafc;
+        }
+        .table-advance tbody tr:last-child td:first-child { border-radius: 0 0 0 10px; }
+        .table-advance tbody tr:last-child td:last-child { border-radius: 0 0 10px 0; }
+        
+        /* ✅ Status Badges */
+        .badge-pending {
+            background: #fef3c7;
+            color: #d97706;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+        .badge-adjusted {
+            background: #d1fae5;
+            color: #065f46;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+        .badge-cancelled {
+            background: #fee2e2;
+            color: #dc2626;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+        
+        /* ✅ Type Badges */
+        .type-karigar {
+            background: #dbeafe;
+            color: #1d4ed8;
+            padding: 3px 12px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+        .type-pressman {
+            background: #cffafe;
+            color: #0891b2;
+            padding: 3px 12px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+        .type-helper {
+            background: #fef3c7;
+            color: #d97706;
+            padding: 3px 12px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+        .type-cutting {
+            background: #fce4ec;
+            color: #dc2626;
+            padding: 3px 12px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+        
+        /* ✅ Filter Section */
+        .filter-section {
+            background: white;
+            border-radius: 12px;
+            padding: 15px 20px;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 20px;
+        }
+        .filter-section .form-select,
+        .filter-section .form-control {
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            padding: 8px 12px;
+            font-size: 0.9rem;
+        }
+        .filter-section .btn-filter {
+            background: #4361ee;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 25px;
+            font-weight: 600;
+        }
+        .filter-section .btn-filter:hover {
+            background: #3651d4;
+        }
+        .filter-section .btn-reset {
+            background: #e2e8f0;
+            color: #475569;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 20px;
+            font-weight: 600;
+        }
+        .filter-section .btn-reset:hover {
+            background: #cbd5e1;
+        }
+        
+        /* ✅ Action Buttons */
+        .btn-action-adjust {
+            background: #d1fae5;
+            color: #065f46;
+            border: none;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .btn-action-adjust:hover {
+            background: #a7f3d0;
+            color: #065f46;
+        }
+        .btn-action-delete {
+            background: #fee2e2;
+            color: #dc2626;
+            border: none;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .btn-action-delete:hover {
+            background: #fecaca;
+            color: #dc2626;
+        }
+        .btn-action-disabled {
+            background: #f1f5f9;
+            color: #94a3b8;
+            border: none;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: not-allowed;
+        }
+        
+        .amount-text {
+            font-weight: 700;
+            color: #1e293b;
+        }
+        .amount-text.pending {
+            color: #d97706;
+        }
+        .amount-text.adjusted {
+            color: #065f46;
+        }
+        
+        /* ✅ Empty State */
+        .empty-state {
+            padding: 50px 20px;
+            text-align: center;
+        }
+        .empty-state i {
+            font-size: 3rem;
+            color: #cbd5e1;
+            margin-bottom: 15px;
+        }
+        .empty-state h6 {
+            color: #475569;
+            font-weight: 600;
+        }
+        .empty-state p {
+            color: #94a3b8;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/dashboard">
+            <i class="fas fa-tshirt"></i> Garment ERP
+        </a>
+        <div class="ms-auto">
+            <span class="text-white me-3">
+                <i class="fas fa-user"></i> <%= user ? user.username : 'Admin' %>
+            </span>
+            <a href="/auth/logout" class="btn btn-sm btn-outline-light">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid mt-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3><i class="fas fa-hand-holding-usd text-warning"></i> Payment Advance Management</h3>
+            <p class="text-muted">Manage worker advances for payments</p>
+        </div>
+        <div>
+            <a href="/payments" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Payments
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-label">Total Advances</div>
+                <div class="stat-value text-primary"><%= totalAdvances || 0 %></div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-label">Pending Amount</div>
+                <div class="stat-value text-warning">₹<%= pendingAmount || 0 %></div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-label">Adjusted Amount</div>
+                <div class="stat-value text-success">₹<%= adjustedAmount || 0 %></div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-label">Active Workers</div>
+                <div class="stat-value text-info"><%= activeWorkers || 0 %></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ✅ FILTER SECTION (Professional) -->
+    <!-- ✅ FILTER SECTION (Professional) -->
+<div class="filter-section">
+    <form method="GET" action="/payments/advances" class="row g-3 align-items-end">
+        <div class="col-md-3">
+            <label class="form-label fw-bold">Worker Type</label>
+            <select name="workerType" class="form-select">
+                <option value="">All Types</option>
+                <option value="karigar" <%= locals.query && query.workerType === 'karigar' ? 'selected' : '' %>>Karigar</option>
+                <option value="pressman" <%= locals.query && query.workerType === 'pressman' ? 'selected' : '' %>>Pressman</option>
+                <option value="helper" <%= locals.query && query.workerType === 'helper' ? 'selected' : '' %>>Helper</option>
+                <option value="cutting" <%= locals.query && query.workerType === 'cutting' ? 'selected' : '' %>>Cutting</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label fw-bold">Status</label>
+            <select name="status" class="form-select">
+                <option value="">All</option>
+                <option value="pending" <%= locals.query && query.status === 'pending' ? 'selected' : '' %>>Pending</option>
+                <option value="adjusted" <%= locals.query && query.status === 'adjusted' ? 'selected' : '' %>>Adjusted</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label fw-bold">From</label>
+            <input type="date" name="fromDate" class="form-control" value="<%= locals.query && query.fromDate ? query.fromDate : '' %>">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label fw-bold">To</label>
+            <input type="date" name="toDate" class="form-control" value="<%= locals.query && query.toDate ? query.toDate : '' %>">
+        </div>
+        <div class="col-md-3">
+            <button type="submit" class="btn-filter me-2">
+                <i class="fas fa-filter"></i> Filter
+            </button>
+            <a href="/payments/advances" class="btn-reset">
+                <i class="fas fa-undo"></i> Reset
+            </a>
+        </div>
+    </form>
+</div>
+
+    <!-- ✅ PROFESSIONAL ADVANCE RECORDS TABLE -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-white py-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="mb-0"><i class="fas fa-list text-primary"></i> Advance Records</h5>
+                    <small class="text-muted"><%= advances ? advances.length : 0 %> records found</small>
+                </div>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#recordAdvanceModal">
+                    <i class="fas fa-plus"></i> New Advance
+                </button>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table-advance">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Worker</th>
+                            <th>Type</th>
+                            <th class="text-end">Amount</th>
+                            <th>Purpose</th>
+                            <th>Status</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% if (advances && advances.length > 0) { %>
+                            <% advances.forEach(a => { %>
+                                <tr>
+                                    <td>
+                                        <span class="fw-semibold"><%= new Date(a.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) %></span>
+                                    </td>
+                                    <td>
+                                        <span class="fw-bold"><%= a.worker?.name || 'N/A' %></span>
+                                    </td>
+                                    <td>
+                                        <span class="type-<%= a.workerType || 'karigar' %>">
+                                            <%= (a.workerType || 'N/A').toUpperCase() %>
+                                        </span>
+                                    </td>
+                                    <td class="text-end">
+                                        <span class="amount-text <%= a.status === 'pending' ? 'pending' : a.status === 'adjusted' ? 'adjusted' : '' %>">
+                                            ₹<%= a.amount || 0 %>
+                                        </span>
+                                        <% if (a.adjustedAmount > 0 && a.adjustedAmount < a.amount) { %>
+                                            <br><small class="text-muted">(₹<%= a.adjustedAmount %> adjusted)</small>
+                                        <% } %>
+                                    </td>
+                                    <td><%= a.purpose || 'General' %></td>
+                                    <td>
+                                        <% if (a.status === 'pending') { %>
+                                            <span class="badge-pending">⏳ Pending</span>
+                                        <% } else if (a.status === 'adjusted') { %>
+                                            <span class="badge-adjusted">✅ Adjusted</span>
+                                        <% } else { %>
+                                            <span class="badge-cancelled">❌ Cancelled</span>
+                                        <% } %>
+                                    </td>
+                                    <td class="text-center">
+                                        <% if (a.status === 'pending') { %>
+                                            <button onclick="adjustAdvance('<%= a._id %>')" class="btn-action-adjust me-1">
+                                                <i class="fas fa-check"></i> Adjust
+                                            </button>
+                                        <% } else { %>
+                                            <span class="btn-action-disabled">
+                                                <i class="fas fa-check-circle"></i> Done
+                                            </span>
+                                        <% } %>
+                                        <button onclick="deleteAdvance('<%= a._id %>')" class="btn-action-delete">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            <% }) %>
+                        <% } else { %>
+                            <tr>
+                                <td colspan="7">
+                                    <div class="empty-state">
+                                        <i class="fas fa-inbox"></i>
+                                        <h6>No Advance Records Found</h6>
+                                        <p>Click "New Advance" to record your first advance.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        <% } %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== RECORD ADVANCE MODAL (PROFESSIONAL) ==================== -->
+<div class="modal fade" id="recordAdvanceModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content shadow-lg border-0">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-hand-holding-usd me-2"></i> New Advance
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="advanceForm">
+                <div class="modal-body p-4">
+                    <!-- Worker Type -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">
+                            <i class="fas fa-users text-primary me-1"></i> Worker Type 
+                            <span class="text-danger">*</span>
+                        </label>
+                        <select name="workerType" id="advanceWorkerType" class="form-select form-select-lg" required>
+                            <option value="">-- Select Worker Type --</option>
+                            <option value="karigar">🧵 Karigar</option>
+                            <option value="pressman">👕 Pressman</option>
+                            <option value="helper">🤝 Helper</option>
+                            <option value="cutting">✂️ Cutting</option>
+                        </select>
+                        <small class="text-muted">Select worker type to filter workers</small>
+                    </div>
+
+                    <!-- Worker -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">
+                            <i class="fas fa-user text-primary me-1"></i> Worker 
+                            <span class="text-danger">*</span>
+                        </label>
+                        <select name="workerId" id="advanceWorker" class="form-select form-select-lg" required disabled>
+                            <option value="">-- Select Worker Type First --</option>
+                        </select>
+                        <small class="text-muted" id="workerCount">Select a worker type first</small>
+                    </div>
+
+                    <!-- Amount & Purpose -->
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-rupee-sign text-success me-1"></i> Amount (₹) 
+                                <span class="text-danger">*</span>
+                            </label>
+                            <input type="number" name="amount" id="advanceAmount" class="form-control form-control-lg" 
+                                   placeholder="Enter advance amount" min="1" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-tag text-warning me-1"></i> Purpose
+                            </label>
+                            <select name="purpose" class="form-select form-select-lg">
+                                <option value="General">General</option>
+                                <option value="Medical">Medical</option>
+                                <option value="Festival">Festival</option>
+                                <option value="Emergency">Emergency</option>
+                                <option value="Salary Advance">Salary Advance</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-comment text-secondary me-1"></i> Remark
+                            </label>
+                            <textarea name="remark" class="form-control" rows="2" 
+                                      placeholder="Optional remark..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Worker Preview -->
+                    <div class="mt-3 p-3 bg-light rounded-3 d-none" id="workerPreview">
+                        <div class="d-flex align-items-center">
+                            <div class="me-3">
+                                <i class="fas fa-user-circle fa-2x text-primary"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold" id="previewWorkerName">Worker Name</div>
+                                <div class="text-muted small" id="previewWorkerType">Worker Type</div>
+                            </div>
+                            <div class="ms-auto">
+                                <span class="badge bg-success">Selected</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-lg" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary btn-lg px-4" id="advanceSubmitBtn">
+                        <i class="fas fa-save"></i> Save Advance
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// ==================== DYNAMIC WORKER LOADING ====================
+document.getElementById('advanceWorkerType')?.addEventListener('change', async function() {
+    const workerType = this.value;
+    const workerSelect = document.getElementById('advanceWorker');
+    const workerCount = document.getElementById('workerCount');
+    const preview = document.getElementById('workerPreview');
+    
+    if (!workerType) {
+        workerSelect.innerHTML = '<option value="">-- Select Worker Type First --</option>';
+        workerSelect.disabled = true;
+        workerCount.textContent = 'Select a worker type first';
+        preview.classList.add('d-none');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/payments/api/workers?type=${workerType}`);
+        const data = await response.json();
+        
+        if (data.success && data.workers.length > 0) {
+            workerSelect.innerHTML = '<option value="">-- Select Worker --</option>';
+            data.workers.forEach(w => {
+                const option = document.createElement('option');
+                option.value = w._id;
+                option.textContent = `${w.name} (${w.phone || 'No phone'})`;
+                workerSelect.appendChild(option);
+            });
+            workerSelect.disabled = false;
+            workerCount.textContent = `${data.workers.length} workers found`;
+            workerCount.className = 'text-muted';
+        } else {
+            workerSelect.innerHTML = '<option value="">-- No workers found --</option>';
+            workerSelect.disabled = true;
+            workerCount.textContent = 'No workers found for this type';
+            workerCount.className = 'text-warning';
+        }
+    } catch (error) {
+        console.error('Error loading workers:', error);
+        workerSelect.innerHTML = '<option value="">-- Error loading workers --</option>';
+        workerSelect.disabled = true;
+        workerCount.textContent = 'Error loading workers';
+        workerCount.className = 'text-danger';
+    }
+});
+
+// ==================== WORKER PREVIEW ====================
+document.getElementById('advanceWorker')?.addEventListener('change', function() {
+    const selectedOption = this.options[this.selectedIndex];
+    const preview = document.getElementById('workerPreview');
+    const previewName = document.getElementById('previewWorkerName');
+    const previewType = document.getElementById('previewWorkerType');
+    
+    if (this.value) {
+        previewName.textContent = selectedOption.textContent.split(' (')[0];
+        const workerType = document.getElementById('advanceWorkerType');
+        previewType.textContent = workerType.options[workerType.selectedIndex]?.textContent || 'Worker';
+        preview.classList.remove('d-none');
+    } else {
+        preview.classList.add('d-none');
+    }
+});
+
+// ==================== RECORD ADVANCE ====================
+document.getElementById('advanceForm')?.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData.entries());
+    
+    if (!data.workerId) {
+        alert('⚠️ Please select a worker');
+        return;
+    }
+    if (!data.amount || parseFloat(data.amount) <= 0) {
+        alert('⚠️ Please enter a valid amount');
+        return;
+    }
+    
+    const submitBtn = document.getElementById('advanceSubmitBtn');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    
+    try {
+        const response = await fetch('/payments/api/advance', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('✅ Advance recorded successfully!');
+            window.location.reload();
+        } else {
+            alert('❌ Error: ' + (result.error || 'Unknown error'));
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-save"></i> Save Advance';
+        }
+    } catch (error) {
+        alert('❌ Error: ' + error.message);
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-save"></i> Save Advance';
+    }
+});
+
+// ==================== ADJUST ADVANCE ====================
+function adjustAdvance(id) {
+    if (!confirm('Are you sure you want to mark this advance as adjusted?')) return;
+    
+    fetch(`/payments/api/advance/${id}/adjust`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            window.location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(err => alert('Error: ' + err.message));
+}
+
+// ==================== DELETE ADVANCE ====================
+function deleteAdvance(id) {
+    if (!confirm('Are you sure you want to delete this advance?')) return;
+    
+    fetch(`/payments/api/advance/${id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            window.location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(err => alert('Error: ' + err.message));
+}
+</script>
+</body>
+</html>

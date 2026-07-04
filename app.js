@@ -144,6 +144,11 @@ const AdvanceClient = require('./models/AdvanceClient');
 // Add with other routes
 app.use('/payment-advance', require('./routes/payment-advance'));
 
+// Add with other routes
+app.use('/attendance', require('./routes/attendance'));
+// Add with other routes - ensure it's before 404 handler
+app.use('/attendance', require('./routes/attendance'));
+
 
 // ======================================
 // HOME ROUTE

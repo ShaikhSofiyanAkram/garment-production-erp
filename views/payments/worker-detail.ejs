@@ -78,7 +78,7 @@ const currentPage = 'payments';
             </p>
         </div>
         <div>
-           <!-- Statement Button -->
+            <!-- Statement Button -->
             <a href="/payments/worker/<%= worker._id %>/statement?period=month" class="btn btn-outline-primary">
                 <i class="fas fa-file-invoice"></i> Statement
             </a>
@@ -144,60 +144,70 @@ const currentPage = 'payments';
 
     <!-- Tab Content -->
     <div class="tab-content">
-        <!-- Work Details Tab -->
-        <div class="tab-pane fade show active" id="workTab">
-            <div class="card shadow-sm">
-                <div class="card-header bg-white py-2">
-                    <h6 class="mb-0"><i class="fas fa-list"></i> Work Details</h6>
-                </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table-premium">
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>ID</th>
-                                    <th>Product</th>
-                                    <th>Size</th>
-                                    <th class="text-end">Pieces</th>
-                                    <th class="text-end">Rate (₹)</th>
-                                    <th class="text-end">Amount (₹)</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <% if (workDetails && workDetails.length > 0) { %>
-                                    <% workDetails.forEach(w => { %>
-                                        <tr>
-                                            <td><%= new Date(w.date).toLocaleDateString('en-IN') %></td>
-                                            <td><%= w.assignmentId || w.entryNumber || '-' %></td>
-                                            <td><%= w.productName || '-' %></td>
-                                            <td><%= w.size || 'N/A' %></td>
-                                            <td class="text-end"><%= w.pieces || 0 %></td>
-                                           <!-- Rate display fix -->
-                                            <td class="text-end">₹<%= w.rate || 0 %></td>
-                                            <td class="text-end fw-bold">₹<%= w.amount || 0 %></td>
-                                            <td>
-                                                <span class="badge-status badge bg-<%= w.status === 'paid' ? 'success' : w.status === 'pending' ? 'warning' : 'secondary' %>">
-                                                    <%= w.status || 'N/A' %>
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    <% }) %>
-                                <% } else { %>
-                                    <tr><td colspan="8" class="text-center py-3 text-muted">No work records found</td></tr>
-                                <% } %>
-                            </tbody>
-                            <tfoot class="table-light fw-bold">
-                                <tr>
-                                    <td colspan="4" class="text-end">Total:</td>
-                                    <td class="text-end"><%= totalPieces || 0 %></td>
-                                    <td></td>
-                                    <td class="text-end text-success">₹<%= totalEarnings || 0 %></td>
-                                    <td></td>
-                                </tr>
-                            </tfoot>
-                        </table>
+       <!-- Work Details Tab -->
+            <div class="tab-pane fade show active" id="workTab">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white py-2">
+                        <h6 class="mb-0"><i class="fas fa-list"></i> Work Details</h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table-premium">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>ID</th>
+                                        <th>Product</th>
+                                        <th>Size</th>
+                                        <th class="text-end">Pieces</th>
+                                        <th class="text-end">Rate (₹)</th>
+                                        <th class="text-end">Amount (₹)</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <% if (workDetails && workDetails.length > 0) { %>
+                                        <% workDetails.forEach(w => { %>
+                                            <tr>
+                                                <td><%= new Date(w.date).toLocaleDateString('en-IN') %></td>
+                                                <td><%= w.assignmentId || w.entryNumber || '-' %></td>
+                                                <td><%= w.productName || '-' %></td>
+                                                <td><%= w.size || 'N/A' %></td>
+                                                <td class="text-end"><%= w.pieces || 0 %></td>
+                                                <td class="text-end">₹<%= w.rate || 0 %></td>
+                                                <td class="text-end fw-bold">₹<%= w.amount || 0 %></td>
+                                                <td>
+                                                    <% if (w.status === 'present') { %>
+                                                        <span class="badge bg-success">Present</span>
+                                                    <% } else if (w.status === 'absent') { %>
+                                                        <span class="badge bg-danger">Absent</span>
+                                                    <% } else if (w.status === 'half-day') { %>
+                                                        <span class="badge bg-warning">Half Day</span>
+                                                    <% } else if (w.status === 'holiday') { %>
+                                                        <span class="badge bg-info">Holiday</span>
+                                                    <% } else { %>
+                                                        <span class="badge-status badge bg-<%= w.status === 'paid' ? 'success' : w.status === 'pending' ? 'warning' : 'secondary' %>">
+                                                            <%= w.status || 'N/A' %>
+                                                        </span>
+                                                    <% } %>
+                                                </td>
+                                            </tr>
+                                        <% }) %>
+                                    <% } else { %>
+                                        <tr><td colspan="8" class="text-center py-3 text-muted">No work records found</td></tr>
+                                    <% } %>
+                                </tbody>
+                                <tfoot class="table-light fw-bold">
+                                    <tr>
+                                        <td colspan="4" class="text-end">Total:</td>
+                                        <td class="text-end"><%= totalPieces || 0 %></td>
+                                        <td></td>
+                                        <td class="text-end text-success">₹<%= totalEarnings || 0 %></td>
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -249,7 +259,7 @@ const currentPage = 'payments';
             </div>
         </div>
 
-        <!-- Advances Tab -->
+        <!-- ✅ Advances Tab - FIXED (No duplicate else) -->
         <div class="tab-pane fade" id="advanceTab">
             <div class="card shadow-sm">
                 <div class="card-header bg-white py-2">
@@ -300,60 +310,167 @@ const currentPage = 'payments';
         </div>
 
         <!-- Record Payment Tab -->
-        <div class="tab-pane fade" id="recordTab">
-            <div class="card shadow-sm">
-                <div class="card-header bg-white py-2">
-                    <h6 class="mb-0"><i class="fas fa-plus-circle"></i> Record Payment</h6>
-                </div>
-                <div class="card-body">
-                    <form id="paymentForm">
-                        <input type="hidden" name="workerId" value="<%= worker._id %>">
-                        <input type="hidden" name="workerType" value="<%= worker.workerType %>">
-                        
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Amount (₹)</label>
-                                <input type="number" name="amount" id="paymentAmount" class="form-control" 
-                                       placeholder="Enter amount" min="1" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Payment Method</label>
-                                <select name="paymentMethod" class="form-control" required>
-                                    <option value="Cash">Cash</option>
-                                    <option value="Bank Transfer">Bank Transfer</option>
-                                    <option value="UPI">UPI</option>
-                                    <option value="Cheque">Cheque</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Reference</label>
-                                <input type="text" name="reference" class="form-control" placeholder="Reference number (optional)">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Date</label>
-                                <input type="date" name="paymentDate" class="form-control" 
-                                       value="<%= new Date().toISOString().split('T')[0] %>">
-                            </div>
-                            <div class="col-md-12">
-                                <label class="form-label fw-bold">Remark</label>
-                                <textarea name="remark" class="form-control" rows="2" placeholder="Optional remark..."></textarea>
-                            </div>
-                            <div class="col-md-12">
-                                <div class="alert alert-info">
-                                    <strong>Net Payable:</strong> ₹<%= netPayable || 0 %>
-                                    <span class="ms-3"><strong>Pending Advances:</strong> ₹<%= totalAdvances || 0 %></span>
-                                </div>
-                            </div>
-                            <div class="col-md-12">
-                                <button type="submit" class="btn btn-primary" id="paymentSubmitBtn">
-                                    <i class="fas fa-save"></i> Record Payment
-                                </button>
-                                <button type="reset" class="btn btn-secondary">Clear</button>
-                            </div>
+        <!-- Record Payment Tab -->
+<div class="tab-pane fade" id="recordTab">
+    <div class="card shadow-sm">
+        <div class="card-header bg-white py-3">
+            <h6 class="mb-0"><i class="fas fa-plus-circle"></i> Record Payment</h6>
+        </div>
+        <div class="card-body">
+            <!-- ✅ Payment Summary Cards -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-3">
+                    <div class="card bg-light border-0">
+                        <div class="card-body text-center">
+                            <div class="text-muted small">Total Earnings</div>
+                            <div class="h5 fw-bold text-success">₹<%= totalEarnings || 0 %></div>
                         </div>
-                    </form>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-light border-0">
+                        <div class="card-body text-center">
+                            <div class="text-muted small">Total Paid</div>
+                            <div class="h5 fw-bold text-info">₹<%= totalPaid || 0 %></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-light border-0">
+                        <div class="card-body text-center">
+                            <div class="text-muted small">Pending Advance</div>
+                            <div class="h5 fw-bold text-warning" id="pendingAdvanceDisplay">₹<%= totalAdvances || 0 %></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-primary text-white border-0">
+                        <div class="card-body text-center">
+                            <div class="small">Net Payable</div>
+                            <div class="h5 fw-bold" id="netPayableDisplay">₹<%= netPayable || 0 %></div>
+                        </div>
+                    </div>
                 </div>
             </div>
+
+            <!-- ✅ Payment Form -->
+            <form id="paymentForm">
+                <input type="hidden" name="workerId" value="<%= worker._id %>">
+                <input type="hidden" name="workerType" value="<%= worker.workerType %>">
+                
+                <div class="row g-3">
+                    <!-- Payment Amount -->
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Payment Amount (₹) <span class="text-danger">*</span></label>
+                        <input type="number" name="amount" id="paymentAmount" class="form-control form-control-lg" 
+                               placeholder="Enter payment amount" min="1" 
+                               max="<%= netPayable || 0 %>" required>
+                        <small class="text-muted">Max: ₹<%= netPayable || 0 %></small>
+                    </div>
+                    
+                    <!-- Payment Method -->
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Payment Method <span class="text-danger">*</span></label>
+                        <select name="paymentMethod" class="form-control form-control-lg" required>
+                            <option value="Cash">💵 Cash</option>
+                            <option value="Bank Transfer">🏦 Bank Transfer</option>
+                            <option value="UPI">📱 UPI</option>
+                            <option value="Cheque">📄 Cheque</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Reference -->
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Reference / Transaction ID</label>
+                        <input type="text" name="reference" class="form-control" 
+                               placeholder="Cheque No / UTR / Transaction ID">
+                    </div>
+                    
+                    <!-- Payment Date -->
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Payment Date</label>
+                        <input type="date" name="paymentDate" class="form-control" 
+                               value="<%= new Date().toISOString().split('T')[0] %>">
+                    </div>
+                    
+                    <!-- ✅ Advance Adjustment Section -->
+                    <div class="col-md-12">
+                        <div class="card border-warning">
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <div class="col-md-4">
+                                        <label class="fw-bold">
+                                            <i class="fas fa-hand-holding-usd text-warning"></i> Adjust Advance
+                                        </label>
+                                        <div class="form-check mt-2">
+                                            <input type="checkbox" class="form-check-input" id="adjustAdvance" checked>
+                                            <label class="form-check-label" for="adjustAdvance">
+                                                Auto-adjust pending advance
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="text-center">
+                                            <div class="text-muted small">Pending Advance</div>
+                                            <div class="h5 fw-bold text-warning" id="pendingAdvance">₹<%= totalAdvances || 0 %></div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="text-center">
+                                            <div class="text-muted small">Advance to Adjust</div>
+                                            <div class="h5 fw-bold text-success" id="advanceToAdjust">₹0</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- ✅ Payment Breakdown -->
+                    <div class="col-md-12">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6 class="mb-3"><i class="fas fa-calculator"></i> Payment Breakdown</h6>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="d-flex justify-content-between">
+                                            <span class="text-muted">Total Amount:</span>
+                                            <span class="fw-bold" id="breakdownTotal">₹0</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="d-flex justify-content-between">
+                                            <span class="text-muted">Advance Adjusted:</span>
+                                            <span class="fw-bold text-success" id="breakdownAdvance">₹0</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="d-flex justify-content-between">
+                                            <span class="text-muted">Cash / Bank:</span>
+                                            <span class="fw-bold text-primary" id="breakdownCash">₹0</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Remark -->
+                    <div class="col-md-12">
+                        <label class="form-label fw-bold">Remark</label>
+                        <textarea name="remark" class="form-control" rows="2" 
+                                  placeholder="Optional remark..."></textarea>
+                    </div>
+                    
+                    <!-- Submit Buttons -->
+                    <div class="col-md-12">
+                        <button type="submit" class="btn btn-primary btn-lg px-5" id="paymentSubmitBtn">
+                            <i class="fas fa-save"></i> Process Payment
+                        </button>
+                        <button type="reset" class="btn btn-secondary btn-lg px-4">Clear</button>
+                    </div>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -362,12 +479,78 @@ const currentPage = 'payments';
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const paymentForm = document.getElementById('paymentForm');
+    const paymentAmount = document.getElementById('paymentAmount');
+    const adjustAdvanceCheck = document.getElementById('adjustAdvance');
+    const pendingAdvance = document.getElementById('pendingAdvance');
+    const advanceToAdjust = document.getElementById('advanceToAdjust');
+    const breakdownTotal = document.getElementById('breakdownTotal');
+    const breakdownAdvance = document.getElementById('breakdownAdvance');
+    const breakdownCash = document.getElementById('breakdownCash');
+    const netPayableDisplay = document.getElementById('netPayableDisplay');
+    const pendingAdvanceDisplay = document.getElementById('pendingAdvanceDisplay');
     
+    const totalAdvances = <%= totalAdvances || 0 %>;
+    const netPayable = <%= netPayable || 0 %>;
+    
+    // ✅ Update breakdown on amount change
+    function updateBreakdown() {
+        const amount = parseFloat(paymentAmount.value) || 0;
+        const adjustAdvance = adjustAdvanceCheck.checked;
+        let advanceAdjust = 0;
+        let cashAmount = amount;
+        
+        if (adjustAdvance && totalAdvances > 0) {
+            advanceAdjust = Math.min(amount, totalAdvances);
+            cashAmount = amount - advanceAdjust;
+        }
+        
+        // Update displays
+        breakdownTotal.textContent = '₹' + amount;
+        breakdownAdvance.textContent = '₹' + advanceAdjust;
+        breakdownCash.textContent = '₹' + cashAmount;
+        advanceToAdjust.textContent = '₹' + advanceAdjust;
+        
+        // Update net payable after advance adjustment
+        const remainingAdvance = totalAdvances - advanceAdjust;
+        const netAfterPayment = netPayable - amount;
+        
+        // Show remaining advance
+        if (remainingAdvance > 0) {
+            pendingAdvance.textContent = '₹' + remainingAdvance;
+            pendingAdvanceDisplay.textContent = '₹' + remainingAdvance;
+        } else {
+            pendingAdvance.textContent = '₹0';
+            pendingAdvanceDisplay.textContent = '₹0';
+        }
+        
+        // Update net payable
+        netPayableDisplay.textContent = '₹' + Math.max(0, netAfterPayment);
+    }
+    
+    paymentAmount.addEventListener('input', updateBreakdown);
+    adjustAdvanceCheck.addEventListener('change', updateBreakdown);
+    
+    // ✅ Initial update
+    updateBreakdown();
+    
+    // ✅ Form Submit
     paymentForm.addEventListener('submit', async function(e) {
         e.preventDefault();
         
         const formData = new FormData(this);
         const data = Object.fromEntries(formData.entries());
+        data.adjustAdvance = adjustAdvanceCheck.checked;
+        
+        const amount = parseFloat(data.amount);
+        if (!amount || amount <= 0) {
+            alert('⚠️ Please enter a valid payment amount');
+            return;
+        }
+        
+        if (amount > netPayable) {
+            alert(`⚠️ Payment amount (₹${amount}) exceeds net payable (₹${netPayable})`);
+            return;
+        }
         
         const submitBtn = document.getElementById('paymentSubmitBtn');
         submitBtn.disabled = true;
@@ -383,20 +566,26 @@ document.addEventListener('DOMContentLoaded', function() {
             const result = await response.json();
             
             if (result.success) {
-                alert('✅ Payment recorded successfully!');
+                let msg = '✅ Payment recorded successfully!';
+                if (result.adjustedAdvanceAmount > 0) {
+                    msg += `\n💰 Adjusted ₹${result.adjustedAdvanceAmount} from advance.`;
+                }
+                alert(msg);
                 window.location.reload();
             } else {
                 alert('❌ Error: ' + (result.error || 'Unknown error'));
                 submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="fas fa-save"></i> Record Payment';
+                submitBtn.innerHTML = '<i class="fas fa-save"></i> Process Payment';
             }
         } catch (error) {
             alert('❌ Error: ' + error.message);
             submitBtn.disabled = false;
-            submitBtn.innerHTML = '<i class="fas fa-save"></i> Record Payment';
+            submitBtn.innerHTML = '<i class="fas fa-save"></i> Process Payment';
         }
     });
 });
 </script>
 </body>
 </html>
+
+

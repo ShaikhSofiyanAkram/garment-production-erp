@@ -1,6 +1,5 @@
 const mongoose = require('mongoose');
 
-
 const paymentAdvanceSchema = new mongoose.Schema({
     worker: {
         type: mongoose.Schema.Types.ObjectId,
@@ -43,12 +42,10 @@ const paymentAdvanceSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
-    adjustedAt: Date,
-    createdBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
+    adjustedAt: {
+        type: Date
     },
-    approvedBy: {
+    createdBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     }
@@ -59,11 +56,14 @@ const paymentAdvanceSchema = new mongoose.Schema({
 // ✅ Indexes
 paymentAdvanceSchema.index({ worker: 1, date: -1 });
 paymentAdvanceSchema.index({ status: 1, worker: 1 });
-paymentAdvanceSchema.index({ workerType: 1, status: 1 });
 
-
-// Check if model exists, if not create it
-
-
+// ✅ Get pending total for a worker
+paymentAdvanceSchema.statics.getPendingTotal = async function(workerId) {
+    const result = await this.aggregate([
+        { $match: { worker: workerId, status: 'pending' } },
+        { $group: { _id: null, total: { $sum: '$amount' } } }
+    ]);
+    return result[0]?.total || 0;
+};
 
 module.exports = mongoose.model('PaymentAdvance', paymentAdvanceSchema);
