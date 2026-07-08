@@ -36,6 +36,18 @@ const attendanceSchema = new mongoose.Schema({
     remark: {
         type: String,
         trim: true
+    },
+    // ✅ NEW: Month paid status
+    monthPaid: {
+        type: Boolean,
+        default: false
+    },
+    monthPaidAt: {
+        type: Date
+    },
+    monthPaidAmount: {
+        type: Number,
+        default: 0
     }
 }, { 
     timestamps: true 
@@ -45,17 +57,16 @@ const attendanceSchema = new mongoose.Schema({
 attendanceSchema.index({ worker: 1, date: -1 });
 attendanceSchema.index({ worker: 1, weekStart: 1, weekEnd: 1 });
 attendanceSchema.index({ weekStart: 1, weekEnd: 1 });
+attendanceSchema.index({ worker: 1, monthPaid: 1 });
 
 // ✅ Virtual: Pending days in a week
 attendanceSchema.virtual('pendingDays').get(function() {
-    // This is a virtual, needs to be used with populated data
-    // Better to calculate in controller
-    return 0; // Default, override in controller
+    return 0;
 });
 
 // ✅ Virtual: Total days in week
 attendanceSchema.virtual('weekTotalDays').get(function() {
-    return 7; // Week has 7 days (Saturday to Friday)
+    return 7;
 });
 
 // ✅ Get attendance for a worker in a date range
@@ -76,35 +87,7 @@ attendanceSchema.statics.getPresentDays = async function(workerId, startDate, en
     return attendance.length;
 };
 
-// ✅ Get week attendance summary with pending days
-attendanceSchema.statics.getWeekSummary = async function(workerId, weekStart, weekEnd) {
-    const attendance = await this.find({
-        worker: workerId,
-        date: { $gte: weekStart, $lte: weekEnd }
-    });
-    
-    const present = attendance.filter(a => a.status === 'present').length;
-    const absent = attendance.filter(a => a.status === 'absent').length;
-    const halfDay = attendance.filter(a => a.status === 'half-day').length;
-    const holiday = attendance.filter(a => a.status === 'holiday').length;
-    
-    // ✅ Calculate pending days (7 days - total attendance records)
-    const totalDays = 7; // Week has 7 days (Saturday to Friday)
-    const totalAttendance = attendance.length;
-    const pending = totalDays - totalAttendance;
-    
-    return { 
-        present, 
-        absent, 
-        halfDay, 
-        holiday, 
-        total: totalAttendance,
-        pending: pending,
-        totalDays: totalDays
-    };
-};
-
-// ✅ Get month attendance summary with pending days
+// ✅ Get month attendance summary with paid status
 attendanceSchema.statics.getMonthSummary = async function(workerId, monthStart, monthEnd) {
     const attendance = await this.find({
         worker: workerId,
@@ -116,7 +99,10 @@ attendanceSchema.statics.getMonthSummary = async function(workerId, monthStart, 
     const halfDay = attendance.filter(a => a.status === 'half-day').length;
     const holiday = attendance.filter(a => a.status === 'holiday').length;
     
-    // ✅ Calculate total days in month
+    // ✅ Check if month is paid
+    const isPaid = attendance.length > 0 && attendance.every(a => a.monthPaid === true);
+    const paidAmount = attendance.length > 0 ? attendance[0].monthPaidAmount || 0 : 0;
+    
     const totalDays = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0).getDate();
     const totalAttendance = attendance.length;
     const pending = totalDays - totalAttendance;
@@ -128,8 +114,27 @@ attendanceSchema.statics.getMonthSummary = async function(workerId, monthStart, 
         holiday, 
         total: totalAttendance,
         pending: pending,
-        totalDays: totalDays
+        totalDays: totalDays,
+        isPaid: isPaid,
+        paidAmount: paidAmount,
+        month: monthStart.getMonth(),
+        year: monthStart.getFullYear()
     };
+};
+
+// ✅ Mark month as paid
+attendanceSchema.statics.markMonthPaid = async function(workerId, monthStart, monthEnd, amount) {
+    return await this.updateMany(
+        {
+            worker: workerId,
+            date: { $gte: monthStart, $lte: monthEnd }
+        },
+        {
+            monthPaid: true,
+            monthPaidAt: new Date(),
+            monthPaidAmount: amount
+        }
+    );
 };
 
 // ✅ Get attendance with pending count for a date range
@@ -144,7 +149,6 @@ attendanceSchema.statics.getAttendanceWithPending = async function(workerId, sta
     const halfDay = attendance.filter(a => a.status === 'half-day').length;
     const holiday = attendance.filter(a => a.status === 'holiday').length;
     
-    // ✅ Calculate total days and pending
     const diffTime = Math.abs(endDate - startDate);
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
     const totalAttendance = attendance.length;

@@ -1,591 +1,894 @@
-<%
-const currentPage = 'payments';
-%>
+<% const currentPage='payments' ; %>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= title %> | Garment ERP</title>
-    
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="/css/style.css">
-    
-    <style>
-        .stat-card { background: white; border-radius: 16px; padding: 15px; text-align: center; border: 1px solid #e2e8f0; }
-        .stat-value { font-size: 1.5rem; font-weight: 700; }
-        .stat-label { font-size: 0.7rem; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
-        .badge-status { padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; }
-        .table-premium { width: 100%; border-collapse: collapse; }
-        .table-premium th { padding: 10px; background: #f8fafc; font-weight: 600; border-bottom: 2px solid #e2e8f0; }
-        .table-premium td { padding: 10px; border-bottom: 1px solid #e2e8f0; }
-        .amount-positive { color: #22c55e; }
-        .amount-negative { color: #ef4444; }
-        .amount-zero { color: #94a3b8; }
-        .nav-tabs .nav-link { font-weight: 600; padding: 10px 20px; }
-        .nav-tabs .nav-link.active { border-bottom: 3px solid #4361ee; color: #4361ee; }
-    </style>
-</head>
-<body>
+    <!DOCTYPE html>
+    <html lang="en">
 
-<!-- Navbar -->
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="/dashboard">
-            <i class="fas fa-tshirt"></i> Garment ERP
-        </a>
-        <div class="ms-auto">
-            <span class="text-white me-3">
-                <i class="fas fa-user"></i> <%= user ? user.username : 'Admin' %>
-            </span>
-            <a href="/auth/logout" class="btn btn-sm btn-outline-light">
-                <i class="fas fa-sign-out-alt"></i> Logout
-            </a>
-        </div>
-    </div>
-</nav>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>
+            <%= title %> | Garment ERP
+        </title>
 
-<div class="container-fluid mt-4">
-    <!-- Flash Messages -->
-    <% if (success_msg && success_msg.length) { %>
-        <div class="alert alert-success alert-dismissible fade show">
-            <i class="fas fa-check-circle"></i> <%= success_msg %>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    <% } %>
-    <% if (error_msg && error_msg.length) { %>
-        <div class="alert alert-danger alert-dismissible fade show">
-            <i class="fas fa-exclamation-circle"></i> <%= error_msg %>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    <% } %>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+            rel="stylesheet">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+        <link rel="stylesheet" href="/css/style.css">
 
-    <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h3><i class="fas fa-user-circle text-primary"></i> <%= worker.name %></h3>
-            <p class="text-muted">
-                <span class="badge bg-<%= worker.workerType === 'karigar' ? 'primary' : worker.workerType === 'pressman' ? 'info' : worker.workerType === 'helper' ? 'warning' : 'danger' %>">
-                    <%= worker.workerType.toUpperCase() %>
-                </span>
-                <span class="badge-status badge bg-<%= worker.isActive ? 'success' : 'secondary' %> ms-2">
-                    <%= worker.isActive ? 'Active' : 'Inactive' %>
-                </span>
-                <span class="ms-2"><i class="fas fa-phone"></i> <%= worker.phone || 'N/A' %></span>
-            </p>
-        </div>
-        <div>
-            <!-- Statement Button -->
-            <a href="/payments/worker/<%= worker._id %>/statement?period=month" class="btn btn-outline-primary">
-                <i class="fas fa-file-invoice"></i> Statement
-            </a>
-            <a href="/payments" class="btn btn-secondary">
-                <i class="fas fa-arrow-left"></i> Back
-            </a>
-        </div>
-    </div>
-
-    <!-- Stats Cards -->
-    <div class="row g-3 mb-4">
-        <div class="col-md-3">
-            <div class="stat-card">
-                <div class="stat-label">Total Pieces</div>
-                <div class="stat-value text-primary"><%= totalPieces || 0 %></div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="stat-card">
-                <div class="stat-label">Total Earnings</div>
-                <div class="stat-value text-success">₹<%= totalEarnings || 0 %></div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="stat-card">
-                <div class="stat-label">Total Paid</div>
-                <div class="stat-value text-info">₹<%= totalPaid || 0 %></div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="stat-card">
-                <div class="stat-label">Net Payable</div>
-                <div class="stat-value <%= netPayable > 0 ? 'text-success' : netPayable < 0 ? 'text-danger' : 'text-secondary' %>">
-                    ₹<%= netPayable || 0 %>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Tabs -->
-    <ul class="nav nav-tabs mb-3" id="workerTabs">
-        <li class="nav-item">
-            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#workTab">
-                <i class="fas fa-tasks"></i> Work Details
-            </button>
-        </li>
-        <li class="nav-item">
-            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#paymentTab">
-                <i class="fas fa-money-bill-wave"></i> Payments
-            </button>
-        </li>
-        <li class="nav-item">
-            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#advanceTab">
-                <i class="fas fa-hand-holding-usd"></i> Advances
-            </button>
-        </li>
-        <li class="nav-item">
-            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#recordTab">
-                <i class="fas fa-plus-circle"></i> Record Payment
-            </button>
-        </li>
-    </ul>
-
-    <!-- Tab Content -->
-    <div class="tab-content">
-       <!-- Work Details Tab -->
-            <div class="tab-pane fade show active" id="workTab">
-                <div class="card shadow-sm">
-                    <div class="card-header bg-white py-2">
-                        <h6 class="mb-0"><i class="fas fa-list"></i> Work Details</h6>
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table-premium">
-                                <thead>
-                                    <tr>
-                                        <th>Date</th>
-                                        <th>ID</th>
-                                        <th>Product</th>
-                                        <th>Size</th>
-                                        <th class="text-end">Pieces</th>
-                                        <th class="text-end">Rate (₹)</th>
-                                        <th class="text-end">Amount (₹)</th>
-                                        <th>Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <% if (workDetails && workDetails.length > 0) { %>
-                                        <% workDetails.forEach(w => { %>
-                                            <tr>
-                                                <td><%= new Date(w.date).toLocaleDateString('en-IN') %></td>
-                                                <td><%= w.assignmentId || w.entryNumber || '-' %></td>
-                                                <td><%= w.productName || '-' %></td>
-                                                <td><%= w.size || 'N/A' %></td>
-                                                <td class="text-end"><%= w.pieces || 0 %></td>
-                                                <td class="text-end">₹<%= w.rate || 0 %></td>
-                                                <td class="text-end fw-bold">₹<%= w.amount || 0 %></td>
-                                                <td>
-                                                    <% if (w.status === 'present') { %>
-                                                        <span class="badge bg-success">Present</span>
-                                                    <% } else if (w.status === 'absent') { %>
-                                                        <span class="badge bg-danger">Absent</span>
-                                                    <% } else if (w.status === 'half-day') { %>
-                                                        <span class="badge bg-warning">Half Day</span>
-                                                    <% } else if (w.status === 'holiday') { %>
-                                                        <span class="badge bg-info">Holiday</span>
-                                                    <% } else { %>
-                                                        <span class="badge-status badge bg-<%= w.status === 'paid' ? 'success' : w.status === 'pending' ? 'warning' : 'secondary' %>">
-                                                            <%= w.status || 'N/A' %>
-                                                        </span>
-                                                    <% } %>
-                                                </td>
-                                            </tr>
-                                        <% }) %>
-                                    <% } else { %>
-                                        <tr><td colspan="8" class="text-center py-3 text-muted">No work records found</td></tr>
-                                    <% } %>
-                                </tbody>
-                                <tfoot class="table-light fw-bold">
-                                    <tr>
-                                        <td colspan="4" class="text-end">Total:</td>
-                                        <td class="text-end"><%= totalPieces || 0 %></td>
-                                        <td></td>
-                                        <td class="text-end text-success">₹<%= totalEarnings || 0 %></td>
-                                        <td></td>
-                                    </tr>
-                                </tfoot>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Payments Tab -->
-        <div class="tab-pane fade" id="paymentTab">
-            <div class="card shadow-sm">
-                <div class="card-header bg-white py-2">
-                    <h6 class="mb-0"><i class="fas fa-history"></i> Payment History</h6>
-                </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table-premium">
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th class="text-end">Amount (₹)</th>
-                                    <th>Method</th>
-                                    <th>Reference</th>
-                                    <th>Remark</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <% if (payments && payments.length > 0) { %>
-                                    <% payments.forEach(p => { %>
-                                        <tr>
-                                            <td><%= new Date(p.paymentDate).toLocaleDateString('en-IN') %></td>
-                                            <td class="text-end fw-bold text-success">₹<%= p.amount || 0 %></td>
-                                            <td><%= p.paymentMethod || 'Cash' %></td>
-                                            <td><%= p.reference || '-' %></td>
-                                            <td><%= p.remark || '-' %></td>
-                                        </tr>
-                                    <% }) %>
-                                <% } else { %>
-                                    <tr><td colspan="5" class="text-center py-3 text-muted">No payments found</td></tr>
-                                <% } %>
-                            </tbody>
-                            <tfoot class="table-light fw-bold">
-                                <tr>
-                                    <td class="text-end">Total:</td>
-                                    <td class="text-end text-success">₹<%= totalPaid || 0 %></td>
-                                    <td colspan="3"></td>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ✅ Advances Tab - FIXED (No duplicate else) -->
-        <div class="tab-pane fade" id="advanceTab">
-            <div class="card shadow-sm">
-                <div class="card-header bg-white py-2">
-                    <h6 class="mb-0"><i class="fas fa-hand-holding-usd"></i> Advance History</h6>
-                </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table-premium">
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th class="text-end">Amount (₹)</th>
-                                    <th>Purpose</th>
-                                    <th>Status</th>
-                                    <th>Remark</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <% if (advances && advances.length > 0) { %>
-                                    <% advances.forEach(a => { %>
-                                        <tr>
-                                            <td><%= new Date(a.date).toLocaleDateString('en-IN') %></td>
-                                            <td class="text-end fw-bold text-danger">₹<%= a.amount || 0 %></td>
-                                            <td><%= a.purpose || '-' %></td>
-                                            <td>
-                                                <span class="badge-status badge bg-<%= a.status === 'adjusted' ? 'success' : a.status === 'pending' ? 'warning' : 'secondary' %>">
-                                                    <%= a.status || 'pending' %>
-                                                </span>
-                                            </td>
-                                            <td><%= a.remark || '-' %></td>
-                                        </tr>
-                                    <% }) %>
-                                <% } else { %>
-                                    <tr><td colspan="5" class="text-center py-3 text-muted">No advances found</td></tr>
-                                <% } %>
-                            </tbody>
-                            <tfoot class="table-light fw-bold">
-                                <tr>
-                                    <td class="text-end">Total:</td>
-                                    <td class="text-end text-danger">₹<%= totalAdvances || 0 %></td>
-                                    <td colspan="3"></td>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Record Payment Tab -->
-        <!-- Record Payment Tab -->
-<div class="tab-pane fade" id="recordTab">
-    <div class="card shadow-sm">
-        <div class="card-header bg-white py-3">
-            <h6 class="mb-0"><i class="fas fa-plus-circle"></i> Record Payment</h6>
-        </div>
-        <div class="card-body">
-            <!-- ✅ Payment Summary Cards -->
-            <div class="row g-3 mb-4">
-                <div class="col-md-3">
-                    <div class="card bg-light border-0">
-                        <div class="card-body text-center">
-                            <div class="text-muted small">Total Earnings</div>
-                            <div class="h5 fw-bold text-success">₹<%= totalEarnings || 0 %></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card bg-light border-0">
-                        <div class="card-body text-center">
-                            <div class="text-muted small">Total Paid</div>
-                            <div class="h5 fw-bold text-info">₹<%= totalPaid || 0 %></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card bg-light border-0">
-                        <div class="card-body text-center">
-                            <div class="text-muted small">Pending Advance</div>
-                            <div class="h5 fw-bold text-warning" id="pendingAdvanceDisplay">₹<%= totalAdvances || 0 %></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card bg-primary text-white border-0">
-                        <div class="card-body text-center">
-                            <div class="small">Net Payable</div>
-                            <div class="h5 fw-bold" id="netPayableDisplay">₹<%= netPayable || 0 %></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ✅ Payment Form -->
-            <form id="paymentForm">
-                <input type="hidden" name="workerId" value="<%= worker._id %>">
-                <input type="hidden" name="workerType" value="<%= worker.workerType %>">
-                
-                <div class="row g-3">
-                    <!-- Payment Amount -->
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold">Payment Amount (₹) <span class="text-danger">*</span></label>
-                        <input type="number" name="amount" id="paymentAmount" class="form-control form-control-lg" 
-                               placeholder="Enter payment amount" min="1" 
-                               max="<%= netPayable || 0 %>" required>
-                        <small class="text-muted">Max: ₹<%= netPayable || 0 %></small>
-                    </div>
-                    
-                    <!-- Payment Method -->
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold">Payment Method <span class="text-danger">*</span></label>
-                        <select name="paymentMethod" class="form-control form-control-lg" required>
-                            <option value="Cash">💵 Cash</option>
-                            <option value="Bank Transfer">🏦 Bank Transfer</option>
-                            <option value="UPI">📱 UPI</option>
-                            <option value="Cheque">📄 Cheque</option>
-                        </select>
-                    </div>
-                    
-                    <!-- Reference -->
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold">Reference / Transaction ID</label>
-                        <input type="text" name="reference" class="form-control" 
-                               placeholder="Cheque No / UTR / Transaction ID">
-                    </div>
-                    
-                    <!-- Payment Date -->
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold">Payment Date</label>
-                        <input type="date" name="paymentDate" class="form-control" 
-                               value="<%= new Date().toISOString().split('T')[0] %>">
-                    </div>
-                    
-                    <!-- ✅ Advance Adjustment Section -->
-                    <div class="col-md-12">
-                        <div class="card border-warning">
-                            <div class="card-body">
-                                <div class="row align-items-center">
-                                    <div class="col-md-4">
-                                        <label class="fw-bold">
-                                            <i class="fas fa-hand-holding-usd text-warning"></i> Adjust Advance
-                                        </label>
-                                        <div class="form-check mt-2">
-                                            <input type="checkbox" class="form-check-input" id="adjustAdvance" checked>
-                                            <label class="form-check-label" for="adjustAdvance">
-                                                Auto-adjust pending advance
-                                            </label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="text-center">
-                                            <div class="text-muted small">Pending Advance</div>
-                                            <div class="h5 fw-bold text-warning" id="pendingAdvance">₹<%= totalAdvances || 0 %></div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="text-center">
-                                            <div class="text-muted small">Advance to Adjust</div>
-                                            <div class="h5 fw-bold text-success" id="advanceToAdjust">₹0</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- ✅ Payment Breakdown -->
-                    <div class="col-md-12">
-                        <div class="card bg-light">
-                            <div class="card-body">
-                                <h6 class="mb-3"><i class="fas fa-calculator"></i> Payment Breakdown</h6>
-                                <div class="row">
-                                    <div class="col-md-4">
-                                        <div class="d-flex justify-content-between">
-                                            <span class="text-muted">Total Amount:</span>
-                                            <span class="fw-bold" id="breakdownTotal">₹0</span>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="d-flex justify-content-between">
-                                            <span class="text-muted">Advance Adjusted:</span>
-                                            <span class="fw-bold text-success" id="breakdownAdvance">₹0</span>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="d-flex justify-content-between">
-                                            <span class="text-muted">Cash / Bank:</span>
-                                            <span class="fw-bold text-primary" id="breakdownCash">₹0</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Remark -->
-                    <div class="col-md-12">
-                        <label class="form-label fw-bold">Remark</label>
-                        <textarea name="remark" class="form-control" rows="2" 
-                                  placeholder="Optional remark..."></textarea>
-                    </div>
-                    
-                    <!-- Submit Buttons -->
-                    <div class="col-md-12">
-                        <button type="submit" class="btn btn-primary btn-lg px-5" id="paymentSubmitBtn">
-                            <i class="fas fa-save"></i> Process Payment
-                        </button>
-                        <button type="reset" class="btn btn-secondary btn-lg px-4">Clear</button>
-                    </div>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const paymentForm = document.getElementById('paymentForm');
-    const paymentAmount = document.getElementById('paymentAmount');
-    const adjustAdvanceCheck = document.getElementById('adjustAdvance');
-    const pendingAdvance = document.getElementById('pendingAdvance');
-    const advanceToAdjust = document.getElementById('advanceToAdjust');
-    const breakdownTotal = document.getElementById('breakdownTotal');
-    const breakdownAdvance = document.getElementById('breakdownAdvance');
-    const breakdownCash = document.getElementById('breakdownCash');
-    const netPayableDisplay = document.getElementById('netPayableDisplay');
-    const pendingAdvanceDisplay = document.getElementById('pendingAdvanceDisplay');
-    
-    const totalAdvances = <%= totalAdvances || 0 %>;
-    const netPayable = <%= netPayable || 0 %>;
-    
-    // ✅ Update breakdown on amount change
-    function updateBreakdown() {
-        const amount = parseFloat(paymentAmount.value) || 0;
-        const adjustAdvance = adjustAdvanceCheck.checked;
-        let advanceAdjust = 0;
-        let cashAmount = amount;
-        
-        if (adjustAdvance && totalAdvances > 0) {
-            advanceAdjust = Math.min(amount, totalAdvances);
-            cashAmount = amount - advanceAdjust;
-        }
-        
-        // Update displays
-        breakdownTotal.textContent = '₹' + amount;
-        breakdownAdvance.textContent = '₹' + advanceAdjust;
-        breakdownCash.textContent = '₹' + cashAmount;
-        advanceToAdjust.textContent = '₹' + advanceAdjust;
-        
-        // Update net payable after advance adjustment
-        const remainingAdvance = totalAdvances - advanceAdjust;
-        const netAfterPayment = netPayable - amount;
-        
-        // Show remaining advance
-        if (remainingAdvance > 0) {
-            pendingAdvance.textContent = '₹' + remainingAdvance;
-            pendingAdvanceDisplay.textContent = '₹' + remainingAdvance;
-        } else {
-            pendingAdvance.textContent = '₹0';
-            pendingAdvanceDisplay.textContent = '₹0';
-        }
-        
-        // Update net payable
-        netPayableDisplay.textContent = '₹' + Math.max(0, netAfterPayment);
-    }
-    
-    paymentAmount.addEventListener('input', updateBreakdown);
-    adjustAdvanceCheck.addEventListener('change', updateBreakdown);
-    
-    // ✅ Initial update
-    updateBreakdown();
-    
-    // ✅ Form Submit
-    paymentForm.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const formData = new FormData(this);
-        const data = Object.fromEntries(formData.entries());
-        data.adjustAdvance = adjustAdvanceCheck.checked;
-        
-        const amount = parseFloat(data.amount);
-        if (!amount || amount <= 0) {
-            alert('⚠️ Please enter a valid payment amount');
-            return;
-        }
-        
-        if (amount > netPayable) {
-            alert(`⚠️ Payment amount (₹${amount}) exceeds net payable (₹${netPayable})`);
-            return;
-        }
-        
-        const submitBtn = document.getElementById('paymentSubmitBtn');
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-        
-        try {
-            const response = await fetch('/payments/api/record-payment', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-            
-            const result = await response.json();
-            
-            if (result.success) {
-                let msg = '✅ Payment recorded successfully!';
-                if (result.adjustedAdvanceAmount > 0) {
-                    msg += `\n💰 Adjusted ₹${result.adjustedAdvanceAmount} from advance.`;
-                }
-                alert(msg);
-                window.location.reload();
-            } else {
-                alert('❌ Error: ' + (result.error || 'Unknown error'));
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="fas fa-save"></i> Process Payment';
+        <style>
+            .stat-card {
+                background: white;
+                border-radius: 16px;
+                padding: 15px;
+                text-align: center;
+                border: 1px solid #e2e8f0;
             }
-        } catch (error) {
-            alert('❌ Error: ' + error.message);
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = '<i class="fas fa-save"></i> Process Payment';
-        }
-    });
-});
-</script>
-</body>
-</html>
 
+            .stat-value {
+                font-size: 1.5rem;
+                font-weight: 700;
+            }
 
+            .stat-label {
+                font-size: 0.7rem;
+                color: #64748b;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+            }
+
+            .badge-status {
+                padding: 4px 12px;
+                border-radius: 20px;
+                font-size: 0.7rem;
+            }
+
+            .table-premium {
+                width: 100%;
+                border-collapse: collapse;
+            }
+
+            .table-premium th {
+                padding: 10px;
+                background: #f8fafc;
+                font-weight: 600;
+                border-bottom: 2px solid #e2e8f0;
+            }
+
+            .table-premium td {
+                padding: 10px;
+                border-bottom: 1px solid #e2e8f0;
+            }
+
+            .amount-positive {
+                color: #22c55e;
+            }
+
+            .amount-negative {
+                color: #ef4444;
+            }
+
+            .amount-zero {
+                color: #94a3b8;
+            }
+
+            .nav-tabs .nav-link {
+                font-weight: 600;
+                padding: 10px 20px;
+            }
+
+            .nav-tabs .nav-link.active {
+                border-bottom: 3px solid #4361ee;
+                color: #4361ee;
+            }
+        </style>
+    </head>
+
+    <body>
+
+        <!-- Navbar -->
+        <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="/dashboard">
+                    <i class="fas fa-tshirt"></i> Garment ERP
+                </a>
+                <div class="ms-auto">
+                    <span class="text-white me-3">
+                        <i class="fas fa-user"></i>
+                        <%= user ? user.username : 'Admin' %>
+                    </span>
+                    <a href="/auth/logout" class="btn btn-sm btn-outline-light">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </div>
+            </div>
+        </nav>
+
+        <div class="container-fluid mt-4">
+            <!-- Flash Messages -->
+            <% if (success_msg && success_msg.length) { %>
+                <div class="alert alert-success alert-dismissible fade show">
+                    <i class="fas fa-check-circle"></i>
+                    <%= success_msg %>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                <% } %>
+                    <% if (error_msg && error_msg.length) { %>
+                        <div class="alert alert-danger alert-dismissible fade show">
+                            <i class="fas fa-exclamation-circle"></i>
+                            <%= error_msg %>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                        <% } %>
+
+                            <!-- Header -->
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <div>
+                                    <h3><i class="fas fa-user-circle text-primary"></i>
+                                        <%= worker.name %>
+                                    </h3>
+                                    <p class="text-muted">
+                                        <span
+                                            class="badge bg-<%= worker.workerType === 'karigar' ? 'primary' : worker.workerType === 'pressman' ? 'info' : worker.workerType === 'helper' ? 'warning' : 'danger' %>">
+                                            <%= worker.workerType.toUpperCase() %>
+                                        </span>
+                                        <span
+                                            class="badge-status badge bg-<%= worker.isActive ? 'success' : 'secondary' %> ms-2">
+                                            <%= worker.isActive ? 'Active' : 'Inactive' %>
+                                        </span>
+                                        <span class="ms-2"><i class="fas fa-phone"></i>
+                                            <%= worker.phone || 'N/A' %>
+                                        </span>
+                                    </p>
+                                </div>
+                                <div>
+                                    <!-- Statement Button -->
+                                    <a href="/payments/worker/<%= worker._id %>/statement?period=month"
+                                        class="btn btn-outline-primary">
+                                        <i class="fas fa-file-invoice"></i> Statement
+                                    </a>
+                                    <a href="/payments" class="btn btn-secondary">
+                                        <i class="fas fa-arrow-left"></i> Back
+                                    </a>
+                                </div>
+                            </div>
+
+                            <!-- Stats Cards -->
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-3">
+                                    <div class="stat-card">
+                                        <div class="stat-label">Total Pieces</div>
+                                        <div class="stat-value text-primary">
+                                            <%= totalPieces || 0 %>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="stat-card">
+                                        <div class="stat-label">Total Earnings</div>
+                                        <div class="stat-value text-success">₹<%= Math.round(totalEarnings || 0) %>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="stat-card">
+                                        <div class="stat-label">Total Paid</div>
+                                        <div class="stat-value text-info">₹<%= Math.round(totalPaid || 0) %>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="stat-card">
+                                        <div class="stat-label">Net Payable</div>
+                                        <div
+                                            class="stat-value <%= netPayable > 0 ? 'text-success' : netPayable < 0 ? 'text-danger' : 'text-secondary' %>">
+                                            ₹<%= Math.round(netPayable || 0) %>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Tabs -->
+                            <ul class="nav nav-tabs mb-3" id="workerTabs">
+                                <li class="nav-item">
+                                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#workTab">
+                                        <i class="fas fa-tasks"></i> Work Details
+                                    </button>
+                                </li>
+                                <li class="nav-item">
+                                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#paymentTab">
+                                        <i class="fas fa-money-bill-wave"></i> Payments
+                                    </button>
+                                </li>
+                                <li class="nav-item">
+                                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#advanceTab">
+                                        <i class="fas fa-hand-holding-usd"></i> Advances
+                                    </button>
+                                </li>
+                                <li class="nav-item">
+                                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#recordTab">
+                                        <i class="fas fa-plus-circle"></i> Record Payment
+                                    </button>
+                                </li>
+                            </ul>
+
+                            <!-- Tab Content -->
+                            <div class="tab-content">
+                                <!-- Work Details Tab -->
+                                <!-- Work Details Tab -->
+                                <div class="tab-pane fade show active" id="workTab">
+                                    <div class="card shadow-sm">
+                                        <div
+                                            class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
+                                            <h6 class="mb-0"><i class="fas fa-list"></i> Work Details</h6>
+                                            <% if (worker.workerType==='helper' || worker.workerType==='cutting' ) { %>
+                                                <span class="badge bg-info">Month-wise Summary <i
+                                                        class="fas fa-info-circle"
+                                                        title="Click on month to view details"></i></span>
+                                                <% } else { %>
+                                                    <span class="badge bg-secondary">Details</span>
+                                                    <% } %>
+                                        </div>
+                                        <div class="card-body p-0">
+                                            <div class="table-responsive">
+                                                <table class="table-premium">
+                                                    <thead>
+                                                        <tr>
+                                                            <% if (worker.workerType==='helper' ||
+                                                                worker.workerType==='cutting' ) { %>
+                                                                <!-- ✅ Month-wise Summary - Clean View -->
+                                                                <th>Month</th>
+                                                                <th class="text-end">Present Days</th>
+                                                                <th class="text-end">Half Days</th>
+                                                                <th class="text-end">Working Days</th>
+                                                                <th class="text-end">Earnings (₹)</th>
+                                                                <th>Status</th>
+                                                                <th class="text-center">Action</th>
+                                                                <% } else { %>
+                                                                    <!-- ✅ For Karigar/Pressman - Normal Detail View -->
+                                                                    <th>Date</th>
+                                                                    <th>ID</th>
+                                                                    <th>Product</th>
+                                                                    <th>Size</th>
+                                                                    <th class="text-end">Pieces</th>
+                                                                    <th class="text-end">Rate (₹)</th>
+                                                                    <th class="text-end">Amount (₹)</th>
+                                                                    <th>Status</th>
+                                                                    <% } %>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <% if (workDetails && workDetails.length> 0) { %>
+                                                            <% if (worker.workerType==='helper' ||
+                                                                worker.workerType==='cutting' ) { %>
+                                                                <!-- ✅ Helper/Cutting - Month Summary Rows -->
+                                                                <% workDetails.forEach(function(w) { %>
+                                                                    <tr onclick="window.location.href='/payments/month-payment/<%= worker._id %>/<%= w.monthKey %>'"
+                                                                        style="cursor:pointer; transition: background 0.2s;"
+                                                                        onmouseover="this.style.backgroundColor='#f1f5f9'"
+                                                                        onmouseout="this.style.backgroundColor=''">
+                                                                        <td><strong>
+                                                                                <%= w.monthKey %>
+                                                                            </strong></td>
+                                                                        <td class="text-end">
+                                                                            <%= w.presentDays || 0 %>
+                                                                        </td>
+                                                                        <td class="text-end">
+                                                                            <%= w.halfDays || 0 %>
+                                                                        </td>
+                                                                        <td class="text-end">
+                                                                            <%= w.days || 0 %>
+                                                                        </td>
+                                                                        <td class="text-end fw-bold">₹<%=
+                                                                                Math.round(w.amount || 0) %>
+                                                                        </td>
+                                                                        <td>
+                                                                            <% if (w.isPaid) { %>
+                                                                                <span class="badge bg-success"><i
+                                                                                        class="fas fa-check-circle"></i>
+                                                                                    Paid</span>
+                                                                                <% } else { %>
+                                                                                    <span
+                                                                                        class="badge bg-warning">Pending</span>
+                                                                                    <% } %>
+                                                                        </td>
+                                                                        <td class="text-center">
+                                                                            <i
+                                                                                class="fas fa-chevron-right text-muted"></i>
+                                                                        </td>
+                                                                    </tr>
+                                                                    <% }); %>
+                                                                        <% } else { %>
+                                                                            <!-- ✅ Karigar/Pressman - Normal Rows -->
+                                                                            <% workDetails.forEach(function(w) { %>
+                                                                                <tr>
+                                                                                    <td>
+                                                                                        <%= new
+                                                                                            Date(w.date).toLocaleDateString('en-IN')
+                                                                                            %>
+                                                                                    </td>
+                                                                                    <td>
+                                                                                        <%= w.assignmentId ||
+                                                                                            w.entryNumber || '-' %>
+                                                                                    </td>
+                                                                                    <td>
+                                                                                        <%= w.productName || '-' %>
+                                                                                    </td>
+                                                                                    <td>
+                                                                                        <%= w.size || 'N/A' %>
+                                                                                    </td>
+                                                                                    <td class="text-end">
+                                                                                        <%= w.pieces || 0 %>
+                                                                                    </td>
+                                                                                    <td class="text-end">₹<%=
+                                                                                            Math.round(w.rate || 0) %>
+                                                                                    </td>
+                                                                                    <td class="text-end fw-bold">₹<%=
+                                                                                            Math.round(w.amount || 0) %>
+                                                                                    </td>
+                                                                                    <td>
+                                                                                        <% if (w.status==='paid' ) { %>
+                                                                                            <span
+                                                                                                class="badge bg-success">Paid</span>
+                                                                                            <% } else if
+                                                                                                (w.status==='pending' )
+                                                                                                { %>
+                                                                                                <span
+                                                                                                    class="badge bg-warning">Pending</span>
+                                                                                                <% } else if
+                                                                                                    (w.status==='completed'
+                                                                                                    ) { %>
+                                                                                                    <span
+                                                                                                        class="badge bg-success">Completed</span>
+                                                                                                    <% } else { %>
+                                                                                                        <span
+                                                                                                            class="badge-status badge bg-secondary">
+                                                                                                            <%= w.status
+                                                                                                                || 'N/A'
+                                                                                                                %>
+                                                                                                        </span>
+                                                                                                        <% } %>
+                                                                                    </td>
+                                                                                </tr>
+                                                                                <% }); %>
+                                                                                    <% } %>
+                                                                                        <% } else { %>
+                                                                                            <tr>
+                                                                                                <td colspan="8"
+                                                                                                    class="text-center py-3 text-muted">
+                                                                                                    <i
+                                                                                                        class="fas fa-inbox fa-2x d-block mb-2"></i>
+                                                                                                    No work records
+                                                                                                    found
+                                                                                                </td>
+                                                                                            </tr>
+                                                                                            <% } %>
+                                                    </tbody>
+                                                    <tfoot class="table-light fw-bold">
+                                                        <tr>
+                                                            <% if (worker.workerType==='helper' ||
+                                                                worker.workerType==='cutting' ) { %>
+                                                                <td class="text-end">Total:</td>
+                                                                <td class="text-end">
+                                                                    <%= workDetails.reduce((sum, w)=> sum +
+                                                                        (w.presentDays || 0), 0) || 0 %>
+                                                                </td>
+                                                                <td class="text-end">
+                                                                    <%= workDetails.reduce((sum, w)=> sum + (w.halfDays
+                                                                        || 0), 0) || 0 %>
+                                                                </td>
+                                                                <td class="text-end">
+                                                                    <%= workDetails.reduce((sum, w)=> sum + (w.days ||
+                                                                        0), 0) || 0 %>
+                                                                </td>
+                                                                <td class="text-end text-success">₹<%=
+                                                                        Math.round(totalEarnings || 0) %>
+                                                                </td>
+                                                                <td colspan="2"></td>
+                                                                <% } else { %>
+                                                                    <td colspan="4" class="text-end">Total:</td>
+                                                                    <td class="text-end">
+                                                                        <%= totalPieces || 0 %>
+                                                                    </td>
+                                                                    <td></td>
+                                                                    <td class="text-end text-success">₹<%=
+                                                                            Math.round(totalEarnings || 0) %>
+                                                                    </td>
+                                                                    <td></td>
+                                                                    <% } %>
+                                                        </tr>
+                                                    </tfoot>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Payments Tab -->
+                                <div class="tab-pane fade" id="paymentTab">
+                                    <div class="card shadow-sm">
+                                        <div class="card-header bg-white py-2">
+                                            <h6 class="mb-0"><i class="fas fa-history"></i> Payment History</h6>
+                                        </div>
+                                        <div class="card-body p-0">
+                                            <div class="table-responsive">
+                                                <table class="table-premium">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Date</th>
+                                                            <th class="text-end">Amount (₹)</th>
+                                                            <th>Method</th>
+                                                            <th>Reference</th>
+                                                            <th>Remark</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <% if (payments && payments.length> 0) { %>
+                                                            <% payments.forEach(function(p) { %>
+                                                                <tr>
+                                                                    <td>
+                                                                        <%= new
+                                                                            Date(p.paymentDate).toLocaleDateString('en-IN')
+                                                                            %>
+                                                                    </td>
+                                                                    <td class="text-end fw-bold text-success">₹<%=
+                                                                            Math.round(p.amount || 0) %>
+                                                                    </td>
+                                                                    <td>
+                                                                        <%= p.paymentMethod || 'Cash' %>
+                                                                    </td>
+                                                                    <td>
+                                                                        <%= p.reference || '-' %>
+                                                                    </td>
+                                                                    <td>
+                                                                        <%= p.remark || '-' %>
+                                                                    </td>
+                                                                </tr>
+                                                                <% }); %>
+                                                                    <% } else { %>
+                                                                        <tr>
+                                                                            <td colspan="5"
+                                                                                class="text-center py-3 text-muted">No
+                                                                                payments found</td>
+                                                                        </tr>
+                                                                        <% } %>
+                                                    </tbody>
+                                                    <tfoot class="table-light fw-bold">
+                                                        <tr>
+                                                            <td class="text-end">Total:</td>
+                                                            <td class="text-end text-success">₹<%= Math.round(totalPaid
+                                                                    || 0) %>
+                                                            </td>
+                                                            <td colspan="3"></td>
+                                                        </tr>
+                                                    </tfoot>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Advances Tab -->
+                                <div class="tab-pane fade" id="advanceTab">
+                                    <div class="card shadow-sm">
+                                        <div class="card-header bg-white py-2">
+                                            <h6 class="mb-0"><i class="fas fa-hand-holding-usd"></i> Advance History
+                                            </h6>
+                                        </div>
+                                        <div class="card-body p-0">
+                                            <div class="table-responsive">
+                                                <table class="table-premium">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Date</th>
+                                                            <th class="text-end">Amount (₹)</th>
+                                                            <th>Purpose</th>
+                                                            <th>Status</th>
+                                                            <th>Remark</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <% if (advances && advances.length> 0) { %>
+                                                            <% advances.forEach(function(a) { %>
+                                                                <tr>
+                                                                    <td>
+                                                                        <%= new Date(a.date).toLocaleDateString('en-IN')
+                                                                            %>
+                                                                    </td>
+                                                                    <td class="text-end fw-bold text-danger">₹<%=
+                                                                            Math.round(a.amount || 0) %>
+                                                                    </td>
+                                                                    <td>
+                                                                        <%= a.purpose || '-' %>
+                                                                    </td>
+                                                                    <td>
+                                                                        <span
+                                                                            class="badge-status badge bg-<%= a.status === 'adjusted' ? 'success' : a.status === 'pending' ? 'warning' : 'secondary' %>">
+                                                                            <%= a.status || 'pending' %>
+                                                                        </span>
+                                                                    </td>
+                                                                    <td>
+                                                                        <%= a.remark || '-' %>
+                                                                    </td>
+                                                                </tr>
+                                                                <% }); %>
+                                                                    <% } else { %>
+                                                                        <tr>
+                                                                            <td colspan="5"
+                                                                                class="text-center py-3 text-muted">No
+                                                                                advances found</td>
+                                                                        </tr>
+                                                                        <% } %>
+                                                    </tbody>
+                                                    <tfoot class="table-light fw-bold">
+                                                        <tr>
+                                                            <td class="text-end">Total:</td>
+                                                            <td class="text-end text-danger">₹<%=
+                                                                    Math.round(totalAdvances || 0) %>
+                                                            </td>
+                                                            <td colspan="3"></td>
+                                                        </tr>
+                                                    </tfoot>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Record Payment Tab -->
+                                <!-- Record Payment Tab -->
+                                <div class="tab-pane fade" id="recordTab">
+                                    <div class="card shadow-sm">
+                                        <div class="card-header bg-white py-3">
+                                            <h6 class="mb-0"><i class="fas fa-plus-circle"></i> Record Payment</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <!-- ✅ Payment Summary Cards -->
+                                            <div class="row g-3 mb-4">
+                                                <div class="col-md-3">
+                                                    <div class="card bg-light border-0">
+                                                        <div class="card-body text-center">
+                                                            <div class="text-muted small">Total Earnings</div>
+                                                            <div class="h5 fw-bold text-success">₹<%=
+                                                                    Math.round(totalEarnings || 0) %>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <div class="card bg-light border-0">
+                                                        <div class="card-body text-center">
+                                                            <div class="text-muted small">Total Paid</div>
+                                                            <div class="h5 fw-bold text-info">₹<%= Math.round(totalPaid
+                                                                    || 0) %>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <div class="card bg-light border-0">
+                                                        <div class="card-body text-center">
+                                                            <div class="text-muted small">Pending Advance</div>
+                                                            <div class="h5 fw-bold text-warning"
+                                                                id="pendingAdvanceDisplay">₹<%= Math.round(totalAdvances
+                                                                    || 0) %>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <div class="card bg-primary text-white border-0">
+                                                        <div class="card-body text-center">
+                                                            <div class="small">Net Payable</div>
+                                                            <div class="h5 fw-bold" id="netPayableDisplay">₹<%=
+                                                                    Math.round(netPayable || 0) %>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- ✅ Payment Form -->
+                                            <form id="paymentForm">
+                                                <input type="hidden" name="workerId" value="<%= worker._id %>">
+                                                <input type="hidden" name="workerType" value="<%= worker.workerType %>">
+
+                                                <div class="row g-3">
+                                                    <!-- Payment Amount -->
+                                                    <div class="col-md-6">
+                                                        <label class="form-label fw-bold">Payment Amount (₹) <span
+                                                                class="text-danger">*</span></label>
+                                                        <input type="number" name="amount" id="paymentAmount"
+                                                            class="form-control form-control-lg"
+                                                            placeholder="Enter payment amount" min="0"
+                                                            max="<%= Math.round(netPayable || 0) %>"
+                                                            value="<%= Math.round(netPayable || 0) %>" required>
+                                                        <small class="text-muted">Max: ₹<%= Math.round(netPayable || 0)
+                                                                %></small>
+                                                        <% if (netPayable <=0) { %>
+                                                            <div class="text-success mt-1">
+                                                                <i class="fas fa-check-circle"></i> All payments
+                                                                cleared!
+                                                            </div>
+                                                            <% } %>
+                                                    </div>
+
+                                                    <!-- Payment Method -->
+                                                    <div class="col-md-6">
+                                                        <label class="form-label fw-bold">Payment Method <span
+                                                                class="text-danger">*</span></label>
+                                                        <select name="paymentMethod"
+                                                            class="form-control form-control-lg" required>
+                                                            <option value="Cash">💵 Cash</option>
+                                                            <option value="Bank Transfer">🏦 Bank Transfer</option>
+                                                            <option value="UPI">📱 UPI</option>
+                                                            <option value="Cheque">📄 Cheque</option>
+                                                        </select>
+                                                    </div>
+
+                                                    <!-- Reference -->
+                                                    <div class="col-md-6">
+                                                        <label class="form-label fw-bold">Reference / Transaction
+                                                            ID</label>
+                                                        <input type="text" name="reference" class="form-control"
+                                                            placeholder="Cheque No / UTR / Transaction ID">
+                                                    </div>
+
+                                                    <!-- Payment Date -->
+                                                    <div class="col-md-6">
+                                                        <label class="form-label fw-bold">Payment Date</label>
+                                                        <input type="date" name="paymentDate" class="form-control"
+                                                            value="<%= new Date().toISOString().split('T')[0] %>">
+                                                    </div>
+
+                                                    <!-- ✅ Advance Adjustment Section -->
+                                                    <div class="col-md-12">
+                                                        <div class="card border-warning">
+                                                            <div class="card-body">
+                                                                <div class="row align-items-center">
+                                                                    <div class="col-md-4">
+                                                                        <label class="fw-bold">
+                                                                            <i
+                                                                                class="fas fa-hand-holding-usd text-warning"></i>
+                                                                            Adjust Advance
+                                                                        </label>
+                                                                        <div class="form-check mt-2">
+                                                                            <input type="checkbox"
+                                                                                class="form-check-input"
+                                                                                id="adjustAdvance" <%=totalAdvances> 0 ?
+                                                                            'checked' : 'disabled' %>>
+                                                                            <label class="form-check-label"
+                                                                                for="adjustAdvance">
+                                                                                <%= totalAdvances> 0 ? 'Auto-adjust
+                                                                                    pending advance' : 'No pending
+                                                                                    advance' %>
+                                                                            </label>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="col-md-4">
+                                                                        <div class="text-center">
+                                                                            <div class="text-muted small">Pending
+                                                                                Advance</div>
+                                                                            <div class="h5 fw-bold text-warning"
+                                                                                id="pendingAdvance">₹<%=
+                                                                                    Math.round(totalAdvances || 0) %>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="col-md-4">
+                                                                        <div class="text-center">
+                                                                            <div class="text-muted small">Advance to
+                                                                                Adjust</div>
+                                                                            <div class="h5 fw-bold text-success"
+                                                                                id="advanceToAdjust">₹0</div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- ✅ Payment Breakdown -->
+                                                    <div class="col-md-12">
+                                                        <div class="card bg-light">
+                                                            <div class="card-body">
+                                                                <h6 class="mb-3"><i class="fas fa-calculator"></i>
+                                                                    Payment Breakdown</h6>
+                                                                <div class="row">
+                                                                    <div class="col-md-4">
+                                                                        <div class="d-flex justify-content-between">
+                                                                            <span class="text-muted">Total
+                                                                                Amount:</span>
+                                                                            <span class="fw-bold"
+                                                                                id="breakdownTotal">₹0</span>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="col-md-4">
+                                                                        <div class="d-flex justify-content-between">
+                                                                            <span class="text-muted">Advance
+                                                                                Adjusted:</span>
+                                                                            <span class="fw-bold text-success"
+                                                                                id="breakdownAdvance">₹0</span>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="col-md-4">
+                                                                        <div class="d-flex justify-content-between">
+                                                                            <span class="text-muted">Cash / Bank:</span>
+                                                                            <span class="fw-bold text-primary"
+                                                                                id="breakdownCash">₹0</span>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Remark -->
+                                                    <div class="col-md-12">
+                                                        <label class="form-label fw-bold">Remark</label>
+                                                        <textarea name="remark" class="form-control" rows="2"
+                                                            placeholder="Optional remark..."></textarea>
+                                                    </div>
+
+                                                    <!-- Submit Buttons -->
+                                                    <div class="col-md-12">
+                                                        <button type="submit" class="btn btn-primary btn-lg px-5"
+                                                            id="paymentSubmitBtn" <%=netPayable <=0 ? 'disabled' : ''
+                                                            %>>
+                                                            <i class="fas fa-save"></i> Process Payment
+                                                        </button>
+                                                        <button type="reset"
+                                                            class="btn btn-secondary btn-lg px-4">Clear</button>
+                                                    </div>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <script
+                                    src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+                                <script>
+                                    document.addEventListener('DOMContentLoaded', function () {
+                                        const paymentForm = document.getElementById('paymentForm');
+                                        const paymentAmount = document.getElementById('paymentAmount');
+                                        const adjustAdvanceCheck = document.getElementById('adjustAdvance');
+                                        const pendingAdvance = document.getElementById('pendingAdvance');
+                                        const advanceToAdjust = document.getElementById('advanceToAdjust');
+                                        const breakdownTotal = document.getElementById('breakdownTotal');
+                                        const breakdownAdvance = document.getElementById('breakdownAdvance');
+                                        const breakdownCash = document.getElementById('breakdownCash');
+                                        const netPayableDisplay = document.getElementById('netPayableDisplay');
+                                        const pendingAdvanceDisplay = document.getElementById('pendingAdvanceDisplay');
+
+                                        // ✅ Get values from server
+                                        const totalAdvances = <%= Math.round(totalAdvances || 0) %>;
+                                        const totalEarnings = <%= Math.round(totalEarnings || 0) %>;
+                                        const totalPaid = <%= Math.round(totalPaid || 0) %>;
+                                        const netPayable = <%= Math.round(netPayable || 0) %>;
+                                        const totalNetPayable = netPayable + totalAdvances; // Total amount including advance
+
+                                        // ✅ Set max amount to total earnings (full payment possible)
+                                        const maxAmount = totalEarnings;
+                                        paymentAmount.max = maxAmount;
+                                        paymentAmount.placeholder = `Enter amount (max: ₹${maxAmount})`;
+
+                                        // ✅ Update breakdown on amount change
+                                        function updateBreakdown() {
+                                            const amount = parseFloat(paymentAmount.value) || 0;
+                                            const adjustAdvance = adjustAdvanceCheck.checked;
+                                            let advanceAdjust = 0;
+                                            let cashAmount = amount;
+                                            let remainingAdvance = totalAdvances;
+
+                                            // ✅ If adjust advance is checked, adjust from pending advances
+                                            if (adjustAdvance && totalAdvances > 0) {
+                                                // ✅ Calculate how much advance can be adjusted (max up to amount)
+                                                advanceAdjust = Math.min(amount, totalAdvances);
+                                                cashAmount = amount - advanceAdjust;
+                                                remainingAdvance = totalAdvances - advanceAdjust;
+                                            } else {
+                                                // ✅ If unchecked, no advance adjustment - advance stays as is
+                                                advanceAdjust = 0;
+                                                cashAmount = amount;
+                                                remainingAdvance = totalAdvances;
+                                            }
+
+                                            // ✅ Update displays
+                                            breakdownTotal.textContent = '₹' + amount;
+                                            breakdownAdvance.textContent = '₹' + advanceAdjust;
+                                            breakdownCash.textContent = '₹' + cashAmount;
+                                            advanceToAdjust.textContent = '₹' + advanceAdjust;
+
+                                            // ✅ Update pending advance display
+                                            if (remainingAdvance > 0) {
+                                                pendingAdvance.textContent = '₹' + remainingAdvance;
+                                                pendingAdvanceDisplay.textContent = '₹' + remainingAdvance;
+                                            } else {
+                                                pendingAdvance.textContent = '₹0';
+                                                pendingAdvanceDisplay.textContent = '₹0';
+                                            }
+
+                                            // ✅ Update net payable after payment
+                                            const netAfterPayment = Math.max(0, netPayable - cashAmount);
+                                            netPayableDisplay.textContent = '₹' + netAfterPayment;
+
+                                            // ✅ Show warning if amount exceeds net payable and advance not adjusted
+                                            if (amount > netPayable && !adjustAdvance) {
+                                                breakdownCash.style.color = '#dc2626';
+                                                breakdownCash.textContent = '⚠️ ₹' + cashAmount + ' (Exceeds net payable)';
+                                            } else {
+                                                breakdownCash.style.color = '#2563eb';
+                                            }
+                                        }
+
+                                        // ✅ Event listeners
+                                        paymentAmount.addEventListener('input', updateBreakdown);
+                                        adjustAdvanceCheck.addEventListener('change', updateBreakdown);
+
+                                        // ✅ Initial update
+                                        updateBreakdown();
+
+                                        // ✅ Form Submit
+                                        paymentForm.addEventListener('submit', async function (e) {
+                                            e.preventDefault();
+
+                                            const formData = new FormData(this);
+                                            const data = Object.fromEntries(formData.entries());
+                                            data.adjustAdvance = adjustAdvanceCheck.checked;
+
+                                            const amount = parseFloat(data.amount);
+                                            if (!amount || amount <= 0) {
+                                                alert('⚠️ Please enter a valid payment amount');
+                                                return;
+                                            }
+
+                                            // ✅ Check if amount exceeds total earnings
+                                            if (amount > totalEarnings) {
+                                                alert(`⚠️ Payment amount (₹${amount}) exceeds total earnings (₹${totalEarnings})`);
+                                                return;
+                                            }
+
+                                            // ✅ Check if amount exceeds net payable + advance
+                                            const maxAllowed = totalEarnings;
+                                            if (amount > maxAllowed) {
+                                                alert(`⚠️ Payment amount (₹${amount}) exceeds max allowed (₹${maxAllowed})`);
+                                                return;
+                                            }
+
+                                            const submitBtn = document.getElementById('paymentSubmitBtn');
+                                            submitBtn.disabled = true;
+                                            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+
+                                            try {
+                                                const response = await fetch('/payments/api/record-payment', {
+                                                    method: 'POST',
+                                                    headers: { 'Content-Type': 'application/json' },
+                                                    body: JSON.stringify(data)
+                                                });
+
+                                                const result = await response.json();
+
+                                                if (result.success) {
+                                                    let msg = '✅ Payment recorded successfully!';
+                                                    if (result.adjustedAdvanceAmount > 0) {
+                                                        msg += `\n💰 Adjusted ₹${result.adjustedAdvanceAmount} from advance.`;
+                                                    }
+                                                    alert(msg);
+                                                    window.location.reload();
+                                                } else {
+                                                    alert('❌ Error: ' + (result.error || 'Unknown error'));
+                                                    submitBtn.disabled = false;
+                                                    submitBtn.innerHTML = '<i class="fas fa-save"></i> Process Payment';
+                                                }
+                                            } catch (error) {
+                                                alert('❌ Error: ' + error.message);
+                                                submitBtn.disabled = false;
+                                                submitBtn.innerHTML = '<i class="fas fa-save"></i> Process Payment';
+                                            }
+                                        });
+                                    });
+                                </script>
+    </body>
+
+    </html>

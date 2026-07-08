@@ -3,8 +3,9 @@ const router = express.Router();
 const { protect, adminOnly } = require('../middleware/auth');
 const Attendance = require('../models/Attendance');
 const Worker = require('../models/Worker');
+const BlockedMonth = require('../models/BlockedMonth');
 
-// ==================== GET WEEK START ====================
+// ==================== GET WEEK START (SATURDAY) ====================
 function getWeekStart(date) {
     const d = new Date(date);
     const day = d.getDay();
@@ -15,74 +16,44 @@ function getWeekStart(date) {
 }
 
 // ==================== ATTENDANCE DASHBOARD ====================
-// ==================== ATTENDANCE DASHBOARD (WITH FILTERS) ====================
-// ==================== ATTENDANCE DASHBOARD ====================
-// ==================== ATTENDANCE DASHBOARD ====================
 router.get('/', protect, adminOnly, async (req, res) => {
     try {
-        const { weekStart, view, month, workerType, status, date } = req.query;
-        let viewMode = view || 'week';
-        
-        // ✅ Determine date range
-        let startDate, endDate;
-        let monthStart = new Date();
-        let weekStartDate = new Date();
-        
-        if (viewMode === 'month') {
-            // Month view
-            const monthDate = month ? new Date(month) : new Date();
-            monthStart = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
-            const monthEnd = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
-            startDate = monthStart;
-            endDate = monthEnd;
-            endDate.setHours(23, 59, 59, 999);
-            weekStartDate = startDate;
-        } else {
-            // Week view (default)
-            viewMode = 'week';
-            weekStartDate = weekStart ? new Date(weekStart) : getWeekStart(new Date());
-            startDate = weekStartDate;
-            endDate = new Date(startDate);
-            endDate.setDate(endDate.getDate() + 6);
-            endDate.setHours(23, 59, 59, 999);
-            monthStart = startDate;
-        }
-        
-        // ✅ Build worker filter
+        const { workerType, workerId, month, view, weekStart, status } = req.query;
+
+        // ✅ Set default month
+        let currentMonth = month ? new Date(month + '-01') : new Date();
+        let monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+
+        // ✅ Get workers based on type
         let workerFilter = { isActive: true };
         if (workerType === 'helper') {
             workerFilter.workerType = 'helper';
         } else if (workerType === 'cutting') {
             workerFilter.workerType = 'cutting';
-        } else {
-            workerFilter.workerType = { $in: ['helper', 'cutting'] };
+        } else if (workerType) {
+            workerFilter.workerType = workerType;
         }
-        
-        // Get workers
+
         const workers = await Worker.find(workerFilter);
-        
-        // Get attendance for each worker
+
+        // ✅ Get attendance for all workers
         const attendanceData = [];
+        let selectedWorker = null;
+
         for (const worker of workers) {
             const attendance = await Attendance.find({
                 worker: worker._id,
-                date: { $gte: startDate, $lte: endDate }
+                date: { $gte: monthStart, $lte: new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0) }
             });
-            
+
             const present = attendance.filter(a => a.status === 'present').length;
             const absent = attendance.filter(a => a.status === 'absent').length;
             const halfDay = attendance.filter(a => a.status === 'half-day').length;
             const holiday = attendance.filter(a => a.status === 'holiday').length;
             const total = attendance.length;
-            
-            // Calculate pending days
-            let totalDays = 7; // Default week
-            if (viewMode === 'month') {
-                totalDays = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0).getDate();
-            }
-            const pending = totalDays - total;
-            
-            attendanceData.push({
+            const pending = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0).getDate() - total;
+
+            const workerObj = {
                 worker: worker,
                 attendance: attendance,
                 present: present,
@@ -90,18 +61,77 @@ router.get('/', protect, adminOnly, async (req, res) => {
                 halfDay: halfDay,
                 holiday: holiday,
                 total: total,
-                pending: pending,
-                totalDays: totalDays
-            });
+                pending: pending
+            };
+
+            attendanceData.push(workerObj);
+
+            // ✅ Check if this is the selected worker
+            if (workerId && worker._id.toString() === workerId) {
+                // ✅ Check if month is blocked
+                const blocked = await BlockedMonth.findOne({ month: monthStart.toISOString().slice(0, 7) });
+                selectedWorker = {
+                    ...workerObj,
+                    isMonthBlocked: !!blocked
+                };
+            }
         }
-        
+
+        // ✅ If no worker selected, but workerId is provided, try to find it
+        if (workerId && !selectedWorker) {
+            const worker = await Worker.findById(workerId);
+            if (worker) {
+                const attendance = await Attendance.find({
+                    worker: worker._id,
+                    date: { $gte: monthStart, $lte: new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0) }
+                });
+
+                const present = attendance.filter(a => a.status === 'present').length;
+                const absent = attendance.filter(a => a.status === 'absent').length;
+                const halfDay = attendance.filter(a => a.status === 'half-day').length;
+                const holiday = attendance.filter(a => a.status === 'holiday').length;
+                const total = attendance.length;
+                const pending = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0).getDate() - total;
+
+                const blocked = await BlockedMonth.findOne({ month: monthStart.toISOString().slice(0, 7) });
+
+                selectedWorker = {
+                    worker: worker,
+                    attendance: attendance,
+                    present: present,
+                    absent: absent,
+                    halfDay: halfDay,
+                    holiday: holiday,
+                    total: total,
+                    pending: pending,
+                    isMonthBlocked: !!blocked
+                };
+            }
+        }
+
+        // ✅ If no worker selected, but we have workers, select first one
+        if (!selectedWorker && attendanceData.length > 0) {
+            const blocked = await BlockedMonth.findOne({ month: monthStart.toISOString().slice(0, 7) });
+            selectedWorker = {
+                ...attendanceData[0],
+                isMonthBlocked: !!blocked
+            };
+        }
+
+        // ✅ Prepare week data
+        let weekStartDate = weekStart ? new Date(weekStart) : getWeekStart(new Date());
+        let weekEndDate = new Date(weekStartDate);
+        weekEndDate.setDate(weekEndDate.getDate() + 6);
+        weekEndDate.setHours(23, 59, 59, 999);
+
         res.render('attendance/index', {
             title: 'Attendance Management',
             workers: attendanceData,
-            weekStart: startDate,
-            weekEnd: endDate,
+            selectedWorker: selectedWorker,
             monthStart: monthStart,
-            viewMode: viewMode,  // ✅ CRITICAL: Pass viewMode
+            weekStart: weekStartDate,
+            weekEnd: weekEndDate,
+            viewMode: view || 'month',
             user: req.session.user,
             currentPage: 'attendance',
             getWeekStart: getWeekStart,
@@ -111,7 +141,7 @@ router.get('/', protect, adminOnly, async (req, res) => {
         });
     } catch (error) {
         console.error('Error loading attendance:', error);
-        req.flash('error_msg', 'Error loading attendance');
+        req.flash('error_msg', 'Error loading attendance: ' + error.message);
         res.redirect('/dashboard');
     }
 });
@@ -120,29 +150,30 @@ router.get('/', protect, adminOnly, async (req, res) => {
 router.post('/bulk', protect, adminOnly, async (req, res) => {
     try {
         const { weekStart, attendanceData } = req.body;
-        
+
         if (!attendanceData || attendanceData.length === 0) {
             return res.status(400).json({ success: false, error: 'No attendance data' });
         }
-        
+
         const startDate = new Date(weekStart);
         const endDate = new Date(startDate);
         endDate.setDate(endDate.getDate() + 6);
         endDate.setHours(23, 59, 59, 999);
-        
+
         let savedCount = 0;
-        
+
         for (const item of attendanceData) {
             const { workerId, date, status, remark } = item;
-            
-            // Skip if status is pending (don't save)
+
+            // Skip if not present or pending
             if (status === 'pending') continue;
-            
+
+            // Check if attendance already exists
             let attendance = await Attendance.findOne({
                 worker: workerId,
                 date: new Date(date)
             });
-            
+
             if (attendance) {
                 attendance.status = status || 'present';
                 attendance.remark = remark || '';
@@ -150,7 +181,7 @@ router.post('/bulk', protect, adminOnly, async (req, res) => {
             } else {
                 const worker = await Worker.findById(workerId);
                 if (!worker) continue;
-                
+
                 attendance = new Attendance({
                     worker: workerId,
                     workerType: worker.workerType,
@@ -165,13 +196,45 @@ router.post('/bulk', protect, adminOnly, async (req, res) => {
             }
             savedCount++;
         }
-        
-        res.json({ 
-            success: true, 
-            message: `${savedCount} attendance records saved successfully!` 
+
+        res.json({
+            success: true,
+            message: `${savedCount} attendance records saved successfully!`
         });
     } catch (error) {
         console.error('Error saving bulk attendance:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// ==================== TOGGLE MONTH BLOCK ====================
+router.post('/toggle-block', protect, adminOnly, async (req, res) => {
+    try {
+        const { month, block, workerId } = req.body;
+
+        if (!month) {
+            return res.status(400).json({ success: false, error: 'Month is required' });
+        }
+
+        if (block) {
+            await BlockedMonth.findOneAndUpdate(
+                { month: month },
+                {
+                    month: month,
+                    blocked: true,
+                    blockedAt: new Date(),
+                    blockedBy: req.session.user.id,
+                    workerId: workerId || null
+                },
+                { upsert: true }
+            );
+        } else {
+            await BlockedMonth.findOneAndDelete({ month: month });
+        }
+
+        res.json({ success: true, message: `Month ${block ? 'blocked' : 'unblocked'} successfully` });
+    } catch (error) {
+        console.error('Error toggling month block:', error);
         res.status(500).json({ success: false, error: error.message });
     }
 });

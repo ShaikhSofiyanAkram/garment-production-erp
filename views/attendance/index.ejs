@@ -1,731 +1,1065 @@
-<%
-const currentPage = 'attendance';
-%>
+<% const currentPage='attendance' ; %>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= title %> | Garment ERP</title>
-    
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="/css/style.css">
-    
-    <style>
-        /* ✅ Attendance Cell - Clickable */
-        .attendance-cell {
-            cursor: pointer;
-            padding: 12px 10px;
-            text-align: center;
-            border-radius: 10px;
-            min-width: 50px;
-            transition: all 0.2s ease;
-            font-size: 22px;
-            border: 2px solid #e2e8f0;
-            background: #f8fafc;
-            color: #94a3b8;
-            user-select: none;
-            display: inline-block;
-            width: 100%;
-        }
-        .attendance-cell:hover {
-            transform: scale(1.1);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-        }
-        .attendance-cell.present { 
-            background: #dcfce7; 
-            color: #16a34a; 
-            border-color: #16a34a;
-        }
-        .attendance-cell.pending { 
-            background: #f8fafc; 
-            color: #94a3b8; 
-            border-color: #e2e8f0;
-        }
-        .attendance-cell.absent { 
-            background: #fee2e2; 
-            color: #dc2626; 
-            border-color: #dc2626;
-        }
-        .attendance-cell.half-day { 
-            background: #fef3c7; 
-            color: #d97706; 
-            border-color: #d97706;
-        }
-        .attendance-cell.holiday { 
-            background: #dbeafe; 
-            color: #2563eb; 
-            border-color: #2563eb;
-        }
-        
-        .stat-card { 
-            background: white; 
-            border-radius: 12px; 
-            padding: 15px; 
-            border: 1px solid #e2e8f0; 
-            text-align: center; 
-        }
-        .stat-value { font-size: 1.75rem; font-weight: 700; }
-        .stat-label { font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
-        .week-nav-btn {
-            border-radius: 10px;
-            padding: 8px 20px;
-            font-weight: 600;
-        }
-        .table-attendance th {
-            background: #f8fafc;
-            font-weight: 600;
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            color: #64748b;
-            padding: 10px 6px;
-            text-align: center;
-            border-bottom: 2px solid #e2e8f0;
-        }
-        .table-attendance td {
-            vertical-align: middle;
-            padding: 6px 4px;
-            text-align: center;
-        }
-        .legend-item {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            margin-right: 15px;
-            font-size: 12px;
-        }
-        .legend-color {
-            width: 22px;
-            height: 22px;
-            border-radius: 6px;
-            border: 2px solid #e2e8f0;
-        }
-        .legend-color.present { background: #dcfce7; border-color: #16a34a; }
-        .legend-color.pending { background: #f8fafc; border-color: #e2e8f0; }
-        .legend-color.absent { background: #fee2e2; border-color: #dc2626; }
-        .legend-color.half-day { background: #fef3c7; border-color: #d97706; }
-        .legend-color.holiday { background: #dbeafe; border-color: #2563eb; }
-        
-        .fa-check-circle { font-size: 22px; }
-        .fa-circle { font-size: 22px; color: #d1d5db; }
-        
-        .filter-section {
-            background: white;
-            border-radius: 12px;
-            padding: 15px 20px;
-            border: 1px solid #e2e8f0;
-            margin-bottom: 15px;
-        }
-        .filter-section .form-select, .filter-section .form-control {
-            border-radius: 8px;
-            border: 1px solid #e2e8f0;
-            padding: 8px 12px;
-        }
-        .filter-section .btn-filter {
-            background: #4361ee;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            padding: 8px 25px;
-            font-weight: 600;
-        }
-        .filter-section .btn-filter:hover {
-            background: #3651d4;
-            color: white;
-        }
-        .filter-section .btn-reset {
-            background: #e2e8f0;
-            color: #475569;
-            border: none;
-            border-radius: 8px;
-            padding: 8px 25px;
-            font-weight: 600;
-        }
-        .filter-section .btn-reset:hover {
-            background: #cbd5e1;
-            color: #1e293b;
-        }
-    </style>
-</head>
-<body>
+    <!DOCTYPE html>
+    <html lang="en">
 
-<!-- Navbar -->
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="/dashboard">
-            <i class="fas fa-tshirt"></i> Garment ERP
-        </a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav ms-auto">
-                <li class="nav-item">
-                    <span class="nav-link">
-                        <i class="fas fa-user"></i> <%= user ? user.username : 'Admin' %>
-                    </span>
-                </li>
-                <li class="nav-item">
-                    <a href="/auth/logout" class="btn btn-sm btn-outline-light nav-link">
-                        <i class="fas fa-sign-out-alt"></i> Logout
-                    </a>
-                </li>
-            </ul>
-        </div>
-    </div>
-</nav>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>
+            <%= title %> | Garment ERP
+        </title>
 
-<div class="container-fluid mt-4">
-    <!-- Flash Messages -->
-    <% if (success_msg && success_msg.length) { %>
-        <div class="alert alert-success alert-dismissible fade show">
-            <i class="fas fa-check-circle"></i> <%= success_msg %>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    <% } %>
-    <% if (error_msg && error_msg.length) { %>
-        <div class="alert alert-danger alert-dismissible fade show">
-            <i class="fas fa-exclamation-circle"></i> <%= error_msg %>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    <% } %>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+            rel="stylesheet">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+        <link rel="stylesheet" href="/css/style.css">
 
-    <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h3><i class="fas fa-calendar-check text-primary"></i> Attendance Management</h3>
-            <p class="text-muted">Manage weekly attendance for helpers and cutting workers</p>
-        </div>
-        <div>
-            <a href="/dashboard" class="btn btn-secondary">
-                <i class="fas fa-arrow-left"></i> Back to Dashboard
-            </a>
-        </div>
-    </div>
+        <style>
+            .worker-card {
+                background: white;
+                border-radius: 16px;
+                padding: 18px 22px;
+                border: 1px solid #e2e8f0;
+                margin-bottom: 16px;
+            }
 
-    <!-- ✅ UPDATED: Month/Week Navigation with proper variable handling -->
-    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
-        <div>
-            <h5 class="mb-0">
-                <i class="fas fa-calendar-alt text-primary me-2"></i>
-                <% 
-                    // ✅ Set default values safely
-                    var currentViewMode = typeof viewMode !== 'undefined' ? viewMode : 'week';
-                    var currentMonthStart = typeof monthStart !== 'undefined' ? monthStart : new Date();
-                    var currentWeekStart = typeof weekStart !== 'undefined' ? weekStart : new Date();
-                    var currentWeekEnd = typeof weekEnd !== 'undefined' ? weekEnd : new Date();
-                    
-                    if (typeof currentWeekEnd === 'undefined' || currentWeekEnd === '') {
-                        currentWeekEnd = new Date(currentWeekStart);
-                        currentWeekEnd.setDate(currentWeekEnd.getDate() + 6);
-                    }
-                %>
-                <% if (currentViewMode === 'month') { %>
-                    Month: <strong><%= new Date(currentMonthStart).toLocaleString('default', { month: 'long', year: 'numeric' }) %></strong>
-                <% } else { %>
-                    Week: <strong><%= new Date(currentWeekStart).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) %></strong> - 
-                    <strong><%= new Date(currentWeekEnd).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) %></strong>
-                <% } %>
-            </h5>
-            <small class="text-muted"><%= currentViewMode === 'month' ? 'Full month view' : '(Saturday to Friday)' %></small>
-        </div>
-        <div class="d-flex gap-2 flex-wrap">
-            <% if (currentViewMode === 'month') { %>
-                <a href="?view=month&month=<%= new Date(new Date(currentMonthStart).setMonth(new Date(currentMonthStart).getMonth() - 1)).toISOString().split('T')[0] %>" 
-                   class="btn btn-outline-info week-nav-btn">
-                    <i class="fas fa-chevron-left"></i> Previous Month
+            .worker-card .name {
+                font-size: 22px;
+                font-weight: 700;
+                color: #1a1a2e;
+            }
+
+            .worker-card .details {
+                font-size: 13px;
+                color: #64748b;
+            }
+
+            .month-nav {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                background: white;
+                padding: 10px 18px;
+                border-radius: 12px;
+                border: 1px solid #e2e8f0;
+                margin-bottom: 16px;
+            }
+
+            .month-nav .month-title {
+                font-size: 18px;
+                font-weight: 700;
+                color: #1a1a2e;
+            }
+
+            /* ✅ Calendar Cell */
+            .cal-cell {
+                cursor: pointer;
+                padding: 6px 4px;
+                text-align: center;
+                border-radius: 8px;
+                min-width: 36px;
+                transition: all 0.2s ease;
+                border: 2px solid #e2e8f0;
+                background: #f8fafc;
+                color: #94a3b8;
+                user-select: none;
+                display: inline-block;
+                width: 100%;
+                min-height: 52px;
+            }
+
+            .cal-cell:hover {
+                transform: scale(1.04);
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            }
+
+            .cal-cell .date-num {
+                font-size: 13px;
+                font-weight: 700;
+                color: #1a1a2e;
+            }
+
+            .cal-cell .day-name {
+                font-size: 7px;
+                font-weight: 600;
+                color: #94a3b8;
+                display: block;
+                margin-top: 1px;
+            }
+
+            .cal-cell .status-icon {
+                font-size: 14px;
+                display: block;
+                margin-top: 1px;
+            }
+
+            .cal-cell.present {
+                background: #dcfce7;
+                border-color: #16a34a;
+            }
+
+            .cal-cell.present .status-icon {
+                color: #16a34a;
+            }
+
+            .cal-cell.present .date-num {
+                color: #16a34a;
+            }
+
+            .cal-cell.pending {
+                background: #f8fafc;
+                border-color: #e2e8f0;
+            }
+
+            .cal-cell.pending .status-icon {
+                color: #94a3b8;
+            }
+
+            .cal-cell.absent {
+                background: #fee2e2;
+                border-color: #dc2626;
+            }
+
+            .cal-cell.absent .status-icon {
+                color: #dc2626;
+            }
+
+            .cal-cell.absent .date-num {
+                color: #dc2626;
+            }
+
+            .cal-cell.half-day {
+                background: #fef3c7;
+                border-color: #d97706;
+            }
+
+            .cal-cell.half-day .status-icon {
+                color: #d97706;
+            }
+
+            .cal-cell.half-day .date-num {
+                color: #d97706;
+            }
+
+            .cal-cell.holiday {
+                background: #dbeafe;
+                border-color: #2563eb;
+            }
+
+            .cal-cell.holiday .status-icon {
+                color: #2563eb;
+            }
+
+            .cal-cell.holiday .date-num {
+                color: #2563eb;
+            }
+
+            .cal-cell.blocked {
+                background: #e5e7eb;
+                border-color: #9ca3af;
+                cursor: not-allowed;
+                opacity: 0.5;
+            }
+
+            .cal-cell.blocked:hover {
+                transform: none;
+                box-shadow: none;
+            }
+
+            .cal-cell.future {
+                background: #f3f4f6;
+                border-color: #e5e7eb;
+                cursor: not-allowed;
+                opacity: 0.4;
+            }
+
+            .cal-cell.future:hover {
+                transform: none;
+                box-shadow: none;
+            }
+
+            .cal-cell.today {
+                border-color: #4361ee;
+                box-shadow: 0 0 0 2px #4361ee44;
+            }
+
+            .cal-cell.friday {
+                border-color: #dc2626;
+                background: #fef2f2;
+            }
+
+            .cal-cell.friday .date-num {
+                color: #dc2626;
+            }
+
+            .stats-summary {
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 10px;
+                margin-bottom: 16px;
+            }
+
+            .stat-item {
+                background: white;
+                border-radius: 10px;
+                padding: 10px 14px;
+                border: 1px solid #e2e8f0;
+                text-align: center;
+            }
+
+            .stat-item .value {
+                font-size: 22px;
+                font-weight: 700;
+            }
+
+            .stat-item .label {
+                font-size: 10px;
+                color: #94a3b8;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+
+            .stat-item .value.green {
+                color: #16a34a;
+            }
+
+            .stat-item .value.gray {
+                color: #94a3b8;
+            }
+
+            .stat-item .value.red {
+                color: #dc2626;
+            }
+
+            .stat-item .value.orange {
+                color: #d97706;
+            }
+
+            .legend {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+                background: white;
+                padding: 8px 14px;
+                border-radius: 10px;
+                border: 1px solid #e2e8f0;
+                margin-bottom: 14px;
+            }
+
+            .legend-item {
+                display: flex;
+                align-items: center;
+                gap: 5px;
+                font-size: 11px;
+                padding: 4px 8px;
+                border-radius: 6px;
+                cursor: pointer;
+                transition: all 0.2s;
+                border: 2px solid transparent;
+            }
+
+            .legend-item:hover {
+                background: #f1f5f9;
+            }
+
+            .legend-item.active {
+                border-color: #4361ee;
+                background: #eff6ff;
+            }
+
+            .legend-dot {
+                width: 14px;
+                height: 14px;
+                border-radius: 4px;
+                border: 2px solid #e2e8f0;
+            }
+
+            .legend-dot.present {
+                background: #dcfce7;
+                border-color: #16a34a;
+            }
+
+            .legend-dot.pending {
+                background: #f8fafc;
+                border-color: #94a3b8;
+            }
+
+            .legend-dot.absent {
+                background: #fee2e2;
+                border-color: #dc2626;
+            }
+
+            .legend-dot.half-day {
+                background: #fef3c7;
+                border-color: #d97706;
+            }
+
+            .legend-dot.holiday {
+                background: #dbeafe;
+                border-color: #2563eb;
+            }
+
+            .legend-dot.blocked {
+                background: #e5e7eb;
+                border-color: #9ca3af;
+            }
+
+            .filter-section {
+                background: white;
+                border-radius: 12px;
+                padding: 12px 18px;
+                border: 1px solid #e2e8f0;
+                margin-bottom: 16px;
+            }
+
+            .filter-section .form-select,
+            .filter-section .form-control {
+                border-radius: 8px;
+                border: 1px solid #e2e8f0;
+                padding: 6px 12px;
+            }
+
+            .filter-section .btn-filter {
+                background: #4361ee;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                padding: 6px 20px;
+                font-weight: 600;
+            }
+
+            .filter-section .btn-filter:hover {
+                background: #3651d4;
+            }
+
+            .block-alert {
+                background: #fef2f2;
+                border: 1px solid #fca5a5;
+                border-radius: 10px;
+                padding: 10px 16px;
+                color: #dc2626;
+                font-weight: 600;
+                margin-bottom: 14px;
+                font-size: 13px;
+            }
+
+            .block-alert i {
+                margin-right: 8px;
+            }
+
+            .no-worker {
+                text-align: center;
+                padding: 50px 20px;
+                background: white;
+                border-radius: 16px;
+                border: 2px dashed #e2e8f0;
+            }
+
+            .no-worker i {
+                font-size: 40px;
+                color: #94a3b8;
+                margin-bottom: 12px;
+            }
+
+            .no-worker h5 {
+                color: #1a1a2e;
+            }
+
+            .no-worker p {
+                color: #94a3b8;
+            }
+
+            .fa-check-circle,
+            .fa-circle,
+            .fa-times-circle,
+            .fa-circle-half-stroke,
+            .fa-calendar-day,
+            .fa-lock {
+                font-size: 14px;
+            }
+
+            .table-calendar td {
+                padding: 3px;
+                vertical-align: middle;
+                text-align: center;
+            }
+
+            .table-calendar th {
+                padding: 6px 3px;
+                text-align: center;
+                background: #f8fafc;
+                font-size: 10px;
+                font-weight: 700;
+                text-transform: uppercase;
+                color: #94a3b8;
+            }
+
+            .table-calendar th.friday-header {
+                color: #dc2626;
+            }
+
+            .table-calendar .day-label {
+                font-weight: 600;
+                font-size: 12px;
+                color: #1a1a2e;
+                text-align: center;
+                background: #f8fafc;
+                min-width: 70px;
+            }
+
+            .table-calendar .empty-cell {
+                background: #fafbfc;
+            }
+
+            .btn-sm-custom {
+                padding: 4px 12px;
+                font-size: 12px;
+                border-radius: 6px;
+                font-weight: 600;
+            }
+
+            .status-tip {
+                font-size: 11px;
+                color: #94a3b8;
+                background: #f1f5f9;
+                padding: 3px 12px;
+                border-radius: 20px;
+            }
+
+            @media print {
+                .no-print {
+                    display: none !important;
+                }
+
+                .filter-section {
+                    display: none !important;
+                }
+
+                .month-nav {
+                    display: none !important;
+                }
+
+                .legend {
+                    display: none !important;
+                }
+
+                .stats-summary {
+                    display: none !important;
+                }
+
+                .worker-card {
+                    border: none !important;
+                }
+            }
+        </style>
+    </head>
+
+    <body>
+
+        <!-- Navbar -->
+        <nav class="navbar navbar-expand-lg navbar-dark bg-primary no-print">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="/dashboard">
+                    <i class="fas fa-tshirt"></i> Garment ERP
                 </a>
-                <a href="?view=month&month=<%= new Date(new Date(currentMonthStart).setMonth(new Date(currentMonthStart).getMonth() + 1)).toISOString().split('T')[0] %>" 
-                   class="btn btn-outline-info week-nav-btn">
-                    Next Month <i class="fas fa-chevron-right"></i>
-                </a>
-            <% } else { %>
-                <a href="?view=week&weekStart=<%= new Date(new Date(currentWeekStart).setDate(new Date(currentWeekStart).getDate() - 7)).toISOString().split('T')[0] %>" 
-                   class="btn btn-outline-primary week-nav-btn">
-                    <i class="fas fa-chevron-left"></i> Previous Week
-                </a>
-                <a href="?view=week&weekStart=<%= new Date(new Date(currentWeekStart).setDate(new Date(currentWeekStart).getDate() + 7)).toISOString().split('T')[0] %>" 
-                   class="btn btn-outline-primary week-nav-btn">
-                    Next Week <i class="fas fa-chevron-right"></i>
-                </a>
-            <% } %>
-            <a href="?view=month&month=<%= new Date(currentMonthStart).toISOString().split('T')[0] %>" 
-               class="btn btn-outline-info week-nav-btn <%= currentViewMode === 'month' ? 'active' : '' %>">
-                <i class="fas fa-calendar-alt"></i> Month View
-            </a>
-            <a href="?view=week" 
-               class="btn btn-primary week-nav-btn <%= currentViewMode === 'week' ? 'active' : '' %>">
-                <i class="fas fa-calendar-week"></i> Current Week
-            </a>
-        </div>
-    </div>
-
-    <!-- ✅ FILTER SECTION -->
-    <div class="filter-section">
-        <form method="GET" action="/attendance" class="row g-3 align-items-end">
-            <input type="hidden" name="view" value="<%= viewMode || 'week' %>">
-            <div class="col-md-3">
-                <label class="form-label fw-bold">Worker Type</label>
-                <select name="workerType" class="form-select">
-                    <option value="">All Workers</option>
-                    <option value="helper" <%= query && query.workerType === 'helper' ? 'selected' : '' %>>Helper</option>
-                    <option value="cutting" <%= query && query.workerType === 'cutting' ? 'selected' : '' %>>Cutting</option>
-                </select>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label fw-bold">Date</label>
-                <input type="date" name="date" class="form-control" value="<%= query && query.date ? query.date : '' %>">
-            </div>
-            <div class="col-md-3">
-                <label class="form-label fw-bold">Status</label>
-                <select name="status" class="form-select">
-                    <option value="">All</option>
-                    <option value="present" <%= query && query.status === 'present' ? 'selected' : '' %>>Present</option>
-                    <option value="absent" <%= query && query.status === 'absent' ? 'selected' : '' %>>Absent</option>
-                    <option value="half-day" <%= query && query.status === 'half-day' ? 'selected' : '' %>>Half Day</option>
-                    <option value="holiday" <%= query && query.status === 'holiday' ? 'selected' : '' %>>Holiday</option>
-                </select>
-            </div>
-            <div class="col-md-3">
-                <div class="d-flex gap-2">
-                    <button type="submit" class="btn-filter w-50">
-                        <i class="fas fa-filter"></i> Filter
-                    </button>
-                    <a href="/attendance" class="btn-reset w-50 text-center">
-                        <i class="fas fa-times"></i> Reset
-                    </a>
-                </div>
-            </div>
-        </form>
-    </div>
-
-    <!-- Stats -->
-    <div class="row g-3 mb-4">
-        <div class="col-md-3">
-            <div class="stat-card">
-                <div class="stat-label">Total Workers</div>
-                <div class="stat-value text-primary" id="statWorkers"><%= workers?.length || 0 %></div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="stat-card">
-                <div class="stat-label">Present Days</div>
-                <div class="stat-value text-success" id="statPresent">
-                    <%= workers?.reduce((sum, w) => sum + w.present, 0) || 0 %>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="stat-card">
-                <div class="stat-label">Pending Days</div>
-                <div class="stat-value text-secondary" id="statPending">
-                    <%= workers?.reduce((sum, w) => sum + w.pending, 0) || 0 %>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="stat-card">
-                <div class="stat-label">Total Days</div>
-                <div class="stat-value text-info" id="statTotal">
-                    <%= workers?.reduce((sum, w) => sum + w.total, 0) || 0 %>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Legend -->
-    <div class="card shadow-sm mb-3">
-        <div class="card-body py-2">
-            <div class="d-flex flex-wrap align-items-center gap-3">
-                <span class="fw-bold me-2">Click to toggle:</span>
-                <span class="legend-item">
-                    <span class="legend-color present"></span> Present ✅
-                </span>
-                <span class="legend-item">
-                    <span class="legend-color pending"></span> Pending ⬜
-                </span>
-                <span class="legend-item">
-                    <span class="legend-color absent"></span> Absent ❌
-                </span>
-                <span class="legend-item">
-                    <span class="legend-color half-day"></span> Half Day ⏳
-                </span>
-                <span class="legend-item">
-                    <span class="legend-color holiday"></span> Holiday 🎉
-                </span>
-                <span class="ms-3 text-muted small">Click cycles: Pending → Present → Absent → Half Day → Holiday</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- Attendance Table -->
-    <div class="card shadow-sm">
-        <div class="card-header bg-white py-3">
-            <div class="d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="fas fa-list"></i> Weekly Attendance</h5>
-                <button class="btn btn-success" onclick="saveAllAttendance()">
-                    <i class="fas fa-save"></i> Save All
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
                 </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item">
+                            <span class="nav-link"><i class="fas fa-user"></i>
+                                <%= user ? user.username : 'Admin' %>
+                            </span>
+                        </li>
+                        <li class="nav-item">
+                            <a href="/auth/logout" class="btn btn-sm btn-outline-light nav-link">
+                                <i class="fas fa-sign-out-alt"></i> Logout
+                            </a>
+                        </li>
+                    </ul>
+                </div>
             </div>
-        </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover mb-0 table-attendance" id="attendanceTable">
-                    <thead>
-                        <tr>
-                            <th style="min-width: 120px; text-align: left;">Worker</th>
-                            <th style="min-width: 70px;">Type</th>
-                            <% if (viewMode === 'month') { 
-                                const daysInMonth = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0).getDate();
-                                for (let i = 1; i <= daysInMonth; i++) { 
-                                    const date = new Date(monthStart);
-                                    date.setDate(i);
-                                    const dayName = date.toLocaleString('default', { weekday: 'short' });
-                            %>
-                                <th style="min-width: 40px; font-size: 10px;">
-                                    <div><%= dayName %></div>
-                                    <small><%= i %></small>
-                                </th>
-                            <% } } else { 
-                                const days = ['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
-                                const currentDate = new Date(weekStart);
-                                for (let i = 0; i < 7; i++) { 
-                                    const date = new Date(currentDate);
-                                    date.setDate(date.getDate() + i);
-                                    const dayNum = date.getDate();
-                                    const month = date.toLocaleString('default', { month: 'short' });
-                            %>
-                                <th style="min-width: 50px;">
-                                    <div><%= days[i] %></div>
-                                    <small><%= dayNum %> <%= month %></small>
-                                </th>
-                            <% } } %>
-                            <th style="min-width: 50px;">✅</th>
-                            <th style="min-width: 50px;">⬜</th>
-                            <th style="min-width: 80px;">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <% if (workers && workers.length > 0) { %>
-                            <% workers.forEach(w => { 
-                                const totalDays = viewMode === 'month' ? new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0).getDate() : 7;
-                                const pendingCount = totalDays - w.total;
-                            %>
-                                <tr id="row-<%= w.worker._id %>">
-                                    <td style="text-align: left;">
-                                        <strong><%= w.worker.name %></strong>
-                                        <br><small class="text-muted"><%= w.worker.phone || '' %></small>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-<%= w.worker.workerType === 'helper' ? 'warning' : 'danger' %>">
-                                            <%= w.worker.workerType.toUpperCase() %>
-                                        </span>
-                                    </td>
-                                    <% if (viewMode === 'month') { 
-                                        const daysInMonth = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0).getDate();
-                                        for (let i = 1; i <= daysInMonth; i++) { 
-                                            const date = new Date(monthStart);
-                                            date.setDate(i);
-                                            const dateStr = date.toISOString().split('T')[0];
-                                            const att = w.attendance.find(a => new Date(a.date).toISOString().split('T')[0] === dateStr);
-                                            const status = att ? att.status : 'pending';
-                                    %>
-                                        <td>
-                                            <div class="attendance-cell <%= status %>" 
-                                                 onclick="toggleAttendance('<%= w.worker._id %>', '<%= dateStr %>', '<%= status %>')"
-                                                 data-worker="<%= w.worker._id %>"
-                                                 data-date="<%= dateStr %>"
-                                                 data-status="<%= status %>">
-                                                <% if (status === 'present') { %>
-                                                    <i class="fas fa-check-circle"></i>
-                                                <% } else if (status === 'absent') { %>
-                                                    <i class="fas fa-times-circle"></i>
-                                                <% } else if (status === 'half-day') { %>
-                                                    <i class="fas fa-circle-half-stroke"></i>
-                                                <% } else if (status === 'holiday') { %>
-                                                    <i class="fas fa-calendar-day"></i>
-                                                <% } else { %>
-                                                    <i class="far fa-circle"></i>
-                                                <% } %>
-                                            </div>
-                                        </td>
-                                    <% } } else { 
-                                        const dateObj = new Date(weekStart);
-                                        for (let i = 0; i < 7; i++) {
-                                            const currentDate = new Date(dateObj);
-                                            currentDate.setDate(currentDate.getDate() + i);
-                                            const dateStr = currentDate.toISOString().split('T')[0];
-                                            const att = w.attendance.find(a => new Date(a.date).toISOString().split('T')[0] === dateStr);
-                                            const status = att ? att.status : 'pending';
-                                    %>
-                                        <td>
-                                            <div class="attendance-cell <%= status %>" 
-                                                 onclick="toggleAttendance('<%= w.worker._id %>', '<%= dateStr %>', '<%= status %>')"
-                                                 data-worker="<%= w.worker._id %>"
-                                                 data-date="<%= dateStr %>"
-                                                 data-status="<%= status %>">
-                                                <% if (status === 'present') { %>
-                                                    <i class="fas fa-check-circle"></i>
-                                                <% } else if (status === 'absent') { %>
-                                                    <i class="fas fa-times-circle"></i>
-                                                <% } else if (status === 'half-day') { %>
-                                                    <i class="fas fa-circle-half-stroke"></i>
-                                                <% } else if (status === 'holiday') { %>
-                                                    <i class="fas fa-calendar-day"></i>
-                                                <% } else { %>
-                                                    <i class="far fa-circle"></i>
-                                                <% } %>
-                                            </div>
-                                        </td>
-                                    <% } } %>
-                                    <td><strong class="text-success" id="present-<%= w.worker._id %>"><%= w.present %></strong></td>
-                                    <td id="pending-<%= w.worker._id %>"><%= pendingCount %></td>
-                                    <td>
-                                        <button onclick="saveWorkerAttendance('<%= w.worker._id %>')" class="btn btn-sm btn-outline-success">
-                                            <i class="fas fa-save"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                            <% }) %>
-                        <% } else { %>
-                            <tr>
-                                <td colspan="12" class="text-center py-5 text-muted">
-                                    <i class="fas fa-users fa-3x mb-3 d-block"></i>
-                                    <p class="mb-0">No helpers or cutting workers found</p>
-                                    <small>Add workers from Worker Management</small>
-                                </td>
-                            </tr>
+        </nav>
+
+        <div class="container-fluid mt-3">
+            <!-- Flash Messages -->
+            <% if (success_msg && success_msg.length) { %>
+                <div class="alert alert-success alert-dismissible fade show">
+                    <i class="fas fa-check-circle"></i>
+                    <%= success_msg %>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                <% } %>
+                    <% if (error_msg && error_msg.length) { %>
+                        <div class="alert alert-danger alert-dismissible fade show">
+                            <i class="fas fa-exclamation-circle"></i>
+                            <%= error_msg %>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
                         <% } %>
-                    </tbody>
-                </table>
-            </div>
+
+                            <!-- Header -->
+                            <div class="d-flex justify-content-between align-items-center mb-3 no-print">
+                                <div>
+                                    <h4><i class="fas fa-calendar-check text-primary"></i> Attendance Management</h4>
+                                    <small class="text-muted">Manage monthly attendance for helpers and cutting
+                                        workers</small>
+                                </div>
+                                <div>
+                                    <a href="/dashboard" class="btn btn-secondary btn-sm">
+                                        <i class="fas fa-arrow-left"></i> Back
+                                    </a>
+                                </div>
+                            </div>
+
+                            <!-- ✅ FILTER -->
+                            <div class="filter-section no-print">
+                                <form method="GET" action="/attendance" class="row g-2 align-items-end"
+                                    id="attendanceForm">
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-bold small">Worker Type</label>
+                                        <select name="workerType" class="form-select form-select-sm"
+                                            id="workerTypeSelect" onchange="this.form.submit()">
+                                            <option value="">-- Select --</option>
+                                            <option value="helper" <%=query && query.workerType==='helper' ? 'selected'
+                                                : '' %>>Helper</option>
+                                            <option value="cutting" <%=query && query.workerType==='cutting'
+                                                ? 'selected' : '' %>>Cutting</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-bold small">Worker</label>
+                                        <select name="workerId" class="form-select form-select-sm" id="workerSelect"
+                                            onchange="this.form.submit()">
+                                            <option value="">-- Select --</option>
+                                            <% if (workers && workers.length> 0) { %>
+                                                <% workers.forEach(w=> { %>
+                                                    <option value="<%= w.worker._id %>" <%=query &&
+                                                        query.workerId===w.worker._id.toString() ? 'selected' : '' %>>
+                                                        <%= w.worker.name %>
+                                                    </option>
+                                                    <% }) %>
+                                                        <% } %>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-bold small">Month</label>
+                                        <input type="month" name="month" class="form-control form-control-sm"
+                                            value="<%= query && query.month ? query.month : new Date().toISOString().slice(0, 7) %>"
+                                            onchange="this.form.submit()">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="d-flex gap-2">
+                                            <button type="submit" class="btn-filter btn-sm w-50">
+                                                <i class="fas fa-filter"></i> Apply
+                                            </button>
+                                            <a href="/attendance" class="btn btn-secondary btn-sm w-50 text-center"
+                                                style="border-radius:8px;padding:4px 0;background:#e2e8f0;color:#475569;text-decoration:none;font-weight:600;">
+                                                <i class="fas fa-times"></i> Reset
+                                            </a>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <!-- ✅ WORKER SELECTED -->
+                            <% if (selectedWorker) { var isBlocked=selectedWorker.isMonthBlocked || false; var
+                                monthName=new Date(monthStart).toLocaleString('default', { month: 'long' ,
+                                year: 'numeric' }); var daysInMonth=new Date(monthStart.getFullYear(),
+                                monthStart.getMonth() + 1, 0).getDate(); var firstDay=new Date(monthStart.getFullYear(),
+                                monthStart.getMonth(), 1).getDay(); var startOffset=(firstDay===0) ? 6 : (firstDay - 1);
+                                var weekdays=['Mon', 'Tue' , 'Wed' , 'Thu' , 'Fri' , 'Sat' , 'Sun' ]; var today=new
+                                Date(); var selectedStatus=query && query.status ? query.status : 'pending' ; %>
+
+                                <!-- Worker Card -->
+                                <div class="worker-card">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-6">
+                                            <div class="name">
+                                                <%= selectedWorker.worker.name %>
+                                            </div>
+                                            <div class="details">
+                                                <span
+                                                    class="badge bg-<%= selectedWorker.worker.workerType === 'helper' ? 'warning' : 'danger' %>">
+                                                    <%= selectedWorker.worker.workerType.toUpperCase() %>
+                                                </span>
+                                                <span class="ms-2"><i class="fas fa-phone"></i>
+                                                    <%= selectedWorker.worker.phone || 'N/A' %>
+                                                </span>
+                                                <span class="ms-2"><i class="fas fa-calendar"></i>
+                                                    <%= monthName %>
+                                                </span>
+                                                <% if (isBlocked) { %>
+                                                    <span class="ms-2 badge bg-danger"><i class="fas fa-lock"></i>
+                                                        Payment Cleared</span>
+                                                    <% } %>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 text-end">
+                                            <div class="d-flex gap-2 justify-content-end flex-wrap">
+                                                <button class="btn btn-sm btn-success" onclick="saveAllAttendance()"
+                                                    <%=isBlocked ? 'disabled' : '' %>>
+                                                    <i class="fas fa-save"></i> Save
+                                                </button>
+                                                <% if (isBlocked) { %>
+                                                    <button class="btn btn-sm btn-outline-success"
+                                                        onclick="toggleMonthBlock(false)">
+                                                        <i class="fas fa-unlock"></i> Unblock
+                                                    </button>
+                                                    <% } else { %>
+                                                        <button class="btn btn-sm btn-outline-danger"
+                                                            onclick="toggleMonthBlock(true)">
+                                                            <i class="fas fa-lock"></i> Block
+                                                        </button>
+                                                        <% } %>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Stats -->
+                                <div class="stats-summary">
+                                    <div class="stat-item">
+                                        <div class="value green">
+                                            <%= selectedWorker.present %>
+                                        </div>
+                                        <div class="label">Present</div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <div class="value gray">
+                                            <%= selectedWorker.pending %>
+                                        </div>
+                                        <div class="label">Pending</div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <div class="value red">
+                                            <%= selectedWorker.absent %>
+                                        </div>
+                                        <div class="label">Absent</div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <div class="value orange">
+                                            <%= selectedWorker.halfDay %>
+                                        </div>
+                                        <div class="label">Half Day</div>
+                                    </div>
+                                </div>
+
+                                <!-- ✅ Block Alert -->
+                                <% if (isBlocked) { %>
+                                    <div class="block-alert"><i class="fas fa-lock"></i> This month is blocked.
+                                        Attendance cannot be modified.</div>
+                                    <% } %>
+
+                                        <!-- ✅ SIMPLE LEGEND - Click to select status -->
+                                        <div class="legend">
+                                            <span class="fw-bold me-2 small">Select Status:</span>
+                                            <% var statuses=['pending', 'present' , 'absent' , 'half-day' , 'holiday' ];
+                                                %>
+                                                <% var statusLabels=['Pending ⬜', 'Present ✅' , 'Absent ❌'
+                                                    , 'Half Day ⏳' , 'Holiday 🎉' ]; %>
+                                                    <% for (var si=0; si < statuses.length; si++) { %>
+                                                        <span
+                                                            class="legend-item <%= selectedStatus === statuses[si] ? 'active' : '' %>"
+                                                            onclick="selectStatus('<%= statuses[si] %>')">
+                                                            <span class="legend-dot <%= statuses[si] %>"></span>
+                                                            <%= statusLabels[si] %>
+                                                        </span>
+                                                        <% } %>
+                                                            <span class="status-tip ms-2">Click a status, then click a
+                                                                date</span>
+                                        </div>
+
+                                        <!-- Month Navigation -->
+                                        <div class="month-nav no-print">
+                                            <a href="?workerType=<%= query && query.workerType ? query.workerType : '' %>&workerId=<%= query && query.workerId ? query.workerId : '' %>&month=<%= new Date(new Date(monthStart).setMonth(new Date(monthStart).getMonth() - 1)).toISOString().slice(0, 7) %>"
+                                                class="btn btn-outline-primary btn-sm">
+                                                <i class="fas fa-chevron-left"></i> Prev
+                                            </a>
+                                            <div class="month-title">
+                                                <%= monthName %> <small>(<%= daysInMonth %> days)</small>
+                                            </div>
+                                            <a href="?workerType=<%= query && query.workerType ? query.workerType : '' %>&workerId=<%= query && query.workerId ? query.workerId : '' %>&month=<%= new Date(new Date(monthStart).setMonth(new Date(monthStart).getMonth() + 1)).toISOString().slice(0, 7) %>"
+                                                class="btn btn-outline-primary btn-sm">
+                                                Next <i class="fas fa-chevron-right"></i>
+                                            </a>
+                                        </div>
+
+                                        <!-- ✅ Calendar Table -->
+                                        <div class="card shadow-sm">
+                                            <div class="card-header bg-white py-2">
+                                                <h6 class="mb-0"><i class="fas fa-calendar-alt"></i>
+                                                    <%= monthName %> - Calendar
+                                                </h6>
+                                            </div>
+                                            <div class="card-body p-0">
+                                                <div class="table-responsive">
+                                                    <table class="table table-bordered table-calendar mb-0"
+                                                        style="border-color:#e2e8f0;">
+                                                        <thead>
+                                                            <tr>
+                                                                <th
+                                                                    style="min-width:70px; background:#f8fafc; font-size:11px; color:#64748b; text-align:center;">
+                                                                    Worker</th>
+                                                                <% for (var wd=0; wd < 7; wd++) { %>
+                                                                    <th
+                                                                        style="min-width:40px; background:#f8fafc; font-size:10px; text-align:center; color:<%= wd === 4 ? '#dc2626' : '#64748b' %>;">
+                                                                        <%= weekdays[wd] %>
+                                                                            <% if (wd===4) { %><span
+                                                                                    style="font-size:6px;display:block;color:#dc2626;">H</span>
+                                                                                <% } %>
+                                                                    </th>
+                                                                    <% } %>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr>
+                                                                <td class="day-label">
+                                                                    <%= selectedWorker.worker.name %>
+                                                                </td>
+                                                                <% for (var d=0; d < startOffset; d++) { %>
+                                                                    <td class="empty-cell"></td>
+                                                                    <% } %>
+                                                                        <% for (var day=1; day <=daysInMonth; day++) {
+                                                                            var date=new Date(monthStart);
+                                                                            date.setDate(day); var
+                                                                            dateStr=date.toISOString().split('T')[0];
+                                                                            var
+                                                                            att=selectedWorker.attendance.find(function(a)
+                                                                            { return new
+                                                                            Date(a.date).toISOString().split('T')[0]===dateStr;
+                                                                            }); var status=att ? att.status : 'pending'
+                                                                            ; var isFuture=date> today;
+                                                                            var isToday = date.toDateString() ===
+                                                                            today.toDateString();
+                                                                            var dayOfWeek = date.getDay();
+                                                                            var isFriday = (dayOfWeek === 5);
+                                                                            var isClickable = !isBlocked && !isFuture;
+
+                                                                            var cellClass = isBlocked ? 'blocked' :
+                                                                            (isFuture ? 'future' : status);
+                                                                            if (isToday && !isBlocked && !isFuture)
+                                                                            cellClass += ' today';
+                                                                            if (isFriday && !isBlocked) cellClass += '
+                                                                            friday';
+                                                                            var dayName = date.toLocaleString('default',
+                                                                            { weekday: 'short' });
+                                                                            %>
+                                                                            <td
+                                                                                style="padding:3px; text-align:center; vertical-align:middle;">
+                                                                                <div class="cal-cell <%= cellClass %>"
+                                                                                    onclick="<%= isClickable ? "
+                                                                                    applyStatus('" +
+                                                                                    selectedWorker.worker._id + "', '" +
+                                                                                    dateStr + "', '" + status + "')"
+                                                                                    : "return false;" %>"
+                                                                                    data-worker="<%=
+                                                                                        selectedWorker.worker._id %>"
+                                                                                        data-date="<%= dateStr %>"
+                                                                                            data-status="<%= status %>"
+                                                                                                <%= !isClickable
+                                                                                                    ? 'style="cursor:not-allowed;opacity:0.4;"'
+                                                                                                    : '' %>>
+                                                                                                    <div
+                                                                                                        class="date-num">
+                                                                                                        <%= day %>
+                                                                                                    </div>
+                                                                                                    <span
+                                                                                                        class="day-name">
+                                                                                                        <%= dayName %>
+                                                                                                    </span>
+                                                                                                    <div
+                                                                                                        class="status-icon">
+                                                                                                        <% if
+                                                                                                            (status==='present'
+                                                                                                            ) { %><i
+                                                                                                                class="fas fa-check-circle"></i>
+                                                                                                            <% } else if
+                                                                                                                (status==='absent'
+                                                                                                                ) { %><i
+                                                                                                                    class="fas fa-times-circle"></i>
+                                                                                                                <% } else
+                                                                                                                    if
+                                                                                                                    (status==='half-day'
+                                                                                                                    ) {
+                                                                                                                    %><i
+                                                                                                                        class="fas fa-circle-half-stroke"></i>
+                                                                                                                    <% } else
+                                                                                                                        if
+                                                                                                                        (status==='holiday'
+                                                                                                                        )
+                                                                                                                        {
+                                                                                                                        %>
+                                                                                                                        <i
+                                                                                                                            class="fas fa-calendar-day"></i>
+                                                                                                                        <% } else
+                                                                                                                            if
+                                                                                                                            (isBlocked)
+                                                                                                                            {
+                                                                                                                            %>
+                                                                                                                            <i
+                                                                                                                                class="fas fa-lock"></i>
+                                                                                                                            <% } else
+                                                                                                                                if
+                                                                                                                                (isFuture)
+                                                                                                                                {
+                                                                                                                                %>
+                                                                                                                                <i
+                                                                                                                                    class="far fa-clock"></i>
+                                                                                                                                <% } else
+                                                                                                                                    {
+                                                                                                                                    %>
+                                                                                                                                    <i
+                                                                                                                                        class="far fa-circle"></i>
+                                                                                                                                    <% }
+                                                                                                                                        %>
+                                                                                                    </div>
+                                                                                                    <% if (isToday) { %>
+                                                                                                        <span
+                                                                                                            style="font-size:5px;color:#4361ee;display:block;">●</span>
+                                                                                                        <% } %>
+                                                                                                            <% if
+                                                                                                                (isFriday)
+                                                                                                                { %>
+                                                                                                                <span
+                                                                                                                    style="font-size:5px;color:#dc2626;display:block;">H</span>
+                                                                                                                <% } %>
+                                                                                </div>
+                                                                            </td>
+                                                                            <% } %>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Quick Tips -->
+                                        <div class="row mt-3">
+                                            <div class="col-md-6">
+                                                <div class="card bg-light border-0">
+                                                    <div class="card-body py-2">
+                                                        <h6><i class="fas fa-lightbulb text-warning"></i> How to Use
+                                                        </h6>
+                                                        <ul class="small mb-0">
+                                                            <li><strong>Select</strong> a status from the legend above
+                                                            </li>
+                                                            <li><strong>Click</strong> on any date to apply that status
+                                                            </li>
+                                                            <li>Click again to cycle: ⬜ → ✅ → ❌ → ⏳ → 🎉</li>
+                                                            <li><span class="text-danger">Friday</span> is holiday (red)
+                                                            </li>
+                                                            <li><span class="text-primary">Today</span> is highlighted
+                                                                in blue</li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="card bg-light border-0">
+                                                    <div class="card-body py-2">
+                                                        <h6><i class="fas fa-info-circle text-info"></i> Payment Impact
+                                                        </h6>
+                                                        <ul class="small mb-0">
+                                                            <li><strong>Helper:</strong> Salary based on present days
+                                                            </li>
+                                                            <li><strong>Cutting:</strong> Salary based on present days
+                                                            </li>
+                                                            <li>Daily Rate = Monthly Rate / 26 days</li>
+                                                            <li>Only <span class="text-success">Present</span> days
+                                                                count</li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <% } else { %>
+                                            <div class="no-worker">
+                                                <i class="fas fa-user-circle"></i>
+                                                <h5>Select a Worker</h5>
+                                                <p>Please select a worker type and worker from the filters above</p>
+                                            </div>
+                                            <% } %>
         </div>
-    </div>
 
-    <!-- Quick Tips -->
-    <div class="row mt-4">
-        <div class="col-md-6">
-            <div class="card bg-light border-0">
-                <div class="card-body">
-                    <h6><i class="fas fa-lightbulb text-warning"></i> Quick Tips</h6>
-                    <ul class="small mb-0">
-                        <li><strong>Click</strong> on any cell to cycle status</li>
-                        <li>Status cycle: Pending → Present → Absent → Half Day → Holiday</li>
-                        <li>Save individual worker or use <strong>"Save All"</strong></li>
-                        <li><strong>Month View</strong> for full month management</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card bg-light border-0">
-                <div class="card-body">
-                    <h6><i class="fas fa-info-circle text-info"></i> Payment Impact</h6>
-                    <ul class="small mb-0">
-                        <li><strong>Helper:</strong> Monthly salary based on present days</li>
-                        <li><strong>Cutting:</strong> Monthly salary based on present days</li>
-                        <li>Daily Rate = Monthly Rate / 26 working days</li>
-                        <li>Only <span class="text-success">Present</span> days count for salary</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+        <script>
+            // ==================== SELECT STATUS ====================
+            var currentStatus = '<%= selectedStatus %>';
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-// ==================== TOGGLE ATTENDANCE ====================
-function toggleAttendance(workerId, date, currentStatus) {
-    console.log('🔄 Toggle clicked:', workerId, date, currentStatus);
-    
-    // Status cycle: pending → present → absent → half-day → holiday → pending
-    const statuses = ['pending', 'present', 'absent', 'half-day', 'holiday'];
-    let index = statuses.indexOf(currentStatus);
-    if (index === -1) index = 0;
-    const newStatus = statuses[(index + 1) % statuses.length];
-    
-    // Find and update the cell
-    const cell = document.querySelector(`[data-worker="${workerId}"][data-date="${date}"]`);
-    if (cell) {
-        // Update class
-        cell.className = 'attendance-cell ' + newStatus;
-        cell.dataset.status = newStatus;
-        
-        // Update icon
-        if (newStatus === 'present') {
-            cell.innerHTML = '<i class="fas fa-check-circle"></i>';
-        } else if (newStatus === 'absent') {
-            cell.innerHTML = '<i class="fas fa-times-circle"></i>';
-        } else if (newStatus === 'half-day') {
-            cell.innerHTML = '<i class="fas fa-circle-half-stroke"></i>';
-        } else if (newStatus === 'holiday') {
-            cell.innerHTML = '<i class="fas fa-calendar-day"></i>';
-        } else {
-            cell.innerHTML = '<i class="far fa-circle"></i>';
-        }
-        
-        console.log('✅ Cell updated to:', newStatus);
-    } else {
-        console.log('❌ Cell not found for:', workerId, date);
-    }
-    
-    // Update counts
-    updateRowCounts(workerId);
-}
+            function selectStatus(status) {
+                currentStatus = status;
+                document.querySelectorAll('.legend-item').forEach(function (el) {
+                    el.classList.remove('active');
+                    if (el.querySelector('.legend-dot.' + status)) {
+                        el.classList.add('active');
+                    }
+                });
+                console.log('📌 Status selected:', status);
+            }
 
-// ==================== UPDATE ROW COUNTS ====================
-function updateRowCounts(workerId) {
-    const cells = document.querySelectorAll(`[data-worker="${workerId}"]`);
-    let presentCount = 0;
-    let totalCount = 0;
-    
-    cells.forEach(cell => {
-        totalCount++;
-        if (cell.dataset.status === 'present') {
-            presentCount++;
-        }
-    });
-    
-    const pendingCount = totalCount - presentCount;
-    
-    // Update UI
-    const presentCell = document.getElementById(`present-${workerId}`);
-    const pendingCell = document.getElementById(`pending-${workerId}`);
-    
-    if (presentCell) presentCell.textContent = presentCount;
-    if (pendingCell) pendingCell.textContent = pendingCount;
-    
-    // Update stats
-    updateStats();
-}
+            // ==================== APPLY STATUS TO CELL ====================
+            function applyStatus(workerId, date, currentCellStatus) {
+                var cell = document.querySelector('[data-worker="' + workerId + '"][data-date="' + date + '"]');
+                if (!cell) return;
+                if (cell.classList.contains('blocked') || cell.classList.contains('future')) return;
 
-// ==================== UPDATE STATS ====================
-function updateStats() {
-    const rows = document.querySelectorAll('#attendanceTable tbody tr');
-    let totalPresent = 0;
-    let totalPending = 0;
-    let totalDays = 0;
-    
-    rows.forEach(row => {
-        const presentCell = row.querySelector('td:nth-last-child(3)');
-        const pendingCell = row.querySelector('td:nth-last-child(2)');
-        if (presentCell) totalPresent += parseInt(presentCell.textContent) || 0;
-        if (pendingCell) totalPending += parseInt(pendingCell.textContent) || 0;
-    });
-    totalDays = totalPresent + totalPending;
-    
-    document.getElementById('statPresent').textContent = totalPresent;
-    document.getElementById('statPending').textContent = totalPending;
-    document.getElementById('statTotal').textContent = totalDays;
-}
+                // If no status selected, use pending as default
+                var newStatus = currentStatus || 'pending';
 
-// ==================== SAVE WORKER ATTENDANCE ====================
-function saveWorkerAttendance(workerId) {
-    const cells = document.querySelectorAll(`[data-worker="${workerId}"]`);
-    const attendanceData = [];
-    
-    cells.forEach(cell => {
-        const status = cell.dataset.status;
-        if (status !== 'pending') {
-            attendanceData.push({
-                workerId: workerId,
-                date: cell.dataset.date,
-                status: status,
-                remark: ''
+                // If clicking again, cycle through statuses
+                if (currentCellStatus === newStatus) {
+                    var statuses = ['pending', 'present', 'absent', 'half-day', 'holiday'];
+                    var index = statuses.indexOf(currentCellStatus);
+                    if (index !== -1) {
+                        newStatus = statuses[(index + 1) % statuses.length];
+                    }
+                }
+
+                // Update cell
+                cell.className = 'cal-cell ' + newStatus;
+                cell.dataset.status = newStatus;
+
+                var iconDiv = cell.querySelector('.status-icon');
+                if (newStatus === 'present') {
+                    iconDiv.innerHTML = '<i class="fas fa-check-circle"></i>';
+                } else if (newStatus === 'absent') {
+                    iconDiv.innerHTML = '<i class="fas fa-times-circle"></i>';
+                } else if (newStatus === 'half-day') {
+                    iconDiv.innerHTML = '<i class="fas fa-circle-half-stroke"></i>';
+                } else if (newStatus === 'holiday') {
+                    iconDiv.innerHTML = '<i class="fas fa-calendar-day"></i>';
+                } else {
+                    iconDiv.innerHTML = '<i class="far fa-circle"></i>';
+                }
+
+                updateCounts();
+                console.log('✅ Applied:', newStatus, 'to', date);
+            }
+
+            // ==================== UPDATE COUNTS ====================
+            function updateCounts() {
+                var cells = document.querySelectorAll('.cal-cell');
+                var present = 0, absent = 0, halfDay = 0, pending = 0;
+
+                cells.forEach(function (cell) {
+                    if (cell.classList.contains('blocked') || cell.classList.contains('future')) return;
+                    var status = cell.dataset.status;
+                    if (status === 'present') present++;
+                    else if (status === 'absent') absent++;
+                    else if (status === 'half-day') halfDay++;
+                    else pending++;
+                });
+
+                var statItems = document.querySelectorAll('.stat-item .value');
+                if (statItems.length >= 4) {
+                    statItems[0].textContent = present;
+                    statItems[1].textContent = pending;
+                    statItems[2].textContent = absent;
+                    statItems[3].textContent = halfDay;
+                }
+            }
+
+            // ==================== BLOCK/UNBLOCK ====================
+            function toggleMonthBlock(block) {
+                var action = block ? 'block' : 'unblock';
+                if (!confirm('Are you sure you want to ' + action + ' this month?')) return;
+
+                var month = '<%= monthStart.toISOString().slice(0, 7) %>';
+                var workerId = '<%= query && query.workerId ? query.workerId : "" %>';
+                var workerType = '<%= query && query.workerType ? query.workerType : "" %>';
+
+                fetch('/attendance/toggle-block', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ month: month, block: block, workerId: workerId })
+                })
+                    .then(function (res) { return res.json(); })
+                    .then(function (data) {
+                        if (data.success) {
+                            alert('✅ Month ' + (block ? 'blocked' : 'unblocked') + '!');
+                            window.location.href = '/attendance?workerType=' + workerType + '&workerId=' + workerId + '&month=' + month;
+                        } else {
+                            alert('❌ Error: ' + data.error);
+                        }
+                    })
+                    .catch(function (err) { alert('❌ Error: ' + err.message); });
+            }
+
+            // ==================== SAVE ALL ====================
+            function saveAllAttendance() {
+                var cells = document.querySelectorAll('.cal-cell');
+                var attendanceData = [];
+
+                cells.forEach(function (cell) {
+                    if (cell.classList.contains('blocked') || cell.classList.contains('future')) return;
+                    var status = cell.dataset.status;
+                    if (status !== 'pending') {
+                        attendanceData.push({
+                            workerId: cell.dataset.worker,
+                            date: cell.dataset.date,
+                            status: status,
+                            remark: ''
+                        });
+                    }
+                });
+
+                if (attendanceData.length === 0) {
+                    alert('⚠️ No attendance to save.');
+                    return;
+                }
+
+                if (!confirm('Save ' + attendanceData.length + ' record(s)?')) return;
+
+                var submitBtn = document.querySelector('.btn-success');
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+                }
+
+                fetch('/attendance/bulk', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        weekStart: '<%= weekStart.toISOString().split("T")[0] %>',
+                        attendanceData: attendanceData
+                    })
+                })
+                    .then(function (res) { return res.json(); })
+                    .then(function (data) {
+                        if (data.success) {
+                            alert('✅ Saved successfully!');
+                            window.location.reload();
+                        } else {
+                            alert('❌ Error: ' + data.error);
+                        }
+                    })
+                    .catch(function (err) { alert('❌ Error: ' + err.message); })
+                    .finally(function () {
+                        if (submitBtn) {
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = '<i class="fas fa-save"></i> Save';
+                        }
+                    });
+            }
+
+            // ==================== AUTO SUBMIT ====================
+            document.addEventListener('DOMContentLoaded', function () {
+                var workerTypeSelect = document.getElementById('workerTypeSelect');
+                var workerSelect = document.getElementById('workerSelect');
+
+                if (workerTypeSelect) {
+                    workerTypeSelect.addEventListener('change', function () { this.form.submit(); });
+                }
+                if (workerSelect) {
+                    workerSelect.addEventListener('change', function () { this.form.submit(); });
+                }
             });
-        }
-    });
-    
-    if (attendanceData.length === 0) {
-        alert('⚠️ No attendance to save. Please mark attendance first.');
-        return;
-    }
-    
-    saveAttendance(attendanceData);
-}
+        </script>
+    </body>
 
-// ==================== SAVE ALL ATTENDANCE ====================
-function saveAllAttendance() {
-    const allCells = document.querySelectorAll('.attendance-cell');
-    const attendanceMap = {};
-    
-    allCells.forEach(cell => {
-        const workerId = cell.dataset.worker;
-        const status = cell.dataset.status;
-        if (status === 'pending') return;
-        
-        if (!attendanceMap[workerId]) {
-            attendanceMap[workerId] = [];
-        }
-        attendanceMap[workerId].push({
-            workerId: workerId,
-            date: cell.dataset.date,
-            status: status,
-            remark: ''
-        });
-    });
-    
-    let allData = [];
-    Object.values(attendanceMap).forEach(arr => {
-        allData = allData.concat(arr);
-    });
-    
-    if (allData.length === 0) {
-        alert('⚠️ No attendance to save. Please mark attendance first.');
-        return;
-    }
-    
-    saveAttendance(allData);
-}
-
-// ==================== SAVE ATTENDANCE API ====================
-function saveAttendance(attendanceData) {
-    if (!confirm(`Save ${attendanceData.length} attendance record(s)?`)) return;
-    
-    const submitBtn = document.querySelector('.btn-success');
-    if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
-    }
-    
-    fetch('/attendance/bulk', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            weekStart: '<%= weekStart.toISOString().split("T")[0] %>',
-            attendanceData: attendanceData
-        })
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.success) {
-            alert('✅ Attendance saved successfully!');
-            window.location.reload();
-        } else {
-            alert('❌ Error: ' + data.error);
-        }
-    })
-    .catch(err => {
-        alert('❌ Error: ' + err.message);
-    })
-    .finally(() => {
-        if (submitBtn) {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = '<i class="fas fa-save"></i> Save All';
-        }
-    });
-}
-
-// ==================== DEBUG ====================
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('📋 Attendance page loaded');
-    const cells = document.querySelectorAll('.attendance-cell');
-    console.log('📋 Cells found:', cells.length);
-});
-</script>
-</body>
-</html>
+    </html>

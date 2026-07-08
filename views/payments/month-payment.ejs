@@ -1,0 +1,432 @@
+<%
+const currentPage = 'payments';
+%>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %> | Garment ERP</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+    
+    <style>
+        .stat-card { background: white; border-radius: 12px; padding: 15px; border: 1px solid #e2e8f0; }
+        .stat-value { font-size: 1.25rem; font-weight: 700; }
+        .stat-label { font-size: 0.7rem; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
+        .badge-status { padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; }
+        .table-premium { width: 100%; border-collapse: collapse; }
+        .table-premium th { padding: 8px; background: #f8fafc; font-weight: 600; border-bottom: 2px solid #e2e8f0; }
+        .table-premium td { padding: 8px; border-bottom: 1px solid #e2e8f0; }
+        .attendance-cell { 
+            width: 28px; 
+            height: 28px; 
+            border-radius: 6px;
+            display: inline-block;
+            text-align: center;
+            line-height: 28px;
+            font-size: 12px;
+            font-weight: 700;
+            margin: 1px;
+        }
+        .attendance-cell.present { background: #dcfce7; color: #16a34a; }
+        .attendance-cell.absent { background: #fee2e2; color: #dc2626; }
+        .attendance-cell.half-day { background: #fef3c7; color: #d97706; }
+        .attendance-cell.holiday { background: #dbeafe; color: #2563eb; }
+    </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/dashboard">
+            <i class="fas fa-tshirt"></i> Garment ERP
+        </a>
+        <div class="ms-auto">
+            <span class="text-white me-3">
+                <i class="fas fa-user"></i> <%= user ? user.username : 'Admin' %>
+            </span>
+            <a href="/auth/logout" class="btn btn-sm btn-outline-light">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid mt-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3><i class="fas fa-calendar-alt text-primary"></i> <%= monthKey %> - Payment</h3>
+            <p class="text-muted">
+                <%= worker.name %> - <span class="badge bg-<%= worker.workerType === 'helper' ? 'warning' : 'danger' %>"><%= worker.workerType.toUpperCase() %></span>
+                <% if (isPaid) { %>
+                    <span class="badge bg-success ms-2"><i class="fas fa-check-circle"></i> Paid</span>
+                <% } else { %>
+                    <span class="badge bg-warning ms-2">Pending</span>
+                <% } %>
+            </p>
+        </div>
+        <div>
+            <a href="/payments/worker/<%= worker._id %>" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-label">Present Days</div>
+                <div class="stat-value text-success"><%= presentDays %></div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-label">Half Days</div>
+                <div class="stat-value text-warning"><%= halfDays %></div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-label">Absent Days</div>
+                <div class="stat-value text-danger"><%= absentDays %></div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-label">Holidays</div>
+                <div class="stat-value text-info"><%= holidayDays %></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendance Calendar -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white py-2">
+            <h6 class="mb-0"><i class="fas fa-calendar-day"></i> Attendance - <%= monthKey %></h6>
+        </div>
+        <div class="card-body">
+            <div class="d-flex flex-wrap gap-1">
+                <% for (let day = 1; day <= new Date(monthEnd).getDate(); day++) {
+                    const date = new Date(monthStart);
+                    date.setDate(day);
+                    const att = attendance.find(a => new Date(a.date).getDate() === day);
+                    const status = att ? att.status : 'absent';
+                    const isFuture = date > new Date();
+                    const dayOfWeek = date.getDay();
+                    const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+                %>
+                    <div class="attendance-cell <%= status %>" 
+                         style="<%= isWeekend ? 'background:#f3f4f6;color:#9ca3af;' : '' %>"
+                         title="<%= new Date(date).toLocaleDateString('en-IN') %> - <%= status %>">
+                        <%= day %>
+                    </div>
+                <% } %>
+            </div>
+            <div class="mt-2">
+                <span class="badge bg-success">Present</span>
+                <span class="badge bg-danger">Absent</span>
+                <span class="badge bg-warning">Half Day</span>
+                <span class="badge bg-info">Holiday</span>
+                <span class="badge bg-secondary ms-3">Weekend</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Summary -->
+  <!-- Payment Summary -->
+<!-- Payment Summary -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <div class="small">Month Earnings</div>
+                <div class="h4 fw-bold">₹<%= monthEarnings %></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body text-center">
+                <div class="small">Already Paid</div>
+                <div class="h4 fw-bold">₹<%= totalPaid %></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body text-center">
+                <div class="small">Pending Advance</div>
+                <div class="h4 fw-bold">₹<%= totalAdvances %></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-<%= netPayable > 0 ? 'primary' : 'secondary' %> text-white">
+            <div class="card-body text-center">
+                <div class="small">Net Payable</div>
+                <div class="h4 fw-bold">
+                    <% if (isPaid) { %>
+                        <i class="fas fa-check-circle"></i> Paid
+                    <% } else { %>
+                        ₹<%= netPayable %>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ✅ If month is already paid, show success message -->
+<% if (isPaid) { %>
+    <div class="alert alert-success mb-4">
+        <i class="fas fa-check-circle"></i> 
+        <strong>This month is fully paid!</strong> 
+        Total paid: ₹<%= totalPaid %> / ₹<%= monthEarnings %>
+        <br><small class="text-muted">Paid on: <%= attendance[0]?.monthPaidAt ? new Date(attendance[0].monthPaidAt).toLocaleDateString('en-IN') : 'N/A' %></small>
+    </div>
+<% } %>
+
+<!-- Record Payment Form -->
+<div class="card shadow-sm">
+    <div class="card-header bg-white py-2">
+        <h6 class="mb-0"><i class="fas fa-money-bill-wave"></i> Record Payment</h6>
+    </div>
+    <div class="card-body">
+        <form id="monthPaymentForm">
+            <input type="hidden" name="workerId" value="<%= worker._id %>">
+            <input type="hidden" name="monthKey" value="<%= monthKey %>">
+            
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Payment Amount (₹) <span class="text-danger">*</span></label>
+                    <input type="number" name="amount" id="paymentAmount" class="form-control form-control-lg" 
+                           placeholder="Enter amount" min="0" 
+                           max="<%= netPayable %>"
+                           value="<%= netPayable %>"
+                           required
+                           <%= isPaid || netPayable <= 0 ? 'disabled' : '' %>>
+                    <small class="text-muted">
+                        <% if (isPaid) { %>
+                            ✅ Already paid
+                        <% } else { %>
+                            Max: ₹<%= netPayable %>
+                        <% } %>
+                    </small>
+                    <% if (isPaid) { %>
+                        <div class="text-success mt-1">
+                            <i class="fas fa-check-circle"></i> This month is fully paid!
+                        </div>
+                    <% } else if (netPayable <= 0) { %>
+                        <div class="text-success mt-1">
+                            <i class="fas fa-check-circle"></i> No payment required!
+                        </div>
+                    <% } %>
+                </div>
+                
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Payment Method <span class="text-danger">*</span></label>
+                    <select name="paymentMethod" class="form-control form-control-lg" required <%= isPaid ? 'disabled' : '' %>>
+                        <option value="Cash">💵 Cash</option>
+                        <option value="Bank Transfer">🏦 Bank Transfer</option>
+                        <option value="UPI">📱 UPI</option>
+                        <option value="Cheque">📄 Cheque</option>
+                    </select>
+                </div>
+                
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Reference / Transaction ID</label>
+                    <input type="text" name="reference" class="form-control" placeholder="Cheque No / UTR / Transaction ID" <%= isPaid ? 'disabled' : '' %>>
+                </div>
+                
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Payment Date</label>
+                    <input type="date" name="paymentDate" class="form-control" 
+                           value="<%= new Date().toISOString().split('T')[0] %>"
+                           <%= isPaid ? 'disabled' : '' %>>
+                </div>
+                
+                <!-- Adjust Advance Section -->
+                <div class="col-md-12">
+                    <div class="card border-warning">
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-md-4">
+                                    <label class="fw-bold">
+                                        <i class="fas fa-hand-holding-usd text-warning"></i> Adjust Advance
+                                    </label>
+                                    <div class="form-check mt-2">
+                                        <input type="checkbox" class="form-check-input" id="adjustAdvance" 
+                                               <%= totalAdvances > 0 && !isPaid ? 'checked' : 'disabled' %>>
+                                        <label class="form-check-label" for="adjustAdvance">
+                                            <%= totalAdvances > 0 && !isPaid ? 'Auto-adjust pending advance' : 'No pending advance' %>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="text-center">
+                                        <div class="text-muted small">Pending Advance</div>
+                                        <div class="h5 fw-bold text-warning" id="pendingAdvance">₹<%= totalAdvances %></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="text-center">
+                                        <div class="text-muted small">Advance to Adjust</div>
+                                        <div class="h5 fw-bold text-success" id="advanceToAdjust">₹0</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Payment Breakdown -->
+                <div class="col-md-12">
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h6 class="mb-3"><i class="fas fa-calculator"></i> Payment Breakdown</h6>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="d-flex justify-content-between">
+                                        <span class="text-muted">Total Amount:</span>
+                                        <span class="fw-bold" id="breakdownTotal">₹0</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="d-flex justify-content-between">
+                                        <span class="text-muted">Advance Adjusted:</span>
+                                        <span class="fw-bold text-success" id="breakdownAdvance">₹0</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="d-flex justify-content-between">
+                                        <span class="text-muted">Cash / Bank:</span>
+                                        <span class="fw-bold text-primary" id="breakdownCash">₹0</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-12">
+                    <label class="form-label fw-bold">Remark</label>
+                    <textarea name="remark" class="form-control" rows="2" placeholder="Optional remark..." <%= isPaid ? 'disabled' : '' %>></textarea>
+                </div>
+                
+                <div class="col-md-12">
+                    <button type="submit" class="btn btn-success btn-lg px-5" id="paymentSubmitBtn"
+                            <%= isPaid || netPayable <= 0 ? 'disabled' : '' %>>
+                        <i class="fas fa-save"></i> Process Payment
+                    </button>
+                    <button type="reset" class="btn btn-secondary btn-lg px-4" <%= isPaid ? 'disabled' : '' %>>Clear</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('monthPaymentForm');
+    const paymentAmount = document.getElementById('paymentAmount');
+    const adjustAdvanceCheck = document.getElementById('adjustAdvance');
+    const pendingAdvance = document.getElementById('pendingAdvance');
+    const advanceToAdjust = document.getElementById('advanceToAdjust');
+    const breakdownTotal = document.getElementById('breakdownTotal');
+    const breakdownAdvance = document.getElementById('breakdownAdvance');
+    const breakdownCash = document.getElementById('breakdownCash');
+    
+    const totalAdvances = <%= totalAdvances %>;
+    const netPayable = <%= netPayable + totalAdvances %>;
+    
+    // ✅ Set max
+    paymentAmount.max = netPayable;
+    paymentAmount.placeholder = `Enter amount (max: ₹${netPayable})`;
+    
+    function updateBreakdown() {
+        const amount = parseFloat(paymentAmount.value) || 0;
+        const adjustAdvance = adjustAdvanceCheck.checked;
+        let advanceAdjust = 0;
+        let cashAmount = amount;
+        
+        if (adjustAdvance && totalAdvances > 0) {
+            advanceAdjust = Math.min(amount, totalAdvances);
+            cashAmount = amount - advanceAdjust;
+        }
+        
+        breakdownTotal.textContent = '₹' + amount;
+        breakdownAdvance.textContent = '₹' + advanceAdjust;
+        breakdownCash.textContent = '₹' + cashAmount;
+        advanceToAdjust.textContent = '₹' + advanceAdjust;
+        
+        const remainingAdvance = totalAdvances - advanceAdjust;
+        pendingAdvance.textContent = '₹' + remainingAdvance;
+    }
+    
+    paymentAmount.addEventListener('input', updateBreakdown);
+    adjustAdvanceCheck.addEventListener('change', updateBreakdown);
+    updateBreakdown();
+    
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const data = Object.fromEntries(formData.entries());
+        data.adjustAdvance = adjustAdvanceCheck.checked;
+        
+        const amount = parseFloat(data.amount);
+        if (!amount || amount <= 0) {
+            alert('⚠️ Please enter a valid payment amount');
+            return;
+        }
+        
+        if (amount > netPayable) {
+            alert(`⚠️ Payment amount (₹${amount}) exceeds net payable (₹${netPayable})`);
+            return;
+        }
+        
+        const submitBtn = document.getElementById('paymentSubmitBtn');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        
+        try {
+            const response = await fetch('/payments/api/month-payment', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                let msg = '✅ Payment recorded successfully!';
+                if (result.adjustedAdvanceAmount > 0) {
+                    msg += `\n💰 Adjusted ₹${result.adjustedAdvanceAmount} from advance.`;
+                }
+                alert(msg);
+                window.location.href = '/payments/worker/<%= worker._id %>';
+            } else {
+                alert('❌ Error: ' + (result.error || 'Unknown error'));
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-save"></i> Process Payment';
+            }
+        } catch (error) {
+            alert('❌ Error: ' + error.message);
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-save"></i> Process Payment';
+        }
+    });
+});
+</script>
+</body>
+</html>

@@ -52,6 +52,15 @@ const { protect, adminOnly } = require('../middleware/auth');
 const workerPaymentController = require('../controllers/workerPaymentController');
 
 // =============================================================
+
+
+
+const monthPaymentController = require('../controllers/monthPaymentController');
+
+// ==================== MONTH PAYMENT ROUTES ====================
+router.get('/month-payment/:workerId/:monthKey', protect, adminOnly, monthPaymentController.getMonthPayment);
+router.post('/api/month-payment', protect, adminOnly, monthPaymentController.processMonthPayment);
+
 // ✅ STATIC ROUTES
 // =============================================================
 
