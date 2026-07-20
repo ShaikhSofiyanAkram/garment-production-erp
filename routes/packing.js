@@ -13,6 +13,50 @@ router.post('/create', protect, adminOnly, packingController.createPacking);
 router.get('/view/:id', protect, adminOnly, packingController.viewPacking);
 router.delete('/delete/:id', protect, adminOnly, packingController.deletePacking);
 
+// ==================== AUTO FROM FINISHING API ====================
+router.get('/api/finishing-available', protect, adminOnly, packingController.getAutoFromFinishing);
+router.delete('/api/packed-entry/:packingId/:entryIndex', protect, adminOnly, packingController.deletePackedEntry);
+
+// ✅ GET already packed finishing records (FIXED)
+router.get('/api/already-packed', protect, async (req, res) => {
+    try {
+        console.log('📡 Fetching already packed items...');
+        
+        // Get all packing entries
+        const packings = await Packing.find().sort({ createdAt: -1 });
+        const packedItems = [];
+        const packedKeys = new Set();
+        
+        // Extract product+category+size from each packing
+        packings.forEach(p => {
+            if (p.entries && p.entries.length > 0) {
+                p.entries.forEach(entry => {
+                    // ✅ Only add if entry has valid data
+                    if (entry.productName && entry.category && entry.size) {
+                        const key = `${entry.productName}|${entry.category}|${entry.size}`;
+                        if (!packedKeys.has(key)) {
+                            packedKeys.add(key);
+                            packedItems.push({
+                                productName: entry.productName,
+                                category: entry.category,
+                                size: entry.size
+                            });
+                        }
+                    }
+                });
+            }
+        });
+        
+        console.log(`📦 Found ${packedItems.length} unique packed items`);
+        console.log('📦 Packed keys:', Array.from(packedKeys));
+        
+        res.json({ success: true, packed: packedItems });
+    } catch (error) {
+        console.error('❌ Error fetching packed items:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 // ============ API ROUTES ============
 router.get('/api/list', protect, adminOnly, async (req, res) => {
     try {

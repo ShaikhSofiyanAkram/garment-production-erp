@@ -155,6 +155,187 @@ exports.deletePacking = async (req, res) => {
     }
 };
 
+
+
+
+
+
+
+
+
+// ==================== GET AUTO FROM FINISHING ====================
+exports.getAutoFromFinishing = async (req, res) => {
+    try {
+        // ✅ Get all finishing records that are not yet packed
+        const Finishing = require('../models/Finishing');
+        const Packing = require('../models/Packing');
+        
+        // ✅ Get all finishing records with their details
+        const finishingRecords = await Finishing.find({
+            status: 'completed',
+            isPacked: { $ne: true } // ✅ Only get unfinished records
+        }).populate('assignmentId', 'assignmentId productName')
+          .populate('karigarId', 'name')
+          .populate('helperId', 'name')
+          .sort({ finishingDate: -1 });
+        
+        // ✅ Get already packed items (product + size combination)
+        const packedItems = await Packing.find({}, 'entries');
+        const packedSet = new Set();
+        
+        for (const pack of packedItems) {
+            for (const entry of pack.entries) {
+                // ✅ Create unique key: productId + size
+                const key = entry.product + '-' + entry.size;
+                packedSet.add(key);
+            }
+        }
+        
+        // ✅ Filter finishing records that have already been packed
+        const availableRecords = [];
+        for (const record of finishingRecords) {
+            // ✅ Check if this finishing record's product+size is already packed
+            const key = record.productId + '-' + record.size;
+            if (!packedSet.has(key)) {
+                availableRecords.push(record);
+            }
+        }
+        
+        // ✅ Format data for display
+        const formattedRecords = availableRecords.map(record => ({
+            id: record._id,
+            finishingNumber: record.finishingNumber || 'FIN-0000',
+            productName: record.productName || 'Unknown',
+            size: record.size || 'N/A',
+            passedPieces: record.passedPieces || 0,
+            category: record.category || 'N/A',
+            // ✅ Include all sizes if available
+            sizes: record.sizes || [],
+            // ✅ For backwards compatibility
+            sizeDetails: record.sizeDetails || []
+        }));
+        
+        res.json({
+            success: true,
+            records: formattedRecords,
+            total: formattedRecords.length
+        });
+        
+    } catch (error) {
+        console.error('❌ Error fetching auto finishing:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
+
+// ==================== FINALIZE PACKING ====================
+exports.finalizePacking = async (req, res) => {
+    try {
+        const { entries, remark, source } = req.body;
+        
+        if (!entries || entries.length === 0) {
+            return res.status(400).json({ 
+                success: false, 
+                error: 'No entries to pack' 
+            });
+        }
+        
+        // ✅ Create packing entry
+        const Packing = require('../models/Packing');
+        const Finishing = require('../models/Finishing');
+        
+        const packing = new Packing({
+            entries: entries.map(e => ({
+                product: e.productId,
+                productName: e.productName,
+                category: e.category,
+                size: e.size,
+                packedPieces: e.pieces || e.passedPieces || 0,
+                finishingId: e.finishingId || null
+            })),
+            totalPieces: entries.reduce((sum, e) => sum + (e.pieces || e.passedPieces || 0), 0),
+            remark: remark || '',
+            createdBy: req.session.user.id,
+            source: source || 'auto' // auto or manual
+        });
+        
+        await packing.save();
+        
+        // ✅ Mark finishing records as packed
+        if (source === 'auto') {
+            const finishingIds = entries.map(e => e.finishingId).filter(id => id);
+            if (finishingIds.length > 0) {
+                await Finishing.updateMany(
+                    { _id: { $in: finishingIds } },
+                    { isPacked: true, packedAt: new Date() }
+                );
+            }
+        }
+        
+        res.json({
+            success: true,
+            packing: packing,
+            message: 'Packing finalized successfully!'
+        });
+        
+    } catch (error) {
+        console.error('❌ Error finalizing packing:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
+
+// ==================== DELETE PACKED ENTRY ====================
+exports.deletePackedEntry = async (req, res) => {
+    try {
+        const { packingId, entryIndex } = req.params;
+        
+        const Packing = require('../models/Packing');
+        const packing = await Packing.findById(packingId);
+        
+        if (!packing) {
+            return res.status(404).json({ success: false, error: 'Packing not found' });
+        }
+        
+        // ✅ Remove the entry
+        if (entryIndex !== undefined && packing.entries[entryIndex]) {
+            // ✅ Get finishingId before removing
+            const finishingId = packing.entries[entryIndex].finishingId;
+            
+            // ✅ Remove entry
+            packing.entries.splice(entryIndex, 1);
+            
+            // ✅ Recalculate total pieces
+            packing.totalPieces = packing.entries.reduce((sum, e) => sum + (e.packedPieces || 0), 0);
+            
+            await packing.save();
+            
+            // ✅ Unmark finishing record
+            if (finishingId) {
+                const Finishing = require('../models/Finishing');
+                await Finishing.findByIdAndUpdate(finishingId, { isPacked: false });
+            }
+            
+            res.json({ 
+                success: true, 
+                message: 'Entry removed successfully!',
+                totalPieces: packing.totalPieces
+            });
+        } else {
+            res.status(404).json({ success: false, error: 'Entry not found' });
+        }
+    } catch (error) {
+        console.error('❌ Error deleting packed entry:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
+
+
+
+
+
+
+
+
+
 exports.createPacking = async (req, res) => {
     try {
         console.log('=== PACKING SUBMIT START ===');

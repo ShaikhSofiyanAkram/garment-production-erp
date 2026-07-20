@@ -37,14 +37,70 @@
                         
                         <!-- Auto from Finishing Tab -->
                         <div class="tab-pane fade" id="auto" role="tabpanel">
+                            <!-- ✅ Filter Section -->
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <div class="row g-3">
+                                        <div class="col-md-4">
+                                            <label class="form-label fw-bold">Filter by Product</label>
+                                            <input type="text" class="form-control" id="filterProduct" placeholder="Search product..." oninput="filterFinishingRecords()">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label fw-bold">Filter by Category</label>
+                                            <select class="form-control" id="filterCategory" onchange="filterFinishingRecords()">
+                                                <option value="">All Categories</option>
+                                                <option value="Kids">Kids</option>
+                                                <option value="Mens">Mens</option>
+                                                <option value="Other">Other</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label fw-bold">Filter by Status</label>
+                                            <select class="form-control" id="filterStatus" onchange="filterFinishingRecords()">
+                                                <option value="">All</option>
+                                                <option value="available">Available</option>
+                                                <option value="packed">Already Packed</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-2 d-flex align-items-end">
+                                            <button class="btn btn-secondary w-100" onclick="resetFilters()">
+                                                <i class="fas fa-undo"></i> Reset
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="row">
                                 <div class="col-md-8">
                                     <div class="mb-3">
                                         <label class="form-label fw-bold">Select Finishing Records</label>
-                                        <select class="form-control" id="finishingSelect" multiple style="height: 250px;">
-                                            <!-- Will be populated by AJAX -->
-                                        </select>
+                                        <div class="table-responsive" style="max-height: 300px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+                                            <table class="table table-hover mb-0" id="finishingTable">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th style="width:40px;">
+                                                            <input type="checkbox" id="selectAllFinishing" onchange="toggleSelectAll()">
+                                                        </th>
+                                                        <th>Finishing #</th>
+                                                        <th>Product</th>
+                                                        <th>Category</th>
+                                                        <th>Size</th>
+                                                        <th class="text-end">Pieces</th>
+                                                        <th>Status</th>
+                                                        <th style="width:60px;">Action</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="finishingTableBody">
+                                                    <!-- Will be populated by AJAX -->
+                                                </tbody>
+                                            </table>
+                                        </div>
                                         <small class="text-muted">Click to select individual records. Hold Ctrl for multiple selection.</small>
+                                        <div class="mt-2">
+                                            <span class="badge bg-success" id="availableCount">0</span> Available
+                                            <span class="badge bg-secondary ms-2" id="packedCount">0</span> Already Packed
+                                        </div>
                                     </div>
                                     
                                     <div class="mb-3">
@@ -52,7 +108,7 @@
                                             <i class="fas fa-plus-circle"></i> Add Selected to List
                                         </button>
                                         <button type="button" class="btn btn-info" onclick="selectAllFinishing()">
-                                            <i class="fas fa-check-double"></i> Select All
+                                            <i class="fas fa-check-double"></i> Select All Available
                                         </button>
                                         <button type="button" class="btn btn-secondary" onclick="deselectAllFinishing()">
                                             <i class="fas fa-times"></i> Deselect All
@@ -79,6 +135,9 @@
                                 <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                                     <span><i class="fas fa-list"></i> Selected Products for Packing</span>
                                     <span class="badge bg-light text-dark" id="autoListCount">0 items</span>
+                                    <button class="btn btn-sm btn-danger" onclick="clearAutoList()">
+                                        <i class="fas fa-trash"></i> Clear All
+                                    </button>
                                 </div>
                                 <div class="card-body p-0">
                                     <div class="table-responsive">
@@ -141,7 +200,11 @@
     let allProducts = [];
     let entryCount = 0;
     let allFinishingRecords = [];
+    let filteredFinishingRecords = [];
     let autoSelectedEntries = [];
+    let alreadyPackedMap = {};
+    let selectedFinishingIds = [];
+    let selectedFinishingKeys = [];
 
     // ============ LOAD PRODUCTS ============
     async function loadProducts() {
@@ -212,6 +275,7 @@
                         <option value="">Select</option>
                         <option value="Kids">Kids</option>
                         <option value="Mens">Mens</option>
+                        <option value="Other">Other</option>
                     </select>
                 </div>
                 <div class="col-md-2">
@@ -343,6 +407,8 @@
             sizes = ['1','2','3','4','5','6','7','8','9','10','11','12'];
         } else if (category === 'Mens') {
             sizes = ['26','28','30','32','34','36','38','40','42','44','46','48','50','52','54','56','58','60'];
+        } else if (category === 'Other') {
+            sizes = ['S', 'M', 'L', 'XL', 'XXL', 'Free Size', 'One Size'];
         }
         const currentValue = sizeSelect.value;
         sizeSelect.innerHTML = `<option value="">Select Size</option>${sizes.map(s => `<option value="${s}">${s}</option>`).join('')}<option value="other">+ Manual Size</option>`;
@@ -408,146 +474,310 @@
 
     // ============ AUTO FROM FINISHING FUNCTIONS ============
     async function loadFinishingRecords() {
-        const select = document.getElementById('finishingSelect');
-        select.innerHTML = '<option value="">Loading finishing records...</option>';
+    try {
+        console.log('📡 Calling API: /packing/api/finishing-records');
+        const res = await fetch('/packing/api/finishing-records');
+        const data = await res.json();
         
-        try {
-            console.log('📡 Calling API: /packing/api/finishing-records');
-            const res = await fetch('/packing/api/finishing-records');
-            const data = await res.json();
+        console.log('📦 API Response:', data);
+        
+        if (data.success && data.records && data.records.length > 0) {
+            allFinishingRecords = data.records;
             
-            console.log('📦 API Response:', data);
+            // ✅ Check already packed records FIRST
+            await checkAlreadyPacked();
             
-            if (data.success && data.records && data.records.length > 0) {
-                allFinishingRecords = data.records;
-                renderFinishingSelect(allFinishingRecords);
-            } else {
-                select.innerHTML = '<option value="">❌ No finishing records available</option>';
-                console.log('⚠️ No finishing records found');
-            }
-        } catch (error) {
-            console.error('❌ Error loading finishing records:', error);
-            select.innerHTML = `<option value="">❌ Error: ${error.message}</option>`;
+            // ✅ Filter out packed records
+            const availableRecords = allFinishingRecords.filter(record => {
+                const key = `${record.productName}|${record.category}|${record.size}`;
+                return !alreadyPackedMap[key];
+            });
+            
+            console.log(`📊 Available: ${availableRecords.length} / ${allFinishingRecords.length}`);
+            
+            renderFinishingTable(availableRecords);
+            updateCounts();
+        } else {
+            document.getElementById('finishingTableBody').innerHTML = `
+                <tr><td colspan="8" class="text-center py-4 text-muted">
+                    <i class="fas fa-inbox fa-2x d-block mb-2"></i>
+                    No finishing records available
+                </td></tr>
+            `;
+            console.log('⚠️ No finishing records found');
         }
+    } catch (error) {
+        console.error('❌ Error loading finishing records:', error);
+        document.getElementById('finishingTableBody').innerHTML = `
+            <tr><td colspan="8" class="text-center py-4 text-danger">
+                <i class="fas fa-exclamation-triangle fa-2x d-block mb-2"></i>
+                Error: ${error.message}
+            </td></tr>
+        `;
+    }
+}
+
+    // ✅ Check already packed records
+    // ✅ Check already packed records (FIXED)
+async function checkAlreadyPacked() {
+    try {
+        const res = await fetch('/packing/api/already-packed');
+        const data = await res.json();
+        console.log('📦 Already packed API response:', data);
+        
+        if (data.success && data.packed) {
+            alreadyPackedMap = {};
+            data.packed.forEach(item => {
+                // ✅ Normalize key
+                const key = `${item.productName}|${item.category}|${item.size}`;
+                alreadyPackedMap[key] = true;
+                console.log(`  ✅ Marked as packed: ${key}`);
+            });
+            console.log('📦 Already packed map size:', Object.keys(alreadyPackedMap).length);
+        } else {
+            console.log('⚠️ No packed items found');
+        }
+    } catch (e) {
+        console.error('❌ Error checking packed records:', e);
+    }
+}
+
+  function renderFinishingTable(records) {
+    const tbody = document.getElementById('finishingTableBody');
+    
+    // ✅ Filter out already packed items
+    const availableRecords = records.filter(record => {
+        const key = `${record.productName}|${record.category}|${record.size}`;
+        // ✅ Skip if already packed
+        return !alreadyPackedMap[key];
+    });
+    
+    // ✅ Also filter out items that are in selectedFinishingKeys (if needed)
+    const finalRecords = availableRecords.filter(record => {
+        const key = `${record.productName}|${record.category}|${record.size}`;
+        return !selectedFinishingKeys.includes(key);
+    });
+    
+    console.log(`📊 Records: Total=${records.length}, Available=${availableRecords.length}, Final=${finalRecords.length}`);
+    
+    if (finalRecords.length === 0) {
+        tbody.innerHTML = `
+            <tr><td colspan="8" class="text-center py-4 text-muted">
+                <i class="fas fa-check-circle fa-2x d-block mb-2 text-success"></i>
+                <strong>All finishing records have been packed!</strong>
+                <br><small>No items available for packing</small>
+            </td></tr>
+        `;
+        return;
+    }
+    
+    let html = '';
+    finalRecords.forEach((record, index) => {
+        const key = `${record.productName}|${record.category}|${record.size}`;
+        const isSelected = selectedFinishingKeys.includes(key) || selectedFinishingIds.includes(record._id);
+        
+        // ✅ Status badge - only Available or Selected
+        let statusBadge = '';
+        if (isSelected) {
+            statusBadge = '<span class="badge bg-warning"><i class="fas fa-check"></i> Selected</span>';
+        } else {
+            statusBadge = '<span class="badge bg-success"><i class="fas fa-check"></i> Available</span>';
+        }
+        
+        const isDisabled = isSelected;
+        
+        html += `
+            <tr data-index="${index}" data-id="${record._id}">
+                <td>
+                    <input type="checkbox" class="finishing-checkbox" data-index="${index}" data-id="${record._id}"
+                           ${isDisabled ? 'disabled' : ''}
+                           onchange="updateSelectedCount()">
+                </td>
+                <td><span class="badge bg-info">${record.finishingNumber}</span></td>
+                <td><strong>${record.productName}</strong></td>
+                <td><span class="badge bg-secondary">${record.category}</span></td>
+                <td><span class="badge bg-primary">${record.size}</span></td>
+                <td class="text-end fw-bold">${record.passedPieces}</td>
+                <td>${statusBadge}</td>
+                <td>
+                    ${isSelected ? `
+                        <button class="btn btn-sm btn-danger" onclick="removeFromAutoListByKey('${key}')" title="Remove from selection">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    ` : `
+                        <span class="text-muted">-</span>
+                    `}
+                </td>
+            </tr>
+        `;
+    });
+    
+    tbody.innerHTML = html;
+}
+
+   function filterFinishingRecords() {
+    const productFilter = document.getElementById('filterProduct').value.toLowerCase();
+    const categoryFilter = document.getElementById('filterCategory').value;
+    const statusFilter = document.getElementById('filterStatus').value;
+    
+    // ✅ Start with all records, but exclude already packed
+    let filtered = allFinishingRecords.filter(record => {
+        const key = `${record.productName}|${record.category}|${record.size}`;
+        // ✅ Skip already packed
+        if (alreadyPackedMap[key]) return false;
+        // ✅ Skip selected
+        if (selectedFinishingKeys.includes(key)) return false;
+        
+        // Product filter
+        if (productFilter && !record.productName.toLowerCase().includes(productFilter)) {
+            return false;
+        }
+        // Category filter
+        if (categoryFilter && record.category !== categoryFilter) {
+            return false;
+        }
+        // Status filter - only 'available' items left anyway
+        if (statusFilter === 'packed') return false;
+        return true;
+    });
+    
+    filteredFinishingRecords = filtered;
+    renderFinishingTable(filtered);
+    updateCounts();
+}
+
+    function resetFilters() {
+        document.getElementById('filterProduct').value = '';
+        document.getElementById('filterCategory').value = '';
+        document.getElementById('filterStatus').value = '';
+        filteredFinishingRecords = allFinishingRecords;
+        renderFinishingTable(allFinishingRecords);
+        updateCounts();
     }
 
-    function renderFinishingSelect(records) {
-        const select = document.getElementById('finishingSelect');
-        select.innerHTML = '';
+    function updateCounts() {
+        let available = 0;
+        let packed = 0;
         
-        if (!records || records.length === 0) {
-            select.innerHTML = '<option value="">No finishing records available</option>';
-            return;
-        }
-        
-        console.log(`✅ Rendering ${records.length} finishing records`);
-        
-        records.forEach((record, index) => {
-            const option = document.createElement('option');
-            option.value = record._id;
-            option.dataset.index = index;
-            option.dataset.productName = record.productName;
-            option.dataset.category = record.category;
-            option.dataset.size = record.size;
-            option.dataset.pieces = record.passedPieces;
-            option.dataset.finishingNumber = record.finishingNumber;
-            option.textContent = `${record.finishingNumber} - ${record.productName} (${record.size}) - ${record.passedPieces} pcs`;
-            select.appendChild(option);
+        allFinishingRecords.forEach(record => {
+            const key = `${record.productName}|${record.category}|${record.size}`;
+            const isPacked = !!alreadyPackedMap[key] || selectedFinishingIds.includes(record._id) || selectedFinishingKeys.includes(key);
+            if (isPacked) {
+                packed++;
+            } else {
+                available++;
+            }
         });
+        
+        document.getElementById('availableCount').textContent = available;
+        document.getElementById('packedCount').textContent = packed;
+    }
+
+    function toggleSelectAll() {
+        const checked = document.getElementById('selectAllFinishing').checked;
+        document.querySelectorAll('.finishing-checkbox:not(:disabled)').forEach(cb => {
+            cb.checked = checked;
+        });
+        updateSelectedCount();
     }
 
     function selectAllFinishing() {
-        const select = document.getElementById('finishingSelect');
-        const options = select.options;
-        
-        if (options.length === 0 || options[0].value === '') {
-            showToast('No finishing records to select', 'warning');
-            return;
-        }
-        
-        for (let i = 0; i < options.length; i++) {
-            options[i].selected = true;
-        }
+        document.querySelectorAll('.finishing-checkbox:not(:disabled)').forEach(cb => {
+            cb.checked = true;
+        });
+        document.getElementById('selectAllFinishing').checked = true;
         updateSelectedCount();
-        showToast('✅ All records selected', 'info');
+        showToast('✅ All available records selected', 'info');
     }
 
     function deselectAllFinishing() {
-        const select = document.getElementById('finishingSelect');
-        for (let i = 0; i < select.options.length; i++) {
-            select.options[i].selected = false;
-        }
+        document.querySelectorAll('.finishing-checkbox').forEach(cb => {
+            cb.checked = false;
+        });
+        document.getElementById('selectAllFinishing').checked = false;
         updateSelectedCount();
         showToast('❌ All records deselected', 'info');
     }
 
     function updateSelectedCount() {
-        const select = document.getElementById('finishingSelect');
-        const selected = Array.from(select.selectedOptions);
-        document.getElementById('autoSelectedCount').innerText = selected.length;
+        const selected = document.querySelectorAll('.finishing-checkbox:checked').length;
+        document.getElementById('autoSelectedCount').innerText = selected;
     }
 
     function addSelectedToAutoList() {
-        const select = document.getElementById('finishingSelect');
-        const selectedOptions = Array.from(select.selectedOptions);
+        const selectedCheckboxes = document.querySelectorAll('.finishing-checkbox:checked');
         
-        if (selectedOptions.length === 0) {
+        if (selectedCheckboxes.length === 0) {
             showToast('⚠️ Please select at least one finishing record', 'warning');
             return;
         }
         
         let addedCount = 0;
         let duplicateCount = 0;
+        let selectedIds = [];
         
-        selectedOptions.forEach(option => {
-            const productName = option.dataset.productName || 'Unknown';
-            const category = option.dataset.category || 'Mens';
-            const size = option.dataset.size || 'N/A';
-            const pieces = parseInt(option.dataset.pieces) || 0;
-            const finishingNumber = option.dataset.finishingNumber || 'FIN-NA';
+        selectedCheckboxes.forEach(cb => {
+            const index = parseInt(cb.dataset.index);
+            const record = allFinishingRecords[index];
+            const id = cb.dataset.id;
             
+            if (!record) return;
+            
+            const key = `${record.productName}|${record.category}|${record.size}`;
+            selectedIds.push(id);
+            
+            // ✅ Check if already in list (by key)
             const exists = autoSelectedEntries.some(e => 
-                e.productName === productName && 
-                e.category === category && 
-                e.size === size
+                e.productName === record.productName && 
+                e.category === record.category && 
+                e.size === record.size
             );
             
-            if (exists) {
+            if (exists || selectedFinishingKeys.includes(key)) {
                 duplicateCount++;
                 return;
             }
             
-            if (pieces > 0) {
+            if (record.passedPieces > 0) {
                 autoSelectedEntries.push({
-                    productName: productName,
-                    category: category,
-                    size: size,
-                    packedPieces: pieces,
-                    finishingNumber: finishingNumber
+                    productName: record.productName,
+                    category: record.category,
+                    size: record.size,
+                    packedPieces: record.passedPieces,
+                    finishingNumber: record.finishingNumber,
+                    finishingId: record._id,
+                    key: key
                 });
+                selectedFinishingKeys.push(key);
                 addedCount++;
             }
         });
         
-        if (addedCount === 0 && duplicateCount > 0) {
-            showToast(`⚠️ ${duplicateCount} records already in list (duplicates skipped)`, 'warning');
-        } else if (addedCount > 0) {
+        // ✅ Add to selectedFinishingIds
+        selectedIds.forEach(id => {
+            if (!selectedFinishingIds.includes(id)) {
+                selectedFinishingIds.push(id);
+            }
+        });
+        
+        // Uncheck all checkboxes
+        document.querySelectorAll('.finishing-checkbox').forEach(cb => cb.checked = false);
+        document.getElementById('selectAllFinishing').checked = false;
+        updateSelectedCount();
+        
+        if (addedCount > 0) {
             showToast(`✅ ${addedCount} records added to packing list`, 'success');
             if (duplicateCount > 0) {
                 showToast(`⚠️ ${duplicateCount} duplicates skipped`, 'warning');
             }
         } else {
-            showToast('⚠️ No valid records to add (all have 0 pieces)', 'warning');
+            showToast(`⚠️ No new records added. ${duplicateCount} duplicates found.`, 'warning');
         }
         
-        const select2 = document.getElementById('finishingSelect');
-        for (let i = 0; i < select2.options.length; i++) {
-            if (select2.options[i].selected) {
-                select2.options[i].selected = false;
-            }
-        }
-        updateSelectedCount();
+        // ✅ Refresh table to hide selected items
+        filterFinishingRecords();
         renderAutoList();
+        updateCounts();
     }
 
     function renderAutoList() {
@@ -577,7 +807,7 @@
                     <td class="text-end fw-bold text-success">${entry.packedPieces}</td>
                     <td class="text-center">
                         <button class="btn btn-sm btn-danger" onclick="removeFromAutoList(${index})">
-                            <i class="fas fa-times"></i>
+                            <i class="fas fa-trash"></i>
                         </button>
                     </td>
                 </tr>
@@ -587,20 +817,68 @@
         totalElem.innerText = totalPieces;
     }
 
-    function removeFromAutoList(index) {
-        autoSelectedEntries.splice(index, 1);
-        renderAutoList();
-        showToast('🗑️ Item removed from list', 'info');
-    }
-
-    function clearAutoList() {
-        if (autoSelectedEntries.length === 0) return;
-        if (confirm('⚠️ Remove all items from packing list?')) {
-            autoSelectedEntries = [];
-            renderAutoList();
-            showToast('🗑️ All items removed', 'info');
+   // ==================== REMOVE FROM AUTO LIST ====================
+function removeFromAutoList(index) {
+    const removed = autoSelectedEntries[index];
+    if (removed) {
+        // ✅ Remove from selectedFinishingIds
+        const idIndex = selectedFinishingIds.indexOf(removed.finishingId);
+        if (idIndex !== -1) {
+            selectedFinishingIds.splice(idIndex, 1);
+        }
+        // ✅ Remove from selectedFinishingKeys
+        const keyIndex = selectedFinishingKeys.indexOf(removed.key);
+        if (keyIndex !== -1) {
+            selectedFinishingKeys.splice(keyIndex, 1);
         }
     }
+    autoSelectedEntries.splice(index, 1);
+    renderAutoList();
+    filterFinishingRecords();
+    updateCounts();
+    showToast('🗑️ Item removed from list', 'info');
+}
+
+// ✅ Remove by key (from table)
+function removeFromAutoListByKey(key) {
+    const index = autoSelectedEntries.findIndex(e => e.key === key);
+    if (index !== -1) {
+        removeFromAutoList(index);
+    } else {
+        // ✅ If not in autoSelectedEntries, remove from selectedFinishingKeys only
+        const keyIndex = selectedFinishingKeys.indexOf(key);
+        if (keyIndex !== -1) {
+            selectedFinishingKeys.splice(keyIndex, 1);
+            filterFinishingRecords();
+            updateCounts();
+            showToast('🗑️ Item removed from selection', 'info');
+        }
+    }
+}
+
+    // ✅ Remove by key (from table)
+    function removeFromAutoListByKey(key) {
+        const index = autoSelectedEntries.findIndex(e => e.key === key);
+        if (index !== -1) {
+            removeFromAutoList(index);
+        }
+    }
+
+  function clearAutoList() {
+    if (autoSelectedEntries.length === 0 && selectedFinishingKeys.length === 0) {
+        showToast('⚠️ No items to clear', 'info');
+        return;
+    }
+    if (confirm('⚠️ Remove all items from packing list?')) {
+        selectedFinishingIds = [];
+        selectedFinishingKeys = [];
+        autoSelectedEntries = [];
+        renderAutoList();
+        filterFinishingRecords();
+        updateCounts();
+        showToast('🗑️ All items removed', 'info');
+    }
+}
 
     function confirmAutoPack() {
         if (autoSelectedEntries.length === 0) {
@@ -623,7 +901,10 @@
             } catch(e) {}
         });
         
-        autoSelectedEntries.forEach(entry => {
+        // ✅ Store current auto entries to add
+        const entriesToAdd = [...autoSelectedEntries];
+        
+        entriesToAdd.forEach(entry => {
             const key = `${entry.productName}|${entry.category}|${entry.size}`;
             
             if (existingEntries.includes(key)) {
@@ -664,6 +945,7 @@
                             <option value="">Select</option>
                             <option value="Kids" ${entry.category === 'Kids' ? 'selected' : ''}>Kids</option>
                             <option value="Mens" ${entry.category === 'Mens' ? 'selected' : ''}>Mens</option>
+                            <option value="Other" ${entry.category === 'Other' ? 'selected' : ''}>Other</option>
                         </select>
                     </div>
                     <div class="col-md-2">
@@ -723,8 +1005,13 @@
             existingEntries.push(key);
         });
         
+        // ✅ Clear auto list after adding
         autoSelectedEntries = [];
+        selectedFinishingIds = [];
+        selectedFinishingKeys = [];
         renderAutoList();
+        filterFinishingRecords();
+        updateCounts();
         
         if (addedCount > 0) {
             showToast(`✅ ${addedCount} auto entries added successfully!`, 'success');
@@ -809,10 +1096,6 @@
 
     // ============ EVENT LISTENERS ============
     document.addEventListener('DOMContentLoaded', function() {
-        const finishingSelect = document.getElementById('finishingSelect');
-        if (finishingSelect) {
-            finishingSelect.addEventListener('change', updateSelectedCount);
-        }
         updateSelectedCount();
     });
 
