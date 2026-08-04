@@ -16,4 +16,16 @@ router.get('/api/production-return/:returnId', protect, adminOnly, finishingCont
 router.get('/api/assignment-details/:assignmentId', protect, adminOnly, finishingController.getAssignmentDetails);
 router.get('/api/existing-for-assignment/:assignmentId', protect, adminOnly, finishingController.getExistingFinishing);
 
+
+
+// Finishing routes
+router.get('/new', protect, (req, res) => {
+    res.render('finishing/create', {
+        title: 'New Finishing Entry',
+        user: req.session.user,
+        currentPage: 'finishing'
+    });
+});
+
+
 module.exports = router;

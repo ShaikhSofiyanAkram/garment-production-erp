@@ -305,43 +305,264 @@
 // }
 
 // module.exports = router;
+
+
+
+
+
+
+
+
 const express = require('express');
 const router = express.Router();
 const { protect } = require('../middleware/auth');
+const dashboardController = require('../controllers/dashboardController');
 
-// Role-based dashboard redirect
+// ==================== DASHBOARD ROUTES ====================
 router.get('/', protect, async (req, res) => {
-    const role = req.session.user.role;
+    const user = req.session.user;
+    const role = user?.role || 'admin';
     
+    console.log('📊 Dashboard access:', { role, userId: user?.id });
+    
+    // ✅ Admin Dashboard
     if (role === 'admin') {
         return res.render('dashboard/admin-new', {
             title: 'Admin Dashboard',
-            user: req.session.user,
-            layout: 'layouts/admin-layout'
+            user: user,
+            currentPage: 'dashboard',
+            layout: 'layouts/main'
         });
-    } else if (role === 'cutting') {
-        return res.render('dashboard/cutting-dashboard', {
-            title: 'Cutting Worker Dashboard',
-            user: req.session.user
+    }
+    
+    // ✅ Worker Dashboard (Karigar, Pressman, Helper, Cutting)
+    try {
+        const Worker = require('../models/Worker');
+        const worker = await Worker.findOne({ userId: user.id });
+        
+        if (!worker) {
+            console.log('⚠️ Worker not found for user:', user.id);
+            return res.render('dashboard/worker-dashboard', {
+                title: 'Worker Dashboard',
+                user: user,
+                worker: null,
+                stats: { workerType: 'unknown' },
+                layout: 'layouts/main'
+            });
+        }
+        
+        // ✅ Get worker stats
+        const stats = await getWorkerStats(worker);
+        
+        return res.render('dashboard/worker-dashboard', {
+            title: `${worker.workerType.charAt(0).toUpperCase() + worker.workerType.slice(1)} Dashboard`,
+            user: user,
+            worker: worker,
+            stats: stats,
+            layout: 'layouts/main'
         });
-    } else if (role === 'karigar') {
-        return res.render('dashboard/karigar-dashboard', {
-            title: 'Karigar Dashboard',
-            user: req.session.user
-        });
-    } else if (role === 'helper') {
-        return res.render('dashboard/helper-dashboard', {
-            title: 'Helper Dashboard',
-            user: req.session.user
-        });
-    } else if (role === 'pressman') {
-        return res.render('dashboard/pressman-dashboard', {
-            title: 'Pressman Dashboard',
-            user: req.session.user
-        });
-    } else {
+        
+    } catch (error) {
+        console.error('❌ Worker dashboard error:', error);
+        req.flash('error_msg', 'Error loading dashboard');
         return res.redirect('/auth/login');
     }
 });
 
+// ==================== GET WORKER STATS ====================
+async function getWorkerStats(worker) {
+    const stats = {
+        workerType: worker.workerType,
+        name: worker.name,
+        monthlyRate: worker.monthlyRate || 0,
+        today: 0,
+        week: 0,
+        month: 0,
+        total: 0,
+        pending: 0,
+        completed: 0,
+        earnings: 0,
+        recentActivities: []
+    };
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Karigar
+    if (worker.workerType === 'karigar') {
+        const Assignment = require('../models/Assignment');
+        const ProductionReturn = require('../models/ProductionReturn');
+        const Payment = require('../models/Payment');
+        
+        const assignments = await Assignment.find({ karigar: worker._id });
+        const returns = await ProductionReturn.find({ karigar: worker._id });
+        const payments = await Payment.find({ worker: worker._id });
+        
+        stats.total = assignments.length;
+        stats.completed = assignments.filter(a => a.status === 'completed').length;
+        stats.pending = assignments.filter(a => a.status === 'pending' || a.status === 'partial').length;
+        stats.earnings = payments.reduce((sum, p) => sum + p.amount, 0);
+        stats.totalReturned = returns.reduce((sum, r) => sum + (r.totalReturned || 0), 0);
+        stats.totalGiven = assignments.reduce((sum, a) => sum + (a.givenPieces || 0), 0);
+        
+        const recentAssign = await Assignment.find({ karigar: worker._id })
+            .sort({ assignedDate: -1 })
+            .limit(5);
+        stats.recentActivities = recentAssign.map(a => ({
+            type: 'assignment',
+            title: a.assignmentId,
+            description: `${a.productName} - ${a.givenPieces} pieces`,
+            time: timeAgo(a.assignedDate),
+            status: a.status
+        }));
+    }
+    
+    // Pressman
+    else if (worker.workerType === 'pressman') {
+        const PressmanEntry = require('../models/PressmanEntry');
+        const Payment = require('../models/Payment');
+        
+        const entries = await PressmanEntry.find({ pressman: worker._id });
+        const payments = await Payment.find({ worker: worker._id });
+        
+        stats.total = entries.length;
+        stats.today = entries.filter(e => new Date(e.date) >= today).length;
+        stats.totalQuantity = entries.reduce((sum, e) => sum + (e.totalQuantity || 0), 0);
+        stats.totalAmount = entries.reduce((sum, e) => sum + (e.totalAmount || 0), 0);
+        stats.earnings = payments.reduce((sum, p) => sum + p.amount, 0);
+        stats.pendingAmount = stats.totalAmount - stats.earnings;
+        
+        const recentEntries = await PressmanEntry.find({ pressman: worker._id })
+            .sort({ date: -1 })
+            .limit(5);
+        stats.recentActivities = recentEntries.map(e => ({
+            type: 'pressman',
+            title: e.entryNumber,
+            description: `${e.totalQuantity} pieces - ₹${e.totalAmount}`,
+            time: timeAgo(e.date),
+            status: e.status
+        }));
+    }
+    
+    // Helper
+    else if (worker.workerType === 'helper') {
+        const Finishing = require('../models/Finishing');
+        const Payment = require('../models/Payment');
+        
+        const finishingEntries = await Finishing.find({ helper: worker._id });
+        const payments = await Payment.find({ worker: worker._id });
+        
+        stats.total = finishingEntries.length;
+        stats.today = finishingEntries.filter(e => new Date(e.createdAt) >= today).length;
+        stats.totalReceived = finishingEntries.reduce((sum, f) => sum + (f.receivedPieces || 0), 0);
+        stats.totalRejected = finishingEntries.reduce((sum, f) => sum + (f.rejectedPieces || 0), 0);
+        stats.totalPassed = finishingEntries.reduce((sum, f) => sum + (f.passedPieces || 0), 0);
+        stats.earnings = payments.reduce((sum, p) => sum + p.amount, 0);
+        
+        const recentFinishing = await Finishing.find({ helper: worker._id })
+            .sort({ createdAt: -1 })
+            .limit(5);
+        stats.recentActivities = recentFinishing.map(f => ({
+            type: 'finishing',
+            title: `Finishing Entry`,
+            description: `${f.passedPieces} passed out of ${f.receivedPieces}`,
+            time: timeAgo(f.createdAt),
+            status: f.status
+        }));
+    }
+    
+    // Cutting
+    else if (worker.workerType === 'cutting') {
+        const Cutting = require('../models/Cutting');
+        const Payment = require('../models/Payment');
+        
+        const cuttings = await Cutting.find({ cuttingWorker: worker._id });
+        const payments = await Payment.find({ worker: worker._id });
+        
+        stats.total = cuttings.length;
+        stats.today = cuttings.filter(c => new Date(c.createdAt) >= today).length;
+        stats.totalPieces = cuttings.reduce((sum, c) => sum + (c.totalPieces || 0), 0);
+        stats.earnings = payments.reduce((sum, p) => sum + p.amount, 0);
+        stats.monthlySalary = worker.monthlyRate || 0;
+        
+        const recentCuttings = await Cutting.find({ cuttingWorker: worker._id })
+            .sort({ createdAt: -1 })
+            .limit(5);
+        stats.recentActivities = recentCuttings.map(c => ({
+            type: 'cutting',
+            title: c.cuttingNumber,
+            description: `${c.productName} - ${c.totalPieces} pieces`,
+            time: timeAgo(c.createdAt),
+            status: c.status
+        }));
+    }
+    
+    return stats;
+}
+
+function timeAgo(date) {
+    const seconds = Math.floor((new Date() - new Date(date)) / 1000);
+    if (seconds < 60) return 'Just now';
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
+}
+
+// ==================== API ROUTES ====================
+router.get('/api/admin-stats', protect, dashboardController.getAdminStats);
+router.get('/api/worker-stats', protect, dashboardController.getWorkerStats);
+
 module.exports = router;
+
+
+
+
+
+
+
+
+
+
+// const express = require('express');
+// const router = express.Router();
+// const { protect } = require('../middleware/auth');
+
+// // Role-based dashboard redirect
+// router.get('/', protect, async (req, res) => {
+//     const role = req.session.user.role;
+    
+//     if (role === 'admin') {
+//         return res.render('dashboard/admin-new', {
+//             title: 'Admin Dashboard',
+//             user: req.session.user,
+//             layout: 'layouts/admin-layout'
+//         });
+//     } else if (role === 'cutting') {
+//         return res.render('dashboard/cutting-dashboard', {
+//             title: 'Cutting Worker Dashboard',
+//             user: req.session.user
+//         });
+//     } else if (role === 'karigar') {
+//         return res.render('dashboard/karigar-dashboard', {
+//             title: 'Karigar Dashboard',
+//             user: req.session.user
+//         });
+//     } else if (role === 'helper') {
+//         return res.render('dashboard/helper-dashboard', {
+//             title: 'Helper Dashboard',
+//             user: req.session.user
+//         });
+//     } else if (role === 'pressman') {
+//         return res.render('dashboard/pressman-dashboard', {
+//             title: 'Pressman Dashboard',
+//             user: req.session.user
+//         });
+//     } else {
+//         return res.redirect('/auth/login');
+//     }
+// });
+
+// module.exports = router;

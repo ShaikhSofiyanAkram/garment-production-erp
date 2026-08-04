@@ -1,6 +1,8 @@
 const Worker = require('../models/Worker');
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
+const path = require('path');
+const fs = require('fs');
 
 // ============ LIST WORKERS ============
 exports.getWorkers = async (req, res) => {
@@ -88,127 +90,103 @@ exports.registerForm = async (req, res) => {
     }
 };
 
+// ==================== REGISTER WORKER (WITH LOGIN CREDENTIALS) ====================
+// ==================== REGISTER WORKER ====================
+// ==================== REGISTER WORKER (COMPLETE FIX) ====================
+// ==================== REGISTER WORKER (COMPLETE FIX WITH DEBUG) ====================
+// ==================== REGISTER WORKER (FIXED - No Spread Operator) ====================
+// ==================== REGISTER WORKER (FIXED - AUTO HASH) ====================
 exports.registerWorker = async (req, res) => {
     try {
-        console.log('=== REGISTER WORKER START ===');
-        
         const { 
-            name, phone, email, address, workerType, paymentType, 
-            monthlyRate, username, password 
+            name, email, phone, address, workerType, 
+            paymentType, monthlyRate, username, password 
         } = req.body;
         
-        // Validation
-        if (!name || !phone || !email || !workerType || !paymentType) {
-            req.flash('error_msg', 'Please fill all required fields');
+        console.log('📝 ===== REGISTERING WORKER =====');
+        console.log('📝 Name:', name);
+        console.log('📝 Email:', email);
+        console.log('📝 Username:', username);
+        
+        // ✅ Validate
+        if (!name || !email || !phone || !workerType) {
+            req.flash('error_msg', 'All required fields must be filled');
             return res.redirect('/workers/register');
         }
         
-        // Validate email format
-        if (!email.includes('@') || !email.includes('.')) {
-            req.flash('error_msg', 'Please enter a valid email address');
-            return res.redirect('/workers/register');
-        }
-        
-        // Check if email already exists in Worker
-        const existingWorker = await Worker.findOne({ email });
+        // ✅ Check existing
+        const existingWorker = await Worker.findOne({ 
+            $or: [{ phone }, { email }] 
+        });
         if (existingWorker) {
-            req.flash('error_msg', 'Worker with this email already exists!');
+            req.flash('error_msg', 'Worker already exists');
             return res.redirect('/workers/register');
         }
         
-        // Check if email already exists in User
-        const existingUser = await User.findOne({ email });
-        if (existingUser) {
-            req.flash('error_msg', 'Email already registered as user!');
-            return res.redirect('/workers/register');
-        }
-        
-        // Generate username
-        let finalUsername = username;
-        if (!finalUsername || finalUsername === '') {
-            finalUsername = name.toLowerCase().replace(/[^a-z0-9]/g, '').substring(0, 15);
-            let userExists = await User.findOne({ username: finalUsername });
-            let counter = 1;
-            while (userExists) {
-                finalUsername = `${finalUsername}${counter}`;
-                userExists = await User.findOne({ username: finalUsername });
-                counter++;
-                if (counter > 10) break;
-            }
-        } else {
-            const userExists = await User.findOne({ username: finalUsername });
-            if (userExists) {
-                req.flash('error_msg', 'Username already exists!');
-                return res.redirect('/workers/register');
-            }
-        }
-        
-        // Set password
+        const finalUsername = username || name.toLowerCase().replace(/[^a-z0-9]/g, '').substring(0, 15);
         const finalPassword = password || 'worker123';
         
-        // Determine role for User model
-        let userRole = 'worker';
-        if (workerType === 'cutting') userRole = 'cutting';
-        if (workerType === 'karigar') userRole = 'karigar';
-        if (workerType === 'helper') userRole = 'helper';
-        if (workerType === 'pressman') userRole = 'pressman';
+        // ✅ Check existing user
+        const existingUser = await User.findOne({ 
+            $or: [{ email }, { username: finalUsername }] 
+        });
+        if (existingUser) {
+            req.flash('error_msg', 'Email or username already exists');
+            return res.redirect('/workers/register');
+        }
         
-        console.log('Creating User with:', { finalUsername, email, userRole });
-        
-        // FIRST: Create Worker profile
-        const workerData = {
+        // ✅ Create Worker
+        const worker = new Worker({
             name: name,
-            phone: phone,
             email: email,
+            phone: phone,
             address: address || '',
             workerType: workerType,
-            paymentType: paymentType,
+            paymentType: paymentType || 'piece',
+            monthlyRate: monthlyRate || 0,
             isActive: true,
-            joiningDate: new Date(),
-            createdAt: new Date()
-        };
+            createdBy: req.session.user.id
+        });
+        await worker.save();
+        console.log('✅ Worker saved:', worker._id);
         
-        if (paymentType === 'monthly' && monthlyRate) {
-            workerData.monthlyRate = parseFloat(monthlyRate);
-        }
+        // ✅ AUTO HASH PASSWORD
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(finalPassword, salt);
+        console.log('🔑 Auto-hashed password:', hashedPassword);
         
-        // Handle file uploads
-        if (req.files) {
-            workerData.documents = {};
-            if (req.files.aadhar) workerData.documents.aadhar = req.files.aadhar[0].filename;
-            if (req.files.pan) workerData.documents.pan = req.files.pan[0].filename;
-            if (req.files.photo) workerData.documents.photo = req.files.photo[0].filename;
-        }
-        
-        const worker = await Worker.create(workerData);
-        console.log('Worker created:', worker._id);
-        
-        // SECOND: Create User account with reference to Worker
+        // ✅ Create User with hashed password
         const user = new User({
             username: finalUsername,
             email: email,
-            password: finalPassword,
-            role: userRole,
+            password: hashedPassword,  // ✅ AUTO HASHED
+            role: workerType === 'cutting' ? 'cutting' :
+                  workerType === 'karigar' ? 'karigar' :
+                  workerType === 'helper' ? 'helper' :
+                  workerType === 'pressman' ? 'pressman' : 'worker',
             workerId: worker._id,
-            isActive: true,
-            createdAt: new Date()
+            isActive: true
         });
         await user.save();
-        console.log('User created:', user._id);
+        console.log('✅ User saved:', user._id);
         
-        // THIRD: Update Worker with userId
-        await Worker.findByIdAndUpdate(worker._id, { userId: user._id });
+        worker.userId = user._id;
+        await worker.save();
         
-        req.flash('success_msg', `✅ Worker "${name}" registered successfully! 
-            Username: ${finalUsername} | Password: ${finalPassword}`);
+        req.flash('success_msg', 
+            '✅ Worker "' + name + '" registered!<br>' +
+            '🔑 Username: <strong>' + finalUsername + '</strong><br>' +
+            '🔑 Password: <strong>' + finalPassword + '</strong>'
+        );
         res.redirect('/workers');
         
     } catch (error) {
-        console.error('Worker registration error:', error);
-        req.flash('error_msg', 'Error registering worker: ' + error.message);
+        console.error('❌ Register error:', error);
+        req.flash('error_msg', 'Error: ' + error.message);
         res.redirect('/workers/register');
     }
 };
+
 
 // ============ EDIT WORKER ============
 exports.editForm = async (req, res) => {
@@ -293,6 +271,7 @@ exports.deleteWorker = async (req, res) => {
 };
 
 // ============ VIEW WORKER DETAILS ============
+// ==================== VIEW WORKER DETAILS ====================
 exports.viewWorker = async (req, res) => {
     try {
         const worker = await Worker.findById(req.params.id);
@@ -300,14 +279,21 @@ exports.viewWorker = async (req, res) => {
             req.flash('error_msg', 'Worker not found');
             return res.redirect('/workers');
         }
-        res.render('workers/view', { 
-            title: 'Worker Details', 
-            worker,
-            user: req.session.user,
+        
+        // Get user details if exists
+        let user = null;
+        if (worker.userId) {
+            user = await User.findById(worker.userId);
+        }
+        
+        res.render('workers/view', {
+            title: `Worker Details: ${worker.name}`,
+            worker: worker,
+            user: user,
             currentPage: 'workers'
         });
     } catch (error) {
-        console.error(error);
+        console.error('❌ View worker error:', error);
         req.flash('error_msg', 'Error loading worker details');
         res.redirect('/workers');
     }
@@ -360,3 +346,225 @@ exports.getPressmanWork = async (req, res) => {
         res.json({ entries: [] });
     }
 };
+
+
+
+
+
+
+
+
+// ==================== CREATE WORKER (WITHOUT LOGIN) ====================
+exports.createWorker = async (req, res) => {
+    try {
+        const { name, email, phone, address, workerType, paymentType, monthlyRate } = req.body;
+        
+        console.log('📝 Creating worker (no login):', { name, workerType });
+        
+        const existingWorker = await Worker.findOne({ phone: phone });
+        if (existingWorker) {
+            req.flash('error_msg', 'Worker with this phone already exists');
+            return res.redirect('/workers/create');
+        }
+        
+        const worker = new Worker({
+            name: name,
+            email: email || '',
+            phone: phone,
+            address: address || '',
+            workerType: workerType,
+            paymentType: paymentType || 'piece',
+            monthlyRate: monthlyRate || 0,
+            isActive: true,
+            createdBy: req.session.user.id
+        });
+        
+        await worker.save();
+        
+        req.flash('success_msg', 'Worker "' + name + '" added successfully!');
+        res.redirect('/workers');
+        
+    } catch (error) {
+        console.error('❌ Create worker error:', error);
+        req.flash('error_msg', 'Error adding worker: ' + error.message);
+        res.redirect('/workers/create');
+    }
+};
+
+// ==================== GET WORKERS LIST ====================
+exports.getWorkers = async (req, res) => {
+    try {
+        const workers = await Worker.find().sort({ createdAt: -1 });
+        res.render('workers/index', {
+            title: 'Workers Management',
+            workers: workers,
+            currentPage: 'workers',
+            user: req.session.user
+        });
+    } catch (error) {
+        console.error('❌ Get workers error:', error);
+        req.flash('error_msg', 'Error loading workers');
+        res.redirect('/dashboard');
+    }
+};
+
+// ==================== GET REGISTER FORM ====================
+exports.registerForm = async (req, res) => {
+    res.render('workers/register-worker', {
+        title: 'Register Worker',
+        currentPage: 'workers',
+        user: req.session.user
+    });
+};
+
+// ==================== GET CREATE FORM ====================
+exports.createForm = async (req, res) => {
+    res.render('workers/create', {
+        title: 'Add Worker',
+        currentPage: 'workers',
+        user: req.session.user
+    });
+};
+
+// ==================== VIEW WORKER ====================
+exports.viewWorker = async (req, res) => {
+    try {
+        const worker = await Worker.findById(req.params.id);
+        if (!worker) {
+            req.flash('error_msg', 'Worker not found');
+            return res.redirect('/workers');
+        }
+        
+        let user = null;
+        if (worker.userId) {
+            user = await User.findById(worker.userId);
+        }
+        
+        res.render('workers/view', {
+            title: 'Worker Details: ' + worker.name,
+            worker: worker,
+            user: user,
+            currentPage: 'workers'
+        });
+    } catch (error) {
+        console.error('❌ View worker error:', error);
+        req.flash('error_msg', 'Error loading worker details');
+        res.redirect('/workers');
+    }
+};
+
+// ==================== UPDATE WORKER ====================
+exports.updateWorker = async (req, res) => {
+    try {
+        const { name, phone, email, address, workerType, paymentType, monthlyRate, isActive } = req.body;
+        
+        const worker = await Worker.findById(req.params.id);
+        if (!worker) {
+            req.flash('error_msg', 'Worker not found');
+            return res.redirect('/workers');
+        }
+        
+        worker.name = name;
+        worker.phone = phone;
+        worker.email = email || '';
+        worker.address = address || '';
+        worker.workerType = workerType;
+        worker.paymentType = paymentType;
+        worker.monthlyRate = monthlyRate || 0;
+        worker.isActive = isActive === 'true' || isActive === true;
+        worker.updatedBy = req.session.user.id;
+        
+        await worker.save();
+        
+        req.flash('success_msg', 'Worker updated successfully!');
+        res.redirect('/workers');
+        
+    } catch (error) {
+        console.error('❌ Update worker error:', error);
+        req.flash('error_msg', 'Error updating worker: ' + error.message);
+        res.redirect('/workers');
+    }
+};
+
+// ==================== DELETE WORKER ====================
+exports.deleteWorker = async (req, res) => {
+    try {
+        const worker = await Worker.findById(req.params.id);
+        if (!worker) {
+            return res.status(404).json({ success: false, error: 'Worker not found' });
+        }
+        
+        // Delete associated user if exists
+        if (worker.userId) {
+            await User.findByIdAndDelete(worker.userId);
+        }
+        
+        await Worker.findByIdAndDelete(req.params.id);
+        
+        res.json({ success: true });
+    } catch (error) {
+        console.error('❌ Delete worker error:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
+
+// ==================== API: PAYMENT HISTORY ====================
+exports.getPaymentHistory = async (req, res) => {
+    try {
+        const Payment = require('../models/Payment');
+        const payments = await Payment.find({ worker: req.params.id }).sort({ paymentDate: -1 });
+        res.json({ payments: payments || [] });
+    } catch (error) {
+        console.error('❌ Payment history error:', error);
+        res.json({ payments: [] });
+    }
+};
+
+// ==================== API: KARIGAR WORK ====================
+exports.getKarigarWork = async (req, res) => {
+    try {
+        const Assignment = require('../models/Assignment');
+        const assignments = await Assignment.find({ karigar: req.params.id });
+        res.json({ work: assignments || [] });
+    } catch (error) {
+        console.error('❌ Karigar work error:', error);
+        res.json({ work: [] });
+    }
+};
+
+// ==================== API: PRESSMAN WORK ====================
+exports.getPressmanWork = async (req, res) => {
+    try {
+        const PressmanEntry = require('../models/PressmanEntry');
+        const entries = await PressmanEntry.find({ pressman: req.params.id });
+        res.json({ entries: entries || [] });
+    } catch (error) {
+        console.error('❌ Pressman work error:', error);
+        res.json({ entries: [] });
+    }
+};
+
+
+// ==================== EDIT FORM ====================
+exports.editForm = async (req, res) => {
+    try {
+        const worker = await Worker.findById(req.params.id);
+        if (!worker) {
+            req.flash('error_msg', 'Worker not found');
+            return res.redirect('/workers');
+        }
+        
+        res.render('workers/edit', {
+            title: 'Edit Worker',
+            worker: worker,
+            currentPage: 'workers',
+            user: req.session.user
+        });
+    } catch (error) {
+        console.error('❌ Edit form error:', error);
+        req.flash('error_msg', 'Error loading worker');
+        res.redirect('/workers');
+    }
+};
+
+module.exports = exports;

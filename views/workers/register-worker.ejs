@@ -1,337 +1,402 @@
-<%
-currentPage = 'register-worker';
-%>
+<% currentPage='register-worker' ; %>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register Worker | Garment ERP</title>
-    
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-        }
-        .navbar {
-            background: rgba(255,255,255,0.95);
-            backdrop-filter: blur(10px);
-            padding: 1rem 2rem;
-            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
-        }
-        .navbar-brand {
-            font-size: 1.5rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .register-container {
-            max-width: 900px;
-            margin: 30px auto;
-            padding: 0 20px;
-        }
-        .register-card {
-            background: white;
-            border-radius: 24px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
-        .card-header {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            padding: 25px 30px;
-            color: white;
-        }
-        .card-header h2 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin: 0;
-        }
-        .card-body {
-            padding: 30px;
-        }
-        .form-section {
-            background: #f8fafc;
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 25px;
-        }
-        .form-section-title {
-            font-size: 1rem;
-            font-weight: 600;
-            color: #1e293b;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #e2e8f0;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .form-label {
-            font-weight: 500;
-            font-size: 0.8rem;
-            color: #64748b;
-            margin-bottom: 5px;
-        }
-        .form-control, .form-select {
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 10px 15px;
-            font-size: 0.9rem;
-        }
-        .form-control:focus, .form-select:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
-            outline: none;
-        }
-        .credentials-box {
-            background: linear-gradient(135deg, #f0fdf4, #dcfce7);
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 25px;
-            border: 1px solid #bbf7d0;
-        }
-        .credentials-title {
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: #166534;
-            margin-bottom: 15px;
-        }
-        .credential-item {
-            background: white;
-            border-radius: 12px;
-            padding: 12px 15px;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .credential-value {
-            font-family: monospace;
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: #166534;
-            background: #f0fdf4;
-            padding: 4px 12px;
-            border-radius: 20px;
-        }
-        .btn-register {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            border: none;
-            border-radius: 12px;
-            padding: 12px 30px;
-            font-weight: 600;
-            width: 100%;
-        }
-        .btn-register:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px -5px rgba(102,126,234,0.4);
-        }
-        .footer {
-            background: white;
-            margin-top: 40px;
-            padding: 20px;
-            text-align: center;
-            border-top: 1px solid #e2e8f0;
-        }
-        @media (max-width: 768px) {
-            .card-body { padding: 20px; }
-            .form-section { padding: 15px; }
-        }
-    </style>
-</head>
-<body>
+    <!DOCTYPE html>
+    <html lang="en">
 
-<nav class="navbar">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="/dashboard">
-            <i class="fas fa-tshirt"></i> Garment ERP
-        </a>
-        <div>
-            <span class="text-muted me-3">
-                <i class="fas fa-user-cog"></i> <%= user ? user.username : 'Admin' %>
-            </span>
-            <a href="/workers" class="btn btn-sm btn-outline-secondary">
-                <i class="fas fa-arrow-left"></i> Back
-            </a>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Register Worker | Garment ERP</title>
+
+        <link
+            href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap"
+            rel="stylesheet">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+        <style>
+            body {
+                font-family: 'Inter', sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                min-height: 100vh;
+            }
+
+            .navbar {
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(10px);
+                padding: 1rem 2rem;
+                box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+            }
+
+            .navbar-brand {
+                font-size: 1.5rem;
+                font-weight: 700;
+                background: linear-gradient(135deg, #667eea, #764ba2);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+            }
+
+            .register-container {
+                max-width: 900px;
+                margin: 30px auto;
+                padding: 0 20px;
+            }
+
+            .register-card {
+                background: white;
+                border-radius: 24px;
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+                overflow: hidden;
+            }
+
+            .card-header {
+                background: linear-gradient(135deg, #667eea, #764ba2);
+                padding: 25px 30px;
+                color: white;
+            }
+
+            .card-header h2 {
+                font-size: 1.5rem;
+                font-weight: 700;
+                margin: 0;
+            }
+
+            .card-body {
+                padding: 30px;
+            }
+
+            .form-section {
+                background: #f8fafc;
+                border-radius: 16px;
+                padding: 20px;
+                margin-bottom: 25px;
+            }
+
+            .form-section-title {
+                font-size: 1rem;
+                font-weight: 600;
+                color: #1e293b;
+                margin-bottom: 20px;
+                padding-bottom: 10px;
+                border-bottom: 2px solid #e2e8f0;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+
+            .form-label {
+                font-weight: 500;
+                font-size: 0.8rem;
+                color: #64748b;
+                margin-bottom: 5px;
+            }
+
+            .form-control,
+            .form-select {
+                border: 1px solid #e2e8f0;
+                border-radius: 12px;
+                padding: 10px 15px;
+                font-size: 0.9rem;
+            }
+
+            .form-control:focus,
+            .form-select:focus {
+                border-color: #667eea;
+                box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+                outline: none;
+            }
+
+            .credentials-box {
+                background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+                border-radius: 16px;
+                padding: 20px;
+                margin-bottom: 25px;
+                border: 1px solid #bbf7d0;
+            }
+
+            .credentials-title {
+                font-size: 0.9rem;
+                font-weight: 600;
+                color: #166534;
+                margin-bottom: 15px;
+            }
+
+            .credential-item {
+                background: white;
+                border-radius: 12px;
+                padding: 12px 15px;
+                margin-bottom: 10px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .credential-value {
+                font-family: monospace;
+                font-size: 0.9rem;
+                font-weight: 600;
+                color: #166534;
+                background: #f0fdf4;
+                padding: 4px 12px;
+                border-radius: 20px;
+            }
+
+            .btn-register {
+                background: linear-gradient(135deg, #667eea, #764ba2);
+                border: none;
+                border-radius: 12px;
+                padding: 12px 30px;
+                font-weight: 600;
+                width: 100%;
+            }
+
+            .btn-register:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 10px 25px -5px rgba(102, 126, 234, 0.4);
+            }
+
+            .footer {
+                background: white;
+                margin-top: 40px;
+                padding: 20px;
+                text-align: center;
+                border-top: 1px solid #e2e8f0;
+            }
+
+            @media (max-width: 768px) {
+                .card-body {
+                    padding: 20px;
+                }
+
+                .form-section {
+                    padding: 15px;
+                }
+            }
+        </style>
+    </head>
+
+    <body>
+
+        <nav class="navbar">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="/dashboard">
+                    <i class="fas fa-tshirt"></i> Garment ERP
+                </a>
+                <div>
+                    <span class="text-muted me-3">
+                        <i class="fas fa-user-cog"></i>
+                        <%= user ? user.username : 'Admin' %>
+                    </span>
+                    <a href="/workers" class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Back
+                    </a>
+                </div>
+            </div>
+        </nav>
+
+        <div class="register-container">
+            <div class="register-card">
+                <div class="card-header">
+                    <h2><i class="fas fa-user-plus"></i> Register New Worker</h2>
+                    <p class="mb-0 mt-1 opacity-75">Auto-generate login credentials</p>
+                </div>
+
+                <div class="card-body">
+                    <% if (success_msg && success_msg.length) { %>
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle"></i>
+                            <%= success_msg %>
+                        </div>
+                        <% } %>
+
+                            <% if (error_msg && error_msg.length) { %>
+                                <div class="alert alert-danger">
+                                    <i class="fas fa-exclamation-circle"></i>
+                                    <%= error_msg %>
+                                </div>
+                                <% } %>
+
+                                    <form method="POST" action="/workers/register" enctype="multipart/form-data">
+
+                                        <!-- Personal Information -->
+                                        <div class="form-section">
+                                            <div class="form-section-title">
+                                                <i class="fas fa-user"></i> Personal Information
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">FULL NAME *</label>
+                                                    <input type="text" class="form-control" name="name" id="fullName"
+                                                        required placeholder="Enter full name">
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">PHONE NUMBER *</label>
+                                                    <input type="tel" class="form-control" name="phone" required
+                                                        placeholder="Enter phone number">
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">EMAIL ADDRESS *</label>
+                                                    <input type="email" class="form-control" name="email" required
+                                                        placeholder="worker@example.com">
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">ADDRESS</label>
+                                                    <textarea class="form-control" name="address" rows="2"
+                                                        placeholder="Enter address"></textarea>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Worker Type -->
+                                        <div class="form-section">
+                                            <div class="form-section-title">
+                                                <i class="fas fa-briefcase"></i> Worker Details
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">WORKER TYPE *</label>
+                                                    <select class="form-select" id="workerType" name="workerType"
+                                                        required>
+                                                        <option value="">-- Select --</option>
+                                                        <option value="cutting">✂️ Cutting Worker</option>
+                                                        <option value="karigar">👔 Karigar</option>
+                                                        <option value="helper">🤝 Helper</option>
+                                                        <option value="pressman">🔥 Pressman</option>
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">PAYMENT TYPE *</label>
+                                                    <select class="form-select" id="paymentType" name="paymentType"
+                                                        required>
+                                                        <option value="">-- Select --</option>
+                                                        <option value="monthly">Monthly Fixed Salary</option>
+                                                        <option value="piece">Piece-based</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="row" id="monthlyRateRow" style="display: none;">
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">MONTHLY SALARY (₹)</label>
+                                                    <input type="number" class="form-control" name="monthlyRate"
+                                                        step="500" placeholder="e.g., 10000">
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Login Credentials -->
+                                        <!-- Login Credentials -->
+                                        <div class="credentials-box">
+                                            <div class="credentials-title">
+                                                <i class="fas fa-key"></i> Login Credentials
+                                            </div>
+                                            <div class="row">
+                                                <!-- ✅ Already correct - Username without @ -->
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">Username <span
+                                                            class="text-muted">(Auto-generated, editable)</span></label>
+                                                    <input type="text" class="form-control" name="username"
+                                                        id="usernameInput" placeholder="Auto-generated username"
+                                                        value="auto-generated">
+                                                    <small class="text-muted">You can change this username</small>
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">Password <span
+                                                            class="text-muted">(Default: worker123)</span></label>
+                                                    <input type="text" class="form-control" name="password"
+                                                        id="passwordInput" value="worker123">
+                                                    <small class="text-muted">Worker can change password after
+                                                        login</small>
+                                                </div>
+                                            </div>
+                                            <small class="text-muted d-block mt-2">
+                                                <i class="fas fa-info-circle"></i> Worker can login using these
+                                                credentials
+                                            </small>
+                                        </div>
+
+
+                                        <!-- Documents -->
+                                        <div class="form-section">
+                                            <div class="form-section-title">
+                                                <i class="fas fa-file-alt"></i> Documents (Optional)
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-md-4 mb-3">
+                                                    <label class="form-label">AADHAR CARD</label>
+                                                    <input type="file" class="form-control" name="aadhar"
+                                                        accept=".jpg,.jpeg,.png,.pdf">
+                                                </div>
+                                                <div class="col-md-4 mb-3">
+                                                    <label class="form-label">PAN CARD</label>
+                                                    <input type="file" class="form-control" name="pan"
+                                                        accept=".jpg,.jpeg,.png,.pdf">
+                                                </div>
+                                                <div class="col-md-4 mb-3">
+                                                    <label class="form-label">PHOTO</label>
+                                                    <input type="file" class="form-control" name="photo"
+                                                        accept=".jpg,.jpeg,.png">
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <button type="submit" class="btn btn-register text-white">
+                                            <i class="fas fa-save"></i> Register Worker
+                                        </button>
+                                    </form>
+                </div>
+            </div>
         </div>
-    </div>
-</nav>
 
-<div class="register-container">
-    <div class="register-card">
-        <div class="card-header">
-            <h2><i class="fas fa-user-plus"></i> Register New Worker</h2>
-            <p class="mb-0 mt-1 opacity-75">Auto-generate login credentials</p>
+        <div class="footer">
+            <div class="container">
+                <p>SANIYA Garment | 121 Motiwala Complex, Aurangabad, Maharashtra 431001</p>
+                <p>&copy; 2024 Garment ERP. All rights reserved.</p>
+            </div>
         </div>
-        
-        <div class="card-body">
-            <% if (success_msg && success_msg.length) { %>
-                <div class="alert alert-success">
-                    <i class="fas fa-check-circle"></i> <%= success_msg %>
-                </div>
-            <% } %>
-            
-            <% if (error_msg && error_msg.length) { %>
-                <div class="alert alert-danger">
-                    <i class="fas fa-exclamation-circle"></i> <%= error_msg %>
-                </div>
-            <% } %>
-            
-            <form method="POST" action="/workers/register" enctype="multipart/form-data">
-                
-                <!-- Personal Information -->
-                <div class="form-section">
-                    <div class="form-section-title">
-                        <i class="fas fa-user"></i> Personal Information
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">FULL NAME *</label>
-                            <input type="text" class="form-control" name="name" id="fullName" required placeholder="Enter full name">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">PHONE NUMBER *</label>
-                            <input type="tel" class="form-control" name="phone" required placeholder="Enter phone number">
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">EMAIL ADDRESS *</label>
-                            <input type="email" class="form-control" name="email" required placeholder="worker@example.com">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">ADDRESS</label>
-                            <textarea class="form-control" name="address" rows="2" placeholder="Enter address"></textarea>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Worker Type -->
-                <div class="form-section">
-                    <div class="form-section-title">
-                        <i class="fas fa-briefcase"></i> Worker Details
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">WORKER TYPE *</label>
-                            <select class="form-select" id="workerType" name="workerType" required>
-                                <option value="">-- Select --</option>
-                                <option value="cutting">✂️ Cutting Worker</option>
-                                <option value="karigar">👔 Karigar</option>
-                                <option value="helper">🤝 Helper</option>
-                                <option value="pressman">🔥 Pressman</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">PAYMENT TYPE *</label>
-                            <select class="form-select" id="paymentType" name="paymentType" required>
-                                <option value="">-- Select --</option>
-                                <option value="monthly">Monthly Fixed Salary</option>
-                                <option value="piece">Piece-based</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="row" id="monthlyRateRow" style="display: none;">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">MONTHLY SALARY (₹)</label>
-                            <input type="number" class="form-control" name="monthlyRate" step="500" placeholder="e.g., 10000">
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Login Credentials -->
-                <div class="credentials-box">
-                    <div class="credentials-title">
-                        <i class="fas fa-key"></i> Login Credentials (Auto-generated)
-                    </div>
-                    <div class="credential-item">
-                        <span>Username</span>
-                        <span class="credential-value" id="displayUsername">auto-generated</span>
-                    </div>
-                    <div class="credential-item">
-                        <span>Password</span>
-                        <span class="credential-value" id="displayPassword">worker123</span>
-                    </div>
-                    <input type="hidden" name="username" id="usernameInput">
-                    <input type="hidden" name="password" id="passwordInput" value="worker123">
-                    <small class="text-muted d-block mt-2">
-                        <i class="fas fa-info-circle"></i> Worker can login using these credentials
-                    </small>
-                </div>
-                
-                <!-- Documents -->
-                <div class="form-section">
-                    <div class="form-section-title">
-                        <i class="fas fa-file-alt"></i> Documents (Optional)
-                    </div>
-                    <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">AADHAR CARD</label>
-                            <input type="file" class="form-control" name="aadhar" accept=".jpg,.jpeg,.png,.pdf">
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">PAN CARD</label>
-                            <input type="file" class="form-control" name="pan" accept=".jpg,.jpeg,.png,.pdf">
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">PHOTO</label>
-                            <input type="file" class="form-control" name="photo" accept=".jpg,.jpeg,.png">
-                        </div>
-                    </div>
-                </div>
-                
-                <button type="submit" class="btn btn-register text-white">
-                    <i class="fas fa-save"></i> Register Worker
-                </button>
-            </form>
-        </div>
-    </div>
-</div>
 
-<div class="footer">
-    <div class="container">
-        <p>SANIYA Garment | 121 Motiwala Complex, Aurangabad, Maharashtra 431001</p>
-        <p>&copy; 2024 Garment ERP. All rights reserved.</p>
-    </div>
-</div>
+        <script>
+            // Auto-generate username (editable)
+            document.getElementById('fullName').addEventListener('input', function () {
+                let name = this.value.trim();
+                if (name) {
+                    let username = name.toLowerCase().replace(/[^a-z0-9]/g, '').substring(0, 15);
+                    document.getElementById('usernameInput').value = username;
+                }
+            });
 
-<script>
-    // Auto-generate username
-    document.getElementById('fullName').addEventListener('input', function() {
-        let name = this.value.trim();
-        if (name) {
-            let username = name.toLowerCase().replace(/[^a-z0-9]/g, '').substring(0, 15);
-            document.getElementById('displayUsername').innerText = username;
-            document.getElementById('usernameInput').value = username;
-        }
-    });
-    
-    // Show/hide monthly rate
-    const paymentType = document.getElementById('paymentType');
-    const monthlyRateRow = document.getElementById('monthlyRateRow');
-    
-    paymentType.addEventListener('change', function() {
-        monthlyRateRow.style.display = this.value === 'monthly' ? 'flex' : 'none';
-    });
-    
-    // Auto-set payment type based on worker type
-    const workerType = document.getElementById('workerType');
-    workerType.addEventListener('change', function() {
-        if (this.value === 'cutting' || this.value === 'helper') {
-            paymentType.value = 'monthly';
-            monthlyRateRow.style.display = 'flex';
-        } else if (this.value === 'karigar' || this.value === 'pressman') {
-            paymentType.value = 'piece';
-            monthlyRateRow.style.display = 'none';
-        }
-    });
-</script>
-</body>
-</html>
+
+            // // Auto-generate username
+            // document.getElementById('fullName').addEventListener('input', function() {
+            //     let name = this.value.trim();
+            //     if (name) {
+            //         let username = name.toLowerCase().replace(/[^a-z0-9]/g, '').substring(0, 15);
+            //         document.getElementById('displayUsername').innerText = username;
+            //         document.getElementById('usernameInput').value = username;
+            //     }
+            // });
+
+            // Show/hide monthly rate
+            const paymentType = document.getElementById('paymentType');
+            const monthlyRateRow = document.getElementById('monthlyRateRow');
+
+            paymentType.addEventListener('change', function () {
+                monthlyRateRow.style.display = this.value === 'monthly' ? 'flex' : 'none';
+            });
+
+            // Auto-set payment type based on worker type
+            const workerType = document.getElementById('workerType');
+            workerType.addEventListener('change', function () {
+                if (this.value === 'cutting' || this.value === 'helper') {
+                    paymentType.value = 'monthly';
+                    monthlyRateRow.style.display = 'flex';
+                } else if (this.value === 'karigar' || this.value === 'pressman') {
+                    paymentType.value = 'piece';
+                    monthlyRateRow.style.display = 'none';
+                }
+            });
+        </script>
+    </body>
+
+    </html>
